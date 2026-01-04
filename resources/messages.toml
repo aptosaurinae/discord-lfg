@@ -1,5 +1,3 @@
-"""String messages."""
-
 help = """Post any issues in https://discord.com/channels/1055487463734386739/1194741620441096332
 
 `/lfg` is used to create a group for the dungeon. Choose desired dungeon > dungeon difficulty > timed/completed > your role > required roles.
