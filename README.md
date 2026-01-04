@@ -17,7 +17,7 @@ To install dungeon-buddy-py (db_py), we recommend using the [conda](https://docs
 ``` shell
 git clone git@github.com:aptosaurinae/dungeon-buddy-py.git
 cd dungeon-buddy-py
-conda create -n discord-bot-db -c conda-forge --file environment.yml
+conda env create -f environment.yml
 conda activate discord-bot-db
 pip install --no-deps -e .
 ```
