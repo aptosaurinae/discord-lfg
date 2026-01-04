@@ -23,11 +23,6 @@ def _load_resource(filename: str, folders: str | None = None):
         return tomllib.load(resource_file)
 
 
-def load_emojis() -> dict:
-    """Loads standard emojis."""
-    return _load_resource("emojis")
-
-
 def load_messages() -> dict:
     """Loads standard messages."""
     return _load_resource("messages")

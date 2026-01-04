@@ -26,6 +26,7 @@ TOKEN = token_data["discord"]["token"]
 GUILD_ID = discord.Object(config_data["guild_id"])
 CURRENT_EXPANSION = config_data["expansion"]
 CURRENT_SEASON = config_data["season"]
+EMOJIS = config_data["emojis"]
 
 CHANNEL_WHITELIST = [
     "bot-control"
@@ -134,8 +135,22 @@ async def lfgquick(
     creator_notes: str = "",
 ):
     """Generates a Dungeon Buddy listing using a quick text-based input."""
-    response = "temp"
-    await interaction.response.send_message(response, ephemeral=True)
+    time_type = load_lists()["time_types"][time_type]
+    await interaction.channel.send(
+        content=f"{dungeon} +{difficulty} ({time_type})",
+        embed=discord.Embed(
+            color=606675,
+            title=f"{dungeon} +{difficulty} ({time_type})",
+            description=f"""
+            {EMOJIS["tank"]} : tankname
+            {EMOJIS["healer"]} : healername
+            {EMOJIS["dps"]} : dpsname 1
+            {EMOJIS["dps"]} : dpsname 2
+            {EMOJIS["dps"]} : dpsname 3
+            """
+        )
+    )
+    await interaction.response.send_message("Thanks for listing your group!", ephemeral=True)
 
 # -- Utils
 

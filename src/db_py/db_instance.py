@@ -2,21 +2,19 @@
 
 import discord
 
-from db_py.resources import generate_passphrase, load_emojis
-
-EMOJIS = load_emojis()
+from db_py.resources import generate_passphrase
 
 
 class DungeonInstance:
     """Container for the primary information relating to a dungeon instance."""
 
-    def __init__(self, interaction: discord.Interaction):
+    def __init__(self, interaction: discord.Interaction, emojis: dict[str, str]):
         """Init."""
-        self._roles_init()
+        self._roles_init(emojis)
         self._meta_init()
         self._interaction_init(interaction)
 
-    def _roles_init(self):
+    def _roles_init(self, emojis):
         """Initialise roles information."""
         self.roles = {
             "tank": {
@@ -25,7 +23,7 @@ class DungeonInstance:
                 "assigned": False,
                 "buttonstyle": discord.ButtonStyle.secondary,
                 "disabled": False,
-                "emoji": EMOJIS["tank"],
+                "emoji": emojis["tank"],
             },
             "healer": {
                 "userid": 0,
@@ -33,7 +31,7 @@ class DungeonInstance:
                 "assigned": False,
                 "buttonstyle": discord.ButtonStyle.secondary,
                 "disabled": False,
-                "emoji": EMOJIS["healer"],
+                "emoji": emojis["healer"],
             },
             "dps1": {
                 "userid": 0,
@@ -41,17 +39,17 @@ class DungeonInstance:
                 "assigned": False,
                 "buttonstyle": discord.ButtonStyle.secondary,
                 "disabled": False,
-                "emoji": EMOJIS["dps"],
+                "emoji": emojis["dps"],
             },
             "dps2": {
                 "userid": 0,
                 "display_name": "",
-                "emoji": EMOJIS["dps"],
+                "emoji": emojis["dps"],
             },
             "dps3": {
                 "userid": 0,
                 "display_name": "",
-                "emoji": EMOJIS["dps"],
+                "emoji": emojis["dps"],
             }
         }
 

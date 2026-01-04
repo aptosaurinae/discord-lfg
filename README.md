@@ -4,15 +4,21 @@ This is a Python implementation of Dungeon Buddy, using the library [`discord-py
 
 ## Background
 
-Dungeon Buddy is a Discord bot for easy creation of groups for World of Warcraft dungeons. These groups have one tank, one healer, and three damage dealers in each group. Dungeon Buddy provides a structured embed with buttons for joining groups, making it easier to track Discord usernames when groups are formed, providing passwords only to those who sign up enabling a link between the Discord signup and the in-game signup.
+Dungeon Buddy is a Discord bot for easy creation of groups for World of Warcraft dungeons.
+These groups have one tank, one healer, and three damage dealers in each group. Dungeon Buddy
+provides a structured embed with buttons for joining groups, making it easier to track Discord
+usernames when groups are formed, providing passwords only to those who sign up enabling a link
+between the Discord signup and the in-game signup.
 
-The [original Dungeon Buddy](https://bit.ly/3ZrVj7C) was built by Baddadan/Kashual using DiscordJS for the [No Pressure EU](https://no-pressure.eu) Discord server. This is an implementation of the same system in Python.
+The [original Dungeon Buddy](https://bit.ly/3ZrVj7C) was built by Baddadan/Kashual using DiscordJS for
+the [No Pressure EU](https://no-pressure.eu) Discord server. This is an implementation of the same system in Python.
 
 ## Installation and setup
 
 ### Installation
 
-To install dungeon-buddy-py (db_py), we recommend using the [conda](https://docs.conda.io/en/latest/) package manager, accessible from the terminal by installing [miniforge](https://github.com/conda-forge/miniforge?tab=readme-ov-file#download).
+To install dungeon-buddy-py (db_py), we recommend using the [conda](https://docs.conda.io/en/latest/) package manager,
+accessible from the terminal by installing [miniforge](https://github.com/conda-forge/miniforge?tab=readme-ov-file#download).
 
 ``` shell
 git clone git@github.com:aptosaurinae/dungeon-buddy-py.git
@@ -59,11 +65,23 @@ The config file needs to look like the following:
 guild_id = 123456789
 expansion = "tww"
 season = "3"
+
+[emojis]
+tank = "<:tankrole:123456789>"
+healer = "<:healerrole:123456789>"
+dps = "<:dpsrole:123456789>"
 ```
 
-where `guild_id` is the Discord ID of the server that you are wanting the host the bot in, and the expansion and season match a valid dungeon lookup file in `/resources/dungeons`.
+where:
 
-If you need to add a new dungeon pool, create a new `toml` file in the `/resources/dungeons` file where each line is a short name reference to a long name string e.g.
+- `guild_id` is the Discord ID of the server that you are wanting the host the bot in.
+- the expansion and season match a valid dungeon lookup file in `/resources/dungeons`.
+- the emoji numbers match the IDs of the emojis in the server you are hosting the bot.
+These can be found by right clicking on the emojis in the server you're in and opening the link,
+then looking at the number of their name in the URL.
+
+If you need to add a new dungeon pool, create a new `toml` file in the `/resources/dungeons` file
+where each line is a short name reference to a long name string e.g.
 
 ``` toml
 EDA = "Eco-dome Al'dani"
