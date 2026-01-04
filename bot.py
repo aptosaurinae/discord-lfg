@@ -6,6 +6,7 @@ except ModuleNotFoundError:
 import argparse
 import discord
 from discord import app_commands
+from resources.messages import HELP
 
 parser = argparse.ArgumentParser(description="Configuration for discord bot")
 parser.add_argument("token_file", type=str, help="Discord Token")
@@ -18,7 +19,7 @@ with open(args["config"], "rb") as config_file:
     config_data = tomllib.load(config_file)
 
 TOKEN = token_data["discord"]["token"]
-GUILD_ID = config_data["guild_id"]
+GUILD_ID = discord.Object(config_data["guild_id"])
 CURRENT_EXPANSION = config_data["expansion"]
 CURRENT_SEASON = config_data["season"]
 
@@ -32,6 +33,7 @@ EMOJIS = {
     "dps": ":dpsrole:"
 }
 
+# see the example app_commands/basic on the discord-py GitHub repo
 class DungeonBuddyClient(discord.Client):
     # Suppress error on the User attribute being None since it fills up later
     user: discord.ClientUser
@@ -48,44 +50,53 @@ class DungeonBuddyClient(discord.Client):
 intents = discord.Intents.default()
 client = DungeonBuddyClient(intents=intents)
 
-
 @client.event
 async def on_ready():
     print(f'Logged in as {client.user} (ID: {client.user.id})')
     print('------')
 
-@client.tree.command()
-async def lfghelp(interaction: discord.Interaction):
-    response = "temp"
-    await interaction.response.send_message(response)
+# -- Help
 
 @client.tree.command()
-async def lfghelpdm(interaction: discord.Interaction):
-    response = "temp"
-    await interaction.user.create_dm()
-    await interaction.user.dm_channel.send(response)
+async def lfghelp(interaction: discord.Interaction):
+    """Help with using Dungeon Buddy"""
+    response = HELP
+    await interaction.response.send_message(response, ephemeral=True)
+
+# -- LFG
 
 @client.tree.command()
 async def lfg(interaction: discord.Interaction):
+    """Generates a Dungeon Buddy listing using a guided wizard"""
     response = "temp"
-    await interaction.response.send_message(response)
+    await interaction.response.send_message(response, ephemeral=True)
 
 @client.tree.command()
 async def lfgquick(interaction: discord.Interaction):
+    """Generates a Dungeon Buddy listing using a quick text-based input"""
     response = "temp"
-    await interaction.response.send_message(response)
+    await interaction.response.send_message(response, ephemeral=True)
+
+## -- Utils
 
 @client.tree.command()
 async def lfghistory(interaction: discord.Interaction):
+    """Review your last 10 dungeon buddy signups"""
     response = "temp"
-    await interaction.response.send_message(response)
+    await interaction.response.send_message(response, ephemeral=True)
 
 @client.tree.command()
 async def lfgstats(interaction: discord.Interaction):
+    """Review recent and all-time numbers of dungeon listings"""
     response = "temp"
-    await interaction.response.send_message(response)
+    await interaction.response.send_message(response, ephemeral=True)
 
 @client.tree.command()
 async def lfguserhistory(interaction: discord.Interaction):
+    """Review a specific users dungeon buddy signup history"""
     response = "temp"
-    await interaction.response.send_message(response)
+    await interaction.response.send_message(response, ephemeral=True)
+
+# ---
+
+client.run(token=TOKEN)
