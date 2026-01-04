@@ -10,7 +10,7 @@ import argparse
 import discord
 from discord import app_commands
 
-from db_py.resources import load_dungeons
+from db_py.resources import load_dungeons, load_lists
 
 parser = argparse.ArgumentParser(description="Configuration for discord bot")
 parser.add_argument("token_file", type=str, help="Discord Token")
@@ -32,13 +32,31 @@ CHANNEL_WHITELIST = [
 ]
 
 
-# TODO: Move this to an autocompletion file?
+# TODO: Move these to an autocompletion file?
 async def dungeon_autocomplete(interaction: discord.Interaction, current: str):
     """Autocompletion system for dungeon strings."""
     dungeons = load_dungeons(CURRENT_EXPANSION, CURRENT_SEASON)
     return [
         app_commands.Choice(name=dungeon, value=dungeon)
         for dungeon in dungeons.values() if current.lower() in dungeon.lower()
+    ]
+
+
+async def dungeon_short_autocomplete(interaction: discord.Interaction, current: str):
+    """Autocompletion system for short dungeon strings."""
+    dungeons = load_dungeons(CURRENT_EXPANSION, CURRENT_SEASON)
+    return [
+        app_commands.Choice(name=dungeon, value=dungeon)
+        for dungeon in dungeons if current.lower() in dungeon.lower()
+    ]
+
+
+async def time_type_autocomplete(interaction: discord.Interaction, current: str):
+    """Autocompletion system for short dungeon strings."""
+    time_types = load_lists()["time_types"]
+    return [
+        app_commands.Choice(name=time_type, value=time_type)
+        for time_type in time_types if current.lower() in time_type.lower()
     ]
 
 
@@ -99,7 +117,22 @@ async def lfg(
 
 
 @client.tree.command(guild=GUILD_ID)
-async def lfgquick(interaction: discord.Interaction):
+@app_commands.describe(
+    dungeon="The dungeon you are listing a key for.",
+    difficulty="The difficulty of the dungeon.",
+    time_type="The timing type you are aiming for e.g. 'toa' for 'Time or Abandon'.",
+    listed_as="The in-game name. Leave blank to automatically generate a name for you (recommended)",
+    creator_notes="Extra notes you want to make players signing up aware of."
+)
+@app_commands.autocomplete(dungeon=dungeon_short_autocomplete, time_type=time_type_autocomplete)
+async def lfgquick(
+    interaction: discord.Interaction,
+    dungeon: str,
+    difficulty: int,
+    time_type: str,
+    listed_as: str = "",
+    creator_notes: str = "",
+):
     """Generates a Dungeon Buddy listing using a quick text-based input."""
     response = "temp"
     await interaction.response.send_message(response, ephemeral=True)
