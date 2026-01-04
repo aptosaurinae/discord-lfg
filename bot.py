@@ -10,6 +10,8 @@ import argparse
 import discord
 from discord import app_commands
 
+from db_py.resources import load_dungeons
+
 parser = argparse.ArgumentParser(description="Configuration for discord bot")
 parser.add_argument("token_file", type=str, help="Discord Token")
 parser.add_argument("config", type=str, help="configuration file")
@@ -28,6 +30,16 @@ CURRENT_SEASON = config_data["season"]
 CHANNEL_WHITELIST = [
     "bot-control"
 ]
+
+
+# TODO: Move this to an autocompletion file?
+async def dungeon_autocomplete(interaction: discord.Interaction, current: str):
+    """Autocompletion system for dungeon strings."""
+    dungeons = load_dungeons(CURRENT_EXPANSION, CURRENT_SEASON)
+    return [
+        app_commands.Choice(name=dungeon, value=dungeon)
+        for dungeon in dungeons.values() if current.lower() in dungeon.lower()
+    ]
 
 
 # see the example app_commands/basic on the discord-py GitHub repo
@@ -69,7 +81,18 @@ async def lfghelp(interaction: discord.Interaction):
 
 
 @client.tree.command(guild=GUILD_ID)
-async def lfg(interaction: discord.Interaction):
+@app_commands.describe(
+    dungeon="The dungeon you are listing a key for.",
+    listed_as="The in-game name. Leave blank to automatically generate a name for you (recommended)",
+    creator_notes="Extra notes you want to make players signing up aware of."
+)
+@app_commands.autocomplete(dungeon=dungeon_autocomplete)
+async def lfg(
+    interaction: discord.Interaction,
+    dungeon: str,
+    listed_as: str = "",
+    creator_notes: str = "",
+):
     """Generates a Dungeon Buddy listing using a guided wizard."""
     response = "temp"
     await interaction.response.send_message(response, ephemeral=True)

@@ -75,7 +75,7 @@ classifiers = [
         "Programming Language :: Python :: 3",
     ]
 
-name = "db-py"
+name = "db_py"
 authors = [
     { name = "aptosaurinae", email = "dukesnopbot@gmail.com" },
 ]

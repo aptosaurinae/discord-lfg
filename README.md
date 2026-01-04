@@ -12,7 +12,7 @@ The [original Dungeon Buddy](https://bit.ly/3ZrVj7C) was built by Baddadan/Kashu
 
 ### Installation
 
-To install dungeon-buddy-py, we recommend using the [conda](https://docs.conda.io/en/latest/) package manager, accessible from the terminal by installing [miniforge](https://github.com/conda-forge/miniforge?tab=readme-ov-file#download).
+To install dungeon-buddy-py (db_py), we recommend using the [conda](https://docs.conda.io/en/latest/) package manager, accessible from the terminal by installing [miniforge](https://github.com/conda-forge/miniforge?tab=readme-ov-file#download).
 
 ``` shell
 git clone git@github.com:aptosaurinae/dungeon-buddy-py.git
@@ -88,6 +88,8 @@ Example quick string: `fall 10t d hdd`
 each key range.
 
 ## License
+
+This project has inherited the license from the original Dungeon Buddy, as below.
 
 This project is licensed under the [CC BY-NC 4.0 License](https://creativecommons.org/licenses/by-nc/4.0/).
 

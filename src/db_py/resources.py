@@ -5,6 +5,7 @@ try:
 except ModuleNotFoundError:
     import pip._vendor.tomli as tomllib
 
+import random
 from pathlib import Path
 
 RESOURCES = Path(__file__).parent.parent.parent / "resources"
@@ -40,3 +41,9 @@ def load_lists() -> dict:
 def load_dungeons(expansion: str, season: str | int) -> dict:
     """Loads a dungeon set."""
     return _load_resource(f"{expansion}-{season}", "dungeons")
+
+
+def generate_passphrase(num_words: int = 3) -> str:
+    """Creates a 3-word passphrase from the list of passphrase words."""
+    passphrase_words = _load_resource("lists")["passphrase_words"]
+    return "".join(random.choices(population=passphrase_words, k=num_words))
