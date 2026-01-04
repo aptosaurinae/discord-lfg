@@ -1,0 +1,91 @@
+[tool.ruff]
+line-length = 100
+preview = true # required to activate many pycodestyle errors and warnings as of 2024-03-13
+
+[tool.ruff.format]
+exclude = [".*.egg-info", "requirements/**"]
+skip-magic-trailing-comma = true
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle errors
+    "E",
+    # pycodestyle warnings
+    "W",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+    # Docstrings
+    "D"
+]
+ignore = [
+    # here and below, rules are redundant with formatter, see
+    # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+    "E501",
+    "W191",
+    "E111",
+    "E114",
+    "E117",
+    "D206",
+    "D300"
+]
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
+
+[tool.ruff.lint.mccabe]
+# Unlike Flake8, default to a complexity level of 10.
+max-complexity = 10
+
+# Ignore `E402` (import violations) and `F401` (unused imports) in all `__init__.py` files
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["E402", "F401"]
+"*.ipynb" = ["E402"]
+"tests/*" = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 200
+ignore-overlong-task-comments = true
+
+[tool.codespell]
+skip = "tests/*.py,AUTHORS.md"
+count = ""
+quiet-level = 3
+# Uncomment and add words that are false flags as a comma delimited string
+# ignore-words-list = ""
+
+[project]
+classifiers = [
+        "Development Status :: 2 - Pre-Alpha",
+        "Intended Audience :: Developers",
+        "Natural Language :: English",
+        "Programming Language :: Python :: 3",
+    ]
+
+name = "db-py"
+authors = [
+    { name = "aptosaurinae", email = "dukesnopbot@gmail.com" },
+]
+maintainers = []
+description = "Dungeon group forming system for Discord."
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["dungeon", "buddy", "wow"]
+dynamic = ["dependencies", "optional-dependencies", "version"]
+
+[project.urls]
+repository = "https://github.com/aptosaurinae/dungeon-buddy-py"
+changelog = "https://github.com/aptosaurinae/dungeon-buddy-py/blob/main/CHANGELOG.md"
