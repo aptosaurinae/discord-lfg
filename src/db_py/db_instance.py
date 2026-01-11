@@ -48,6 +48,9 @@ class DungeonInstance:
         dps1 = self.roles["dps1"]
         dps2 = self.roles["dps2"]
         dps3 = self.roles["dps3"]
+        footer = ""
+        if self.metadata["filled_spot_counter"] < 5:
+            footer = "/lfghelp for Dungeon Buddy help"
         return f"""{dungeon['creator_notes']}
 
             {tank["emoji"]} : {tank["display_name"]}
@@ -55,7 +58,7 @@ class DungeonInstance:
             {dps1["emoji"]} : {dps1["display_name"]}
             {dps2["emoji"]} : {dps2["display_name"]}
             {dps3["emoji"]} : {dps3["display_name"]}
-            """
+            {footer}"""
 
     def _roles_init(self, emojis: dict):
         """Initialise roles information."""
@@ -138,7 +141,6 @@ class DungeonInstance:
                 "chosen_role": "",
             }
         }
-        print(self.interactions)
 
     def update_role(self, role_name: str, user_id: int, display_name: str):
         """Update the specified role name with the given user ID and display name."""
