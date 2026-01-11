@@ -10,7 +10,8 @@ import argparse
 import discord
 from discord import app_commands
 
-from db_py.resources import load_dungeons, load_lists
+from db_py.resources import load_lists
+from db_py.utils import dungeon_autocomplete, dungeon_short_autocomplete, time_type_autocomplete
 
 parser = argparse.ArgumentParser(description="Configuration for discord bot")
 parser.add_argument("token_file", type=str, help="Discord Token")
@@ -31,34 +32,6 @@ EMOJIS = config_data["emojis"]
 CHANNEL_WHITELIST = [
     "bot-control"
 ]
-
-
-# TODO: Move these to an autocompletion file?
-async def dungeon_autocomplete(interaction: discord.Interaction, current: str):
-    """Autocompletion system for dungeon strings."""
-    dungeons = load_dungeons(CURRENT_EXPANSION, CURRENT_SEASON)
-    return [
-        app_commands.Choice(name=dungeon, value=dungeon)
-        for dungeon in dungeons.values() if current.lower() in dungeon.lower()
-    ]
-
-
-async def dungeon_short_autocomplete(interaction: discord.Interaction, current: str):
-    """Autocompletion system for short dungeon strings."""
-    dungeons = load_dungeons(CURRENT_EXPANSION, CURRENT_SEASON)
-    return [
-        app_commands.Choice(name=dungeon, value=dungeon)
-        for dungeon in dungeons if current.lower() in dungeon.lower()
-    ]
-
-
-async def time_type_autocomplete(interaction: discord.Interaction, current: str):
-    """Autocompletion system for short dungeon strings."""
-    time_types = load_lists()["time_types"]
-    return [
-        app_commands.Choice(name=time_type, value=time_type)
-        for time_type in time_types if current.lower() in time_type.lower()
-    ]
 
 
 # see the example app_commands/basic on the discord-py GitHub repo
@@ -105,7 +78,7 @@ async def lfghelp(interaction: discord.Interaction):
     listed_as="The in-game name. Leave blank to automatically generate a name for you (recommended)",
     creator_notes="Extra notes you want to make players signing up aware of."
 )
-@app_commands.autocomplete(dungeon=dungeon_autocomplete)
+@app_commands.autocomplete(dungeon=dungeon_autocomplete(CURRENT_EXPANSION, CURRENT_SEASON))
 async def lfg(
     interaction: discord.Interaction,
     dungeon: str,
@@ -125,7 +98,10 @@ async def lfg(
     listed_as="The in-game name. Leave blank to automatically generate a name for you (recommended)",
     creator_notes="Extra notes you want to make players signing up aware of."
 )
-@app_commands.autocomplete(dungeon=dungeon_short_autocomplete, time_type=time_type_autocomplete)
+@app_commands.autocomplete(
+    dungeon=dungeon_short_autocomplete(CURRENT_EXPANSION, CURRENT_SEASON),
+    time_type=time_type_autocomplete()
+)
 async def lfgquick(
     interaction: discord.Interaction,
     dungeon: str,

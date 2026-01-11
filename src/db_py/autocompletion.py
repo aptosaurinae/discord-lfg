@@ -1,0 +1,46 @@
+"""Contains utilities for dungeon buddy."""
+
+import discord
+from discord import app_commands
+
+from db_py.resources import load_dungeons, load_lists
+
+
+def _autocomplete_choice(choices: list):
+    """Creates an autocompletion choice interactable."""
+    async def autocompleter(interaction: discord.Interaction, current: str):
+        return [
+            app_commands.Choice(name=item, value=item)
+            for item in choices if current.lower() in item.lower()
+        ]
+    return autocompleter
+
+
+def dungeon_autocomplete(
+    expansion: str,
+    season: int
+):
+    """Autocompletion system for dungeon strings."""
+    dungeons = load_dungeons(expansion, season)
+    return _autocomplete_choice(list(dungeons.values()))
+
+
+def dungeon_short_autocomplete(
+    expansion: str,
+    season: int
+):
+    """Autocompletion system for short dungeon strings."""
+    dungeons = load_dungeons(expansion, season)
+    return _autocomplete_choice(list(dungeons.keys()))
+
+
+def time_type_autocomplete():
+    """Autocompletion system for time types."""
+    time_types = load_lists()["time_types"]
+    return _autocomplete_choice(time_types)
+
+
+def difficulty_autocomplete(lower: int, upper: int):
+    """Autocompletion system for short dungeon strings."""
+    difficulties = list(range(lower, upper + 1))
+    return _autocomplete_choice(difficulties)
