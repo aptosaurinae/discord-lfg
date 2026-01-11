@@ -10,8 +10,12 @@ import argparse
 import discord
 from discord import app_commands
 
-from db_py.resources import load_lists
-from db_py.utils import dungeon_autocomplete, dungeon_short_autocomplete, time_type_autocomplete
+from db_py.autocompletion import (
+    dungeon_autocomplete,
+    dungeon_short_autocomplete,
+    time_type_autocomplete,
+)
+from db_py.commands.lfg import lfg, lfgquick
 
 parser = argparse.ArgumentParser(description="Configuration for discord bot")
 parser.add_argument("token_file", type=str, help="Discord Token")
@@ -23,11 +27,26 @@ with open(args["token_file"], "rb") as token_file:
 with open(args["config"], "rb") as config_file:
     config_data = tomllib.load(config_file)
 
+
+def _validate_config(config_data):
+    config_errors = []
+    if config_data.get("expansion", None) is None:
+        config_errors.append("You must define an expansion in the config using the 'expansion' argument")
+    if config_data.get("season", None) is None:
+        config_errors.append("You must define a season in the config using the 'season' argument")
+    if len(config_errors) > 0:
+        conf_errors = "".join([f'{err}\n' for err in config_errors])
+        raise ValueError(f"Config is missing required arguments: \n{conf_errors}")
+
+
+_validate_config(config_data)
+
 TOKEN = token_data["discord"]["token"]
 GUILD_ID = discord.Object(config_data["guild_id"])
-CURRENT_EXPANSION = config_data["expansion"]
-CURRENT_SEASON = config_data["season"]
-EMOJIS = config_data["emojis"]
+
+CURRENT_EXPANSION = str(config_data.get("expansion"))
+CURRENT_SEASON = str(config_data.get("season"))
+EMOJIS = config_data.get("emojis", None)
 
 CHANNEL_WHITELIST = [
     "bot-control"
@@ -72,25 +91,30 @@ async def lfghelp(interaction: discord.Interaction):
 # -- LFG
 
 
-@client.tree.command(guild=GUILD_ID)
+@client.tree.command(guild=GUILD_ID, name="lfg")
 @app_commands.describe(
     dungeon="The dungeon you are listing a key for.",
     listed_as="The in-game name. Leave blank to automatically generate a name for you (recommended)",
     creator_notes="Extra notes you want to make players signing up aware of."
 )
 @app_commands.autocomplete(dungeon=dungeon_autocomplete(CURRENT_EXPANSION, CURRENT_SEASON))
-async def lfg(
+async def lfg_command(
     interaction: discord.Interaction,
     dungeon: str,
     listed_as: str = "",
     creator_notes: str = "",
 ):
     """Generates a Dungeon Buddy listing using a guided wizard."""
-    response = "temp"
-    await interaction.response.send_message(response, ephemeral=True)
+    await lfg(
+        interaction=interaction,
+        dungeon=dungeon,
+        listed_as=listed_as,
+        creator_notes=creator_notes,
+        emojis=EMOJIS,
+    )
 
 
-@client.tree.command(guild=GUILD_ID)
+@client.tree.command(guild=GUILD_ID, name="lfgq")
 @app_commands.describe(
     dungeon="The dungeon you are listing a key for.",
     difficulty="The difficulty of the dungeon.",
@@ -102,7 +126,7 @@ async def lfg(
     dungeon=dungeon_short_autocomplete(CURRENT_EXPANSION, CURRENT_SEASON),
     time_type=time_type_autocomplete()
 )
-async def lfgquick(
+async def lfgquick_command(
     interaction: discord.Interaction,
     dungeon: str,
     difficulty: int,
@@ -111,22 +135,15 @@ async def lfgquick(
     creator_notes: str = "",
 ):
     """Generates a Dungeon Buddy listing using a quick text-based input."""
-    time_type = load_lists()["time_types"][time_type]
-    await interaction.channel.send(
-        content=f"{dungeon} +{difficulty} ({time_type})",
-        embed=discord.Embed(
-            color=606675,
-            title=f"{dungeon} +{difficulty} ({time_type})",
-            description=f"""
-            {EMOJIS["tank"]} : tankname
-            {EMOJIS["healer"]} : healername
-            {EMOJIS["dps"]} : dpsname 1
-            {EMOJIS["dps"]} : dpsname 2
-            {EMOJIS["dps"]} : dpsname 3
-            """
-        )
+    await lfgquick(
+        interaction=interaction,
+        dungeon=dungeon,
+        difficulty=difficulty,
+        time_type=time_type,
+        listed_as=listed_as,
+        creator_notes=creator_notes,
+        emojis=EMOJIS,
     )
-    await interaction.response.send_message("Thanks for listing your group!", ephemeral=True)
 
 # -- Utils
 

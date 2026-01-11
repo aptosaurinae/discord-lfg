@@ -18,7 +18,7 @@ def _autocomplete_choice(choices: list):
 
 def dungeon_autocomplete(
     expansion: str,
-    season: int
+    season: str
 ):
     """Autocompletion system for dungeon strings."""
     dungeons = load_dungeons(expansion, season)
@@ -27,7 +27,7 @@ def dungeon_autocomplete(
 
 def dungeon_short_autocomplete(
     expansion: str,
-    season: int
+    season: str
 ):
     """Autocompletion system for short dungeon strings."""
     dungeons = load_dungeons(expansion, season)
