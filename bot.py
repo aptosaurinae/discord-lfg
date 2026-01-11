@@ -15,6 +15,7 @@ from db_py.autocompletion import (
     dungeon_short_autocomplete,
     time_type_autocomplete,
 )
+from db_py.commands.help import help_response
 from db_py.commands.lfg import lfg, lfgquick
 
 parser = argparse.ArgumentParser(description="Configuration for discord bot")
@@ -83,8 +84,7 @@ async def on_ready():
 @client.tree.command(guild=GUILD_ID)
 async def lfghelp(interaction: discord.Interaction):
     """Help with using Dungeon Buddy."""
-    response = "help"
-    await interaction.response.send_message(response, ephemeral=True)
+    await help_response(interaction)
 
 # -- LFG
 
@@ -143,7 +143,7 @@ async def lfgquick_command(
         config=CONFIG_DATA,
     )
 
-# -- Utils
+# -- Stats
 
 
 @client.tree.command(guild=GUILD_ID)
