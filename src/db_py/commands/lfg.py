@@ -5,6 +5,7 @@ import string
 
 import discord
 
+from db_py.db_instance import DungeonInstance
 from db_py.resources import load_dungeons, load_lists
 
 DEFAULT_EMOJIS = {
@@ -19,20 +20,10 @@ def _generate_listing_name(dungeon_short: str, num_chars: int, guild_name):
     for _ in range(num_chars):
         random_string += random.choice(string.ascii_uppercase)
 
-    if guild_name != "" and isinstance(guild_name, str):
+    if guild_name != "":
         guild_name += " "
-    else:
-        guild_name = ""
 
     return f"{guild_name}{dungeon_short} {random_string}"
-
-
-def _generate_passphrase(num_words: int):
-    words = load_lists()["passphrase_words"]
-    passphrase = ""
-    for _ in range(num_words):
-        passphrase += random.choice(words)
-    return passphrase
 
 
 async def _lfg(
@@ -46,7 +37,8 @@ async def _lfg(
 ):
     time_type = load_lists()["time_types"][time_type]
     dungeons = load_dungeons(config.get("expansion"), config.get("season"))    # type: ignore
-    emojis = config.get("emojis", DEFAULT_EMOJIS)
+    if "emojis" not in config:
+        config["emojis"] = DEFAULT_EMOJIS
 
     if dungeon in dungeons:
         dungeon_short = dungeon
@@ -64,25 +56,30 @@ async def _lfg(
         listed_as = _generate_listing_name(
             dungeon_short,
             num_chars=3,
-            guild_name=config.get("guild_name")
+            guild_name=config.get("guild_name", "")
         )
+
+    dungeon_info = {
+        "dungeon_short": dungeon_short,
+        "dungeon_long": dungeon_long,
+        "listed_as": listed_as,
+        "creator_notes": creator_notes,
+        "difficulty": difficulty,
+        "time_type": time_type,
+    }
+
+    instance = DungeonInstance(interaction=interaction, dungeon_info=dungeon_info, config=config)
 
     await interaction.channel.send(                             # type: ignore
-        content=f"{dungeon_long} +{difficulty} ({time_type})",
+        content=instance.listing_title,
         embed=discord.Embed(
             color=606675,
-            title=f"{listed_as}",
-            description=f"""{creator_notes}
-
-            {emojis["tank"]} : tankname
-            {emojis["healer"]} : healername
-            {emojis["dps"]} : dpsname 1
-            {emojis["dps"]} : dpsname 2
-            {emojis["dps"]} : dpsname 3
-            """
+            title=instance.listing_title,
+            description=instance.description
         )
     )
-    passphrase = _generate_passphrase(3)
+
+    passphrase = instance.metadata.get("passphrase")
     await interaction.response.send_message(
         f"The passphrase for your group is: {passphrase}",
         ephemeral=True

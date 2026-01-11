@@ -77,6 +77,7 @@ async def on_ready():
     """Startup tasks."""
     print(f'Logged in as {client.user} (ID: {client.user.id})')
     print('------')
+    print('Dungeon Buddy started')
 
 # -- Help
 
