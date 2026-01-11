@@ -138,6 +138,7 @@ class DungeonInstance:
                 "chosen_role": "",
             }
         }
+        print(self.interactions)
 
     def update_role(self, role_name: str, user_id: int, display_name: str):
         """Update the specified role name with the given user ID and display name."""

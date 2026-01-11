@@ -8,12 +8,6 @@ import discord
 from db_py.db_instance import DungeonInstance
 from db_py.resources import load_dungeons, load_lists
 
-DEFAULT_EMOJIS = {
-    "tank": ":shield:",
-    "dps": ":crossed_swords:",
-    "healer": ":magic_wand:",
-}
-
 
 def _generate_listing_name(dungeon_short: str, num_chars: int, guild_name):
     random_string = ""
@@ -37,8 +31,6 @@ async def _lfg(
 ):
     time_type = load_lists()["time_types"][time_type]
     dungeons = load_dungeons(config.get("expansion"), config.get("season"))    # type: ignore
-    if "emojis" not in config:
-        config["emojis"] = DEFAULT_EMOJIS
 
     if dungeon in dungeons:
         dungeon_short = dungeon
@@ -74,7 +66,7 @@ async def _lfg(
         content=instance.listing_title,
         embed=discord.Embed(
             color=606675,
-            title=instance.listing_title,
+            title=instance.dungeon_title,
             description=instance.description
         )
     )
