@@ -25,28 +25,26 @@ args = vars(parser.parse_args())
 with open(args["token_file"], "rb") as token_file:
     token_data = tomllib.load(token_file)
 with open(args["config"], "rb") as config_file:
-    config_data = tomllib.load(config_file)
+    CONFIG_DATA = tomllib.load(config_file)
 
 
-def _validate_config(config_data):
+def _validate_config(CONFIG_DATA: dict):
     config_errors = []
-    if config_data.get("expansion", None) is None:
+    if CONFIG_DATA.get("expansion") is None:
         config_errors.append("You must define an expansion in the config using the 'expansion' argument")
-    if config_data.get("season", None) is None:
+    if CONFIG_DATA.get("season") is None:
         config_errors.append("You must define a season in the config using the 'season' argument")
     if len(config_errors) > 0:
         conf_errors = "".join([f'{err}\n' for err in config_errors])
         raise ValueError(f"Config is missing required arguments: \n{conf_errors}")
 
 
-_validate_config(config_data)
+_validate_config(CONFIG_DATA)
 
 TOKEN = token_data["discord"]["token"]
-GUILD_ID = discord.Object(config_data["guild_id"])
-
-CURRENT_EXPANSION = str(config_data.get("expansion"))
-CURRENT_SEASON = str(config_data.get("season"))
-EMOJIS = config_data.get("emojis", None)
+GUILD_ID = discord.Object(CONFIG_DATA["guild_id"])
+CURRENT_EXPANSION = str(CONFIG_DATA.get("expansion"))
+CURRENT_SEASON = str(CONFIG_DATA.get("season"))
 
 CHANNEL_WHITELIST = [
     "bot-control"
@@ -110,7 +108,7 @@ async def lfg_command(
         dungeon=dungeon,
         listed_as=listed_as,
         creator_notes=creator_notes,
-        emojis=EMOJIS,
+        config=CONFIG_DATA,
     )
 
 
@@ -142,7 +140,7 @@ async def lfgquick_command(
         time_type=time_type,
         listed_as=listed_as,
         creator_notes=creator_notes,
-        emojis=EMOJIS,
+        config=CONFIG_DATA,
     )
 
 # -- Utils
