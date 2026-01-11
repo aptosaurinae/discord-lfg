@@ -18,8 +18,12 @@ def _generate_listing_name(dungeon_short: str, num_chars: int, guild_name):
     random_string = ""
     for _ in range(num_chars):
         random_string += random.choice(string.ascii_uppercase)
-    if guild_name != "":
+
+    if guild_name != "" and isinstance(guild_name, str):
         guild_name += " "
+    else:
+        guild_name = ""
+
     return f"{guild_name}{dungeon_short} {random_string}"
 
 
@@ -49,7 +53,7 @@ async def _lfg(
         dungeon_long = dungeons[dungeon]
     else:
         dungeon_long = dungeon
-        for key, value in dungeons:
+        for key, value in dungeons.items():
             if value == dungeon:
                 dungeon_short = key
                 break
