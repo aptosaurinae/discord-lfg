@@ -65,15 +65,6 @@ async def _lfg(
 
     await interaction.channel.send(view=get_embed(instance))    # type: ignore
 
-    # await interaction.channel.send(                             # type: ignore
-    #     content=instance.listing_title,
-    #     embed=discord.Embed(
-    #         color=606675,
-    #         title=instance.dungeon_title,
-    #         description=instance.description
-    #     )
-    # )
-
     passphrase = instance.metadata.get("passphrase")
     await interaction.response.send_message(
         f"The passphrase for your group is: {passphrase}",
