@@ -5,7 +5,7 @@ from enum import Enum
 
 import discord
 
-from db_py.resources import generate_passphrase, load_lists
+from db_py.resources import generate_passphrase, load_emojis
 
 
 class RoleType(Enum):
@@ -72,7 +72,7 @@ class DungeonInstance:
             config: A dictionary of configuration information for Dungeon Buddy
         """
         self._setup_dungeon(**dungeon_info)
-        self._roles_init(config.get("emojis", load_lists()["emojis"]))
+        self._roles_init(config.get("emojis", load_emojis()))
         self._meta_init(config)
         self._interaction_init(interaction)
 
@@ -99,12 +99,12 @@ class DungeonInstance:
             footer = "/lfghelp for Dungeon Buddy help"
         return f"""{dungeon.creator_notes}
 
-            {tank.emoji} : {tank.display_names[0]}
-            {healer.emoji} : {healer.display_names[0]}
-            {dps.emoji} : {dps.display_names[0]}
-            {dps.emoji} : {dps.display_names[1]}
-            {dps.emoji} : {dps.display_names[2]}
-            {footer}"""
+{tank.emoji} : {tank.display_names[0]}
+{healer.emoji} : {healer.display_names[0]}
+{dps.emoji} : {dps.display_names[0]}
+{dps.emoji} : {dps.display_names[1]}
+{dps.emoji} : {dps.display_names[2]}
+{footer}"""
 
     def role_info(self, role_name):
         """Gets information about the requested role."""

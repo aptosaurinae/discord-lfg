@@ -376,6 +376,6 @@ tbc = "Time but Complete"
 vc = "Vault completion"
 
 [emojis]
-tank = ":shield:"
-dps = ":crossed_swords:"
-healer = ":magic_wand:"
+tank = "🛡️"
+dps = "⚔️"
+healer = "🪄"

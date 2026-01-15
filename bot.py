@@ -17,6 +17,7 @@ from db_py.autocompletion import (
 )
 from db_py.commands.help import help_response
 from db_py.commands.lfg import lfg, lfgquick
+from db_py.db_display import get_embed
 
 parser = argparse.ArgumentParser(description="Configuration for discord bot")
 parser.add_argument("token_file", type=str, help="Discord Token")

@@ -28,9 +28,25 @@ def load_messages() -> dict:
     return _load_resource("messages")
 
 
-def load_lists() -> dict:
+def _load_lists() -> dict:
     """Loads standard lists."""
     return _load_resource("lists")
+
+
+def load_emojis() -> dict:
+    """Loads standard emojis."""
+    emojis: dict = _load_lists()["emojis"]
+    return emojis
+
+
+def load_time_types() -> dict:
+    """Loads time types for dungeons."""
+    return _load_lists()["time_types"]
+
+
+def load_passphrase_words() -> list:
+    """Loads passphrase words."""
+    return _load_lists()["passphrase_words"]
 
 
 def load_dungeons(expansion: str, season: str | int) -> dict:
@@ -40,5 +56,5 @@ def load_dungeons(expansion: str, season: str | int) -> dict:
 
 def generate_passphrase(num_words: int = 3) -> str:
     """Creates a 3-word passphrase from the list of passphrase words."""
-    passphrase_words = _load_resource("lists")["passphrase_words"]
+    passphrase_words = load_passphrase_words()
     return "".join(random.choices(population=passphrase_words, k=num_words))

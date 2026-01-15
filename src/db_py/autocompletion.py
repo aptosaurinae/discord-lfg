@@ -3,7 +3,7 @@
 import discord
 from discord import app_commands
 
-from db_py.resources import load_dungeons, load_lists
+from db_py.resources import load_dungeons, load_time_types
 
 
 def _autocomplete_choice(choices: list):
@@ -36,8 +36,8 @@ def dungeon_short_autocomplete(
 
 def time_type_autocomplete():
     """Autocompletion system for time types."""
-    time_types = load_lists()["time_types"]
-    return _autocomplete_choice(time_types)
+    time_types = load_time_types()
+    return _autocomplete_choice(list(time_types.keys()))
 
 
 def difficulty_autocomplete(lower: int, upper: int):

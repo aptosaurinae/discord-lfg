@@ -5,8 +5,9 @@ import string
 
 import discord
 
+from db_py.db_display import get_embed
 from db_py.db_instance import DungeonInstance
-from db_py.resources import load_dungeons, load_lists
+from db_py.resources import load_dungeons, load_time_types
 
 
 def _generate_listing_name(dungeon_short: str, num_chars: int, guild_name):
@@ -29,7 +30,7 @@ async def _lfg(
     creator_notes: str,
     config: dict,
 ):
-    time_type = load_lists()["time_types"][time_type]
+    time_type = load_time_types()[time_type]
     dungeons = load_dungeons(config.get("expansion"), config.get("season"))    # type: ignore
 
     if dungeon in dungeons:
@@ -62,14 +63,16 @@ async def _lfg(
 
     instance = DungeonInstance(interaction=interaction, dungeon_info=dungeon_info, config=config)
 
-    await interaction.channel.send(                             # type: ignore
-        content=instance.listing_title,
-        embed=discord.Embed(
-            color=606675,
-            title=instance.dungeon_title,
-            description=instance.description
-        )
-    )
+    await interaction.channel.send(view=get_embed(instance))    # type: ignore
+
+    # await interaction.channel.send(                             # type: ignore
+    #     content=instance.listing_title,
+    #     embed=discord.Embed(
+    #         color=606675,
+    #         title=instance.dungeon_title,
+    #         description=instance.description
+    #     )
+    # )
 
     passphrase = instance.metadata.get("passphrase")
     await interaction.response.send_message(
