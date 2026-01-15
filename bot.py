@@ -46,10 +46,7 @@ TOKEN = token_data["discord"]["token"]
 GUILD_ID = discord.Object(CONFIG_DATA["guild_id"])
 CURRENT_EXPANSION = str(CONFIG_DATA.get("expansion"))
 CURRENT_SEASON = str(CONFIG_DATA.get("season"))
-
-CHANNEL_WHITELIST = [
-    "bot-control"
-]
+CHANNEL_WHITELIST = str(CONFIG_DATA.get("channel_whitelist", []))
 
 
 # see the example app_commands/basic on the discord-py GitHub repo

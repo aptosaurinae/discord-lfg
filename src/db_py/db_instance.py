@@ -5,13 +5,7 @@ from enum import Enum
 
 import discord
 
-from db_py.resources import generate_passphrase
-
-DEFAULT_EMOJIS = {
-    "tank": ":shield:",
-    "dps": ":crossed_swords:",
-    "healer": ":magic_wand:",
-}
+from db_py.resources import generate_passphrase, load_lists
 
 
 class RoleType(Enum):
@@ -23,12 +17,12 @@ class RoleType(Enum):
 
 class RoleSpecific(Enum):
     """Enumeration for the role a particular user has been assigned."""
+    none = 0
     tank = 1
     healer = 2
     dps1 = 3
     dps2 = 4
     dps3 = 5
-    none = 0
 
 
 @dataclass
@@ -41,6 +35,17 @@ class Role:
     button_style: discord.ButtonStyle
     disabled: bool
     emoji: str
+
+
+@dataclass
+class DungeonDetails:
+    """Container for dungeon details."""
+    dungeon_short: str
+    dungeon_long: str
+    listed_as: str
+    creator_notes: str
+    difficulty: int
+    time_type: str
 
 
 @dataclass
@@ -67,7 +72,7 @@ class DungeonInstance:
             config: A dictionary of configuration information for Dungeon Buddy
         """
         self._setup_dungeon(**dungeon_info)
-        self._roles_init(config.get("emojis", DEFAULT_EMOJIS))
+        self._roles_init(config.get("emojis", load_lists()["emojis"]))
         self._meta_init(config)
         self._interaction_init(interaction)
 
@@ -75,12 +80,12 @@ class DungeonInstance:
     def listing_title(self):
         """Gets a standardised listing title for the dungeon including difficulty and time type."""
         dungeon = self.dungeon_details
-        return f"{dungeon['dungeon_long']} +{dungeon['difficulty']} ({dungeon['time_type']})"
+        return f"{dungeon.dungeon_long} +{dungeon.difficulty} ({dungeon.time_type})"
 
     @property
     def dungeon_title(self):
         """Gets a standardised title string for the dungeon."""
-        return f"{self.dungeon_details['listed_as']}"
+        return f"{self.dungeon_details.listed_as}"
 
     @property
     def description(self):
@@ -92,7 +97,7 @@ class DungeonInstance:
         footer = ""
         if self.metadata["filled_spot_counter"] < 5:
             footer = "/lfghelp for Dungeon Buddy help"
-        return f"""{dungeon['creator_notes']}
+        return f"""{dungeon.creator_notes}
 
             {tank.emoji} : {tank.display_names[0]}
             {healer.emoji} : {healer.display_names[0]}
@@ -150,13 +155,14 @@ class DungeonInstance:
         time_type: str
     ):
         """Captures information from the initial listing process."""
-        self.dungeon_details = {}
-        self.dungeon_details["dungeon_short"] = dungeon_short
-        self.dungeon_details["dungeon_long"] = dungeon_long
-        self.dungeon_details["listed_as"] = listed_as
-        self.dungeon_details["creator_notes"] = creator_notes
-        self.dungeon_details["difficulty"] = difficulty
-        self.dungeon_details["time_type"] = time_type
+        self.dungeon_details = DungeonDetails(
+            dungeon_short=dungeon_short,
+            dungeon_long=dungeon_long,
+            listed_as=listed_as,
+            creator_notes=creator_notes,
+            difficulty=int(difficulty),
+            time_type=time_type,
+        )
 
     def _meta_init(self, config: dict):
         """Initialise metadata."""
