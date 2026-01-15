@@ -1,4 +1,4 @@
-"""Contains utilities for dungeon buddy."""
+"""Contains autocompletion lists for dungeon buddy."""
 
 import discord
 from discord import app_commands
