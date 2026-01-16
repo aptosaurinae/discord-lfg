@@ -10,15 +10,16 @@ def _button(
         emoji: str,
         button_style: discord.ButtonStyle,
         disabled: bool,
-        row: int
+        row: int,
     ) -> discord.ui.Button:
-    return discord.ui.Button(
+    button = discord.ui.Button(
         style=button_style,
         disabled=disabled,
         custom_id=custom_id,
         emoji=emoji,
         row=row,
     )
+    return button
 
 
 def _button_from_role(role: Role, row: int) -> discord.ui.Button:

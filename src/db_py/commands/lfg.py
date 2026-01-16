@@ -5,7 +5,6 @@ import string
 
 import discord
 
-from db_py.db_display import get_embed
 from db_py.db_instance import DungeonInstance
 from db_py.resources import load_dungeons, load_time_types
 
@@ -63,9 +62,9 @@ async def _lfg(
 
     instance = DungeonInstance(interaction=interaction, dungeon_info=dungeon_info, config=config)
 
-    await interaction.channel.send(view=get_embed(instance))    # type: ignore
+    await interaction.channel.send(view=instance.display())    # type: ignore
 
-    passphrase = instance.metadata.get("passphrase")
+    passphrase = instance.passphrase
     await interaction.response.send_message(
         f"The passphrase for your group is: {passphrase}",
         ephemeral=True

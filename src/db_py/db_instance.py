@@ -77,17 +77,6 @@ class DungeonInstance:
         self._interaction_init(interaction)
 
     @property
-    def listing_title(self):
-        """Gets a standardised listing title for the dungeon including difficulty and time type."""
-        dungeon = self.dungeon_details
-        return f"{dungeon.dungeon_long} +{dungeon.difficulty} ({dungeon.time_type})"
-
-    @property
-    def dungeon_title(self):
-        """Gets a standardised title string for the dungeon."""
-        return f"{self.dungeon_details.listed_as}"
-
-    @property
     def description(self):
         """Gets a standardised description for the dungeon including role spots."""
         dungeon = self.dungeon_details
@@ -105,6 +94,22 @@ class DungeonInstance:
 {dps.emoji} : {dps.display_names[1]}
 {dps.emoji} : {dps.display_names[2]}
 {footer}"""
+
+    @property
+    def dungeon_title(self):
+        """Gets a standardised title string for the dungeon."""
+        return f"{self.dungeon_details.listed_as}"
+
+    @property
+    def listing_title(self):
+        """Gets a standardised listing title for the dungeon including difficulty and time type."""
+        dungeon = self.dungeon_details
+        return f"{dungeon.dungeon_long} +{dungeon.difficulty} ({dungeon.time_type})"
+
+    @property
+    def passphrase(self):
+        """Retrieves the passphrase for this dungeon instance."""
+        return self.metadata.get("passphrase")
 
     def role_info(self, role_name):
         """Gets information about the requested role."""
@@ -182,25 +187,58 @@ class DungeonInstance:
             "user": _create_db_user(interaction=interaction, chosen_role=RoleSpecific.none)
         }
 
-    def update_role(self, role_name: str, user_id: int, display_name: str):
+    async def update_role(self, role_name: str, interaction: discord.Interaction):
         """Update the specified role name with the given user ID and display name."""
+        role = self.roles[role_name]
         if role_name in ["tank", "healer"]:
-            self.roles[role_name].userids[0] = user_id
-            self.roles[role_name].display_names[0] = display_name
-        elif _valid_dps_role(role_name):
-            role_idx = int(role_name[-1]) - 1
-            self.roles[role_name].userids[role_idx] = user_id
-            self.roles[role_name].display_names[role_idx] = display_name
+            role.userids[0] = interaction.user.id
+            role.display_names[0] = interaction.user.display_name
+            role.assigned = [True]
+            role.disabled = True
+        else:
+            role_idx = role.assigned.index(False)
+            role.userids[role_idx] = interaction.user.id
+            role.display_names[role_idx] = interaction.user.display_name
+            role.assigned[role_idx] = True
+            if role.assigned == [True, True, True]:
+                role.disabled = True
+        await interaction.response.edit_message(view=self.display())
+        await interaction.followup.send(
+                content=f"The passphrase for your group is: {self.passphrase}",
+                ephemeral=True
+            )
 
+    def display(self):
+        """Creates an embed for display."""
+        layout = discord.ui.LayoutView()
 
-def _valid_dps_role(role_name: str):
-    return bool(
-        role_name[:3] == "dps"
-        and len(role_name) == 4
-        and role_name[-1].isdigit()
-        and int(role_name[-1]) > 0
-        and int(role_name[-1]) < 4
-    )
+        tank_btn = self._role_button(RoleType.tank)
+        healer_btn = self._role_button(RoleType.healer)
+        dps_btn = self._role_button(RoleType.dps)
+
+        self.embed_text_display = discord.ui.TextDisplay(content=self.description)
+
+        layout.add_item(
+            discord.ui.Container(
+                self.embed_text_display,
+                discord.ui.ActionRow(
+                    tank_btn,
+                    healer_btn,
+                    dps_btn),
+                accent_color=606675,
+            )
+        )
+        return layout
+
+    def _role_button(self, role: RoleType) -> discord.ui.Button:
+        """Creates a button interactable formatted for a tank."""
+        async def btn_click(interaction: discord.Interaction):
+            await self.update_role(role_name=role.name, interaction=interaction)
+
+        tank = self.role_info(role.name)
+        btn = _button_from_role(tank, 1)
+        btn.callback = btn_click
+        return btn
 
 
 def _create_db_user(interaction: discord.Interaction, chosen_role: RoleSpecific):
@@ -210,5 +248,15 @@ def _create_db_user(interaction: discord.Interaction, chosen_role: RoleSpecific)
         name=interaction.user.name,
         display_name=interaction.user.display_name,
         global_name=interaction.user.global_name,
-        chosen_role=RoleSpecific.none,
+        chosen_role=chosen_role,
+    )
+
+
+def _button_from_role(role: Role, row: int) -> discord.ui.Button:
+    return discord.ui.Button(
+        custom_id=role.name.name,
+        emoji=role.emoji,
+        style=role.button_style,
+        disabled=role.disabled,
+        row=row
     )
