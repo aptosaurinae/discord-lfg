@@ -4,6 +4,7 @@ import discord
 from discord import app_commands
 
 from db_py.resources import load_dungeons, load_time_types
+from db_py.roles import RoleType
 
 
 def _autocomplete_choice(choices: list):
@@ -44,3 +45,9 @@ def difficulty_autocomplete(lower: int, upper: int):
     """Autocompletion system for short dungeon strings."""
     difficulties = list(range(lower, upper + 1))
     return _autocomplete_choice(difficulties)
+
+
+def role_autocomplete():
+    """Autocompletion system for user role."""
+    roles = [role.name for role in RoleType]
+    return _autocomplete_choice(roles)

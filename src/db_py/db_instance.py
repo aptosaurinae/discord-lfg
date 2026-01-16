@@ -1,28 +1,11 @@
 """Main DB instance control."""
 
 from dataclasses import dataclass
-from enum import Enum
 
 import discord
 
 from db_py.resources import generate_passphrase, load_emojis
-
-
-class RoleType(Enum):
-    """Enumeration for role types."""
-    tank = 1
-    healer = 2
-    dps = 3
-
-
-class RoleSpecific(Enum):
-    """Enumeration for the role a particular user has been assigned."""
-    none = 0
-    tank = 1
-    healer = 2
-    dps1 = 3
-    dps2 = 4
-    dps3 = 5
+from db_py.roles import RoleSpecific, RoleType
 
 
 @dataclass
@@ -76,6 +59,8 @@ class DungeonInstance:
         self._meta_init(config)
         self._interaction_init(interaction)
 
+    # --- Properties
+
     @property
     def description(self):
         """Gets a standardised description for the dungeon including role spots."""
@@ -111,12 +96,16 @@ class DungeonInstance:
         """Retrieves the passphrase for this dungeon instance."""
         return self.metadata.get("passphrase")
 
+    # --- General methods
+
     def role_info(self, role_name):
         """Gets information about the requested role."""
         if role_name in self.roles:
             return self.roles[role_name]
         else:
             raise ValueError(f"{role_name} not in roles: {list(self.roles.keys())}")
+
+    # --- Initialisation
 
     def _roles_init(self, emojis: dict):
         """Initialise roles information."""
@@ -187,6 +176,16 @@ class DungeonInstance:
             "user": _create_db_user(interaction=interaction, chosen_role=RoleSpecific.none)
         }
 
+    # --- Responses and discord message display handling
+
+    async def send_passphrase(self, interaction: discord.Interaction, followup: bool = False):
+        """Sends the passphrase."""
+        message_func = interaction.followup.send if followup else interaction.response.send_message
+        await message_func(
+            content=f"The passphrase for your group is: {self.passphrase}",
+            ephemeral=True
+        )
+
     async def update_role(self, role_name: str, interaction: discord.Interaction):
         """Update the specified role name with the given user ID and display name."""
         role = self.roles[role_name]
@@ -202,11 +201,10 @@ class DungeonInstance:
             role.assigned[role_idx] = True
             if role.assigned == [True, True, True]:
                 role.disabled = True
+
+    async def update_display(self, interaction: discord.Interaction):
+        """Updates the Discord displayed message based on the current status of the instance."""
         await interaction.response.edit_message(view=self.display())
-        await interaction.followup.send(
-                content=f"The passphrase for your group is: {self.passphrase}",
-                ephemeral=True
-            )
 
     def display(self):
         """Creates an embed for display."""
@@ -230,13 +228,15 @@ class DungeonInstance:
         )
         return layout
 
-    def _role_button(self, role: RoleType) -> discord.ui.Button:
+    def _role_button(self, role_type: RoleType) -> discord.ui.Button:
         """Creates a button interactable formatted for a tank."""
         async def btn_click(interaction: discord.Interaction):
-            await self.update_role(role_name=role.name, interaction=interaction)
+            await self.update_role(role_name=role_type.name, interaction=interaction)
+            await self.update_display(interaction)
+            await self.send_passphrase(interaction, True)
 
-        tank = self.role_info(role.name)
-        btn = _button_from_role(tank, 1)
+        role = self.role_info(role_type.name)
+        btn = _button_from_role(role, role_type.value)
         btn.callback = btn_click
         return btn
 

@@ -24,6 +24,7 @@ async def _lfg(
     interaction: discord.Interaction,
     dungeon: str,
     difficulty: int,
+    creator_role: str,
     time_type: str,
     listed_as: str,
     creator_notes: str,
@@ -61,14 +62,9 @@ async def _lfg(
     }
 
     instance = DungeonInstance(interaction=interaction, dungeon_info=dungeon_info, config=config)
-
+    await instance.update_role(creator_role, interaction)
     await interaction.channel.send(view=instance.display())    # type: ignore
-
-    passphrase = instance.passphrase
-    await interaction.response.send_message(
-        f"The passphrase for your group is: {passphrase}",
-        ephemeral=True
-    )
+    await instance.send_passphrase(interaction)
 
 
 async def lfg(
@@ -81,10 +77,12 @@ async def lfg(
     """Creates a LFG listing using an interactable interface."""
     difficulty = 1
     time_type = "vc"
+    creator_role = "tank"
     return await _lfg(
         interaction=interaction,
         dungeon=dungeon,
         difficulty=difficulty,
+        creator_role=creator_role,
         time_type=time_type,
         listed_as=listed_as,
         creator_notes=creator_notes,
@@ -97,6 +95,7 @@ async def lfgquick(
     dungeon: str,
     difficulty: int,
     time_type: str,
+    creator_role: str,
     listed_as: str,
     creator_notes: str,
     config: dict
@@ -106,6 +105,7 @@ async def lfgquick(
         interaction=interaction,
         dungeon=dungeon,
         difficulty=difficulty,
+        creator_role=creator_role,
         time_type=time_type,
         listed_as=listed_as,
         creator_notes=creator_notes,

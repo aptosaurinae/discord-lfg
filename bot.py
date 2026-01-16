@@ -13,6 +13,7 @@ from discord import app_commands
 from db_py.autocompletion import (
     dungeon_autocomplete,
     dungeon_short_autocomplete,
+    role_autocomplete,
     time_type_autocomplete,
 )
 from db_py.commands.help import help_response
@@ -115,18 +116,21 @@ async def lfg_command(
     dungeon="The dungeon you are listing a key for.",
     difficulty="The difficulty of the dungeon.",
     time_type="The timing type you are aiming for e.g. 'toa' for 'Time or Abandon'.",
+    your_role="The role you are filling for this group.",
     listed_as="The in-game name. Leave blank to automatically generate a name for you (recommended)",
     creator_notes="Extra notes you want to make players signing up aware of."
 )
 @app_commands.autocomplete(
     dungeon=dungeon_short_autocomplete(CURRENT_EXPANSION, CURRENT_SEASON),
-    time_type=time_type_autocomplete()
+    time_type=time_type_autocomplete(),
+    your_role=role_autocomplete()
 )
 async def lfgquick_command(
     interaction: discord.Interaction,
     dungeon: str,
     difficulty: int,
     time_type: str,
+    your_role: str,
     listed_as: str = "",
     creator_notes: str = "",
 ):
@@ -136,6 +140,7 @@ async def lfgquick_command(
         dungeon=dungeon,
         difficulty=difficulty,
         time_type=time_type,
+        creator_role=your_role,
         listed_as=listed_as,
         creator_notes=creator_notes,
         config=CONFIG_DATA,
