@@ -67,7 +67,7 @@ class DungeonInstance:
         return self.interactions["creator"]
 
     @property
-    def description(self):
+    def description(self) -> str:
         """Gets a standardised description for the dungeon including role spots."""
         dungeon = self.dungeon_details
         tank = self.roles[RoleType.tank.name]
@@ -87,20 +87,28 @@ class DungeonInstance:
 {footer}"""
 
     @property
-    def dungeon_title(self):
+    def dungeon_title(self) -> str:
         """Gets a standardised title string for the dungeon."""
         return f"{self.dungeon_details.listed_as}"
 
     @property
-    def listing_message(self):
+    def listing_message(self) -> str:
         """Gets a standardised listing title for the dungeon including difficulty and time type."""
         dungeon = self.dungeon_details
         return f"{dungeon.dungeon_long} +{dungeon.difficulty} ({dungeon.time_type})"
 
     @property
-    def passphrase(self):
+    def passphrase(self) -> str:
         """Retrieves the passphrase for this dungeon instance."""
-        return self.metadata.get("passphrase")
+        return self.metadata.get("passphrase", "")
+
+    @property
+    def current_users(self) -> list:
+        """Retrieves the current valid user IDs in the instance."""
+        tank_id = self.roles[RoleType.tank.name].userids[0]
+        healer_id = self.roles[RoleType.healer.name].userids[0]
+        dps_ids = self.roles[RoleType.dps.name].userids
+        return [tank_id] + [healer_id] + dps_ids
 
     # --- General methods
 
@@ -161,7 +169,7 @@ class DungeonInstance:
         self.dungeon_details = DungeonDetails(
             dungeon_short=dungeon_short,
             dungeon_long=dungeon_long,
-            listed_as="" if (listed_as != "") else random_listing,
+            listed_as=listed_as if (listed_as != "") else random_listing,
             creator_notes="" if (creator_notes == "") else f"**Notes:** *{creator_notes}*",
             difficulty=int(difficulty),
             time_type=time_type,
@@ -231,9 +239,10 @@ class DungeonInstance:
         tank_btn = self._role_button(RoleType.tank)
         healer_btn = self._role_button(RoleType.healer)
         dps_btn = self._role_button(RoleType.dps)
+        passphrase_btn = self._passphrase_button()
 
         buttons = discord.ui.View()
-        for element in [tank_btn, healer_btn, dps_btn]:
+        for element in [tank_btn, healer_btn, dps_btn, passphrase_btn]:
             buttons.add_item(element)
         return buttons
 
@@ -255,6 +264,27 @@ class DungeonInstance:
 
         role = self.role_info(role_type.name)
         btn = _button_from_role(role, 1)
+        btn.callback = btn_click
+        return btn
+
+    def _passphrase_button(self) -> discord.ui.Button:
+        """Creates an ephemeral passphrase message for valid callers."""
+        async def btn_click(interaction: discord.Interaction):
+            if interaction.user.id in self.current_users:
+                await self.send_passphrase(interaction, False)
+            else:
+                await interaction.response.send_message(
+                    "You are not part of this group.",
+                    ephemeral=True
+                )
+
+        btn = discord.ui.Button(
+            custom_id="passphrase",
+            emoji="🔑",
+            style=discord.ButtonStyle.secondary,
+            disabled=False,
+            row=1,
+        )
         btn.callback = btn_click
         return btn
 
