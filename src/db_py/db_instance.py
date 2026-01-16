@@ -62,6 +62,11 @@ class DungeonInstance:
     # --- Properties
 
     @property
+    def creator(self) -> DBUser:
+        """Returns the user that created this."""
+        return self.interactions["creator"]
+
+    @property
     def description(self):
         """Gets a standardised description for the dungeon including role spots."""
         dungeon = self.dungeon_details
@@ -73,11 +78,11 @@ class DungeonInstance:
             footer = "/lfghelp for Dungeon Buddy help"
         return f"""{dungeon.creator_notes}
 
-{tank.emoji} : {tank.display_names[0]}
-{healer.emoji} : {healer.display_names[0]}
-{dps.emoji} : {dps.display_names[0]}
-{dps.emoji} : {dps.display_names[1]}
-{dps.emoji} : {dps.display_names[2]}
+{tank.emoji} : {tank.display_names[0]}{'🚩' if tank.userids[0] == self.creator.id else ''}
+{healer.emoji} : {healer.display_names[0]}{'🚩' if healer.userids[0] == self.creator.id else ''}
+{dps.emoji} : {dps.display_names[0]}{'🚩' if dps.userids[0] == self.creator.id else ''}
+{dps.emoji} : {dps.display_names[1]}{'🚩' if dps.userids[1] == self.creator.id else ''}
+{dps.emoji} : {dps.display_names[2]}{'🚩' if dps.userids[2] == self.creator.id else ''}
 {footer}"""
 
     @property
@@ -173,7 +178,7 @@ class DungeonInstance:
         """Initialise interaction elements."""
         self.interactions = {
             "id": interaction.id,
-            "user": _create_db_user(interaction=interaction, chosen_role=RoleSpecific.none)
+            "creator": _create_db_user(interaction=interaction, chosen_role=RoleSpecific.none)
         }
 
     # --- Responses and discord message display handling

@@ -2,7 +2,7 @@
 
 import discord
 
-from db_py.db_instance import DungeonInstance, Role, RoleType
+from db_py.db_instance import Role
 
 
 def _button(
