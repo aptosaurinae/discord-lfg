@@ -1,23 +1,9 @@
 """Controls the LFG system."""
 
-import random
-import string
-
 import discord
 
 from db_py.db_instance import DungeonInstance
 from db_py.resources import load_dungeons, load_time_types
-
-
-def _generate_listing_name(dungeon_short: str, num_chars: int, guild_name):
-    random_string = ""
-    for _ in range(num_chars):
-        random_string += random.choice(string.ascii_uppercase)
-
-    if guild_name != "":
-        guild_name += " "
-
-    return f"{guild_name}{dungeon_short} {random_string}"
 
 
 async def _lfg(
@@ -43,15 +29,6 @@ async def _lfg(
                 dungeon_short = key
                 break
 
-    if creator_notes != "":
-        creator_notes = f"Notes: {creator_notes}\n"
-    if listed_as == "":
-        listed_as = _generate_listing_name(
-            dungeon_short,
-            num_chars=3,
-            guild_name=config.get("guild_name", "")
-        )
-
     dungeon_info = {
         "dungeon_short": dungeon_short,
         "dungeon_long": dungeon_long,
@@ -63,7 +40,7 @@ async def _lfg(
 
     instance = DungeonInstance(interaction=interaction, dungeon_info=dungeon_info, config=config)
     await instance.update_role(creator_role, interaction)
-    await interaction.channel.send(view=instance.display())    # type: ignore
+    await interaction.channel.send(**instance.listing_message_full)    # type: ignore
     await instance.send_passphrase(interaction)
 
 

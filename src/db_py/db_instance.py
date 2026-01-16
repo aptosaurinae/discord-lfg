@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import discord
 
-from db_py.resources import generate_passphrase, load_emojis
+from db_py.resources import generate_listing_name, generate_passphrase, load_emojis
 from db_py.roles import RoleSpecific, RoleType
 
 
@@ -54,7 +54,7 @@ class DungeonInstance:
             dungeon_info: A dictionary of the dungeon specific information
             config: A dictionary of configuration information for Dungeon Buddy
         """
-        self._setup_dungeon(**dungeon_info)
+        self._setup_dungeon(**dungeon_info, config=config)
         self._roles_init(config.get("emojis", load_emojis()))
         self._meta_init(config)
         self._interaction_init(interaction)
@@ -75,7 +75,8 @@ class DungeonInstance:
         dps = self.roles[RoleType.dps.name]
         footer = ""
         if self.metadata["filled_spot_counter"] < 5:
-            footer = "/lfghelp for Dungeon Buddy help"
+            footer = "`/lfghelp for Dungeon Buddy help`"
+
         return f"""{dungeon.creator_notes}
 
 {tank.emoji} : {tank.display_names[0]}{'🚩' if tank.userids[0] == self.creator.id else ''}
@@ -91,7 +92,7 @@ class DungeonInstance:
         return f"{self.dungeon_details.listed_as}"
 
     @property
-    def listing_title(self):
+    def listing_message(self):
         """Gets a standardised listing title for the dungeon including difficulty and time type."""
         dungeon = self.dungeon_details
         return f"{dungeon.dungeon_long} +{dungeon.difficulty} ({dungeon.time_type})"
@@ -151,14 +152,17 @@ class DungeonInstance:
         listed_as: str,
         creator_notes: str,
         difficulty: str,
-        time_type: str
+        time_type: str,
+        config: dict,
     ):
         """Captures information from the initial listing process."""
+        guild_name = config.get("guild_name", "")
+        random_listing = generate_listing_name(dungeon_short, 3, guild_name)
         self.dungeon_details = DungeonDetails(
             dungeon_short=dungeon_short,
             dungeon_long=dungeon_long,
-            listed_as=listed_as,
-            creator_notes=creator_notes,
+            listed_as="" if (listed_as != "") else random_listing,
+            creator_notes="" if (creator_notes == "") else f"**Notes:** *{creator_notes}*",
             difficulty=int(difficulty),
             time_type=time_type,
         )
@@ -209,39 +213,48 @@ class DungeonInstance:
 
     async def update_display(self, interaction: discord.Interaction):
         """Updates the Discord displayed message based on the current status of the instance."""
-        await interaction.response.edit_message(view=self.display())
+        await interaction.response.edit_message(
+            embed=self._dungeon_embed,
+            view=self._dungeon_buttons,
+        )
 
-    def display(self):
-        """Creates an embed for display."""
-        layout = discord.ui.LayoutView()
+    @property
+    def _dungeon_embed(self) -> discord.Embed:
+        return discord.Embed(
+            title=self.dungeon_title,
+            description=self.description,
+            colour=606675,
+        )
 
+    @property
+    def _dungeon_buttons(self) -> discord.ui.View:
         tank_btn = self._role_button(RoleType.tank)
         healer_btn = self._role_button(RoleType.healer)
         dps_btn = self._role_button(RoleType.dps)
 
-        self.embed_text_display = discord.ui.TextDisplay(content=self.description)
+        buttons = discord.ui.View()
+        for element in [tank_btn, healer_btn, dps_btn]:
+            buttons.add_item(element)
+        return buttons
 
-        layout.add_item(
-            discord.ui.Container(
-                self.embed_text_display,
-                discord.ui.ActionRow(
-                    tank_btn,
-                    healer_btn,
-                    dps_btn),
-                accent_color=606675,
-            )
-        )
-        return layout
+    @property
+    def listing_message_full(self) -> dict:
+        """Creates all elements of a discord message for the dungeon instance."""
+        return {
+            "content": self.listing_message,
+            "embed": self._dungeon_embed,
+            "view": self._dungeon_buttons,
+        }
 
     def _role_button(self, role_type: RoleType) -> discord.ui.Button:
-        """Creates a button interactable formatted for a tank."""
+        """Creates a button interactable formatted for a particular role."""
         async def btn_click(interaction: discord.Interaction):
             await self.update_role(role_name=role_type.name, interaction=interaction)
             await self.update_display(interaction)
             await self.send_passphrase(interaction, True)
 
         role = self.role_info(role_type.name)
-        btn = _button_from_role(role, role_type.value)
+        btn = _button_from_role(role, 1)
         btn.callback = btn_click
         return btn
 

@@ -6,6 +6,7 @@ except ModuleNotFoundError:
     import pip._vendor.tomli as tomllib
 
 import random
+import string
 from pathlib import Path
 
 RESOURCES = Path(__file__).parent.parent.parent / "resources"
@@ -58,3 +59,15 @@ def generate_passphrase(num_words: int = 3) -> str:
     """Creates a 3-word passphrase from the list of passphrase words."""
     passphrase_words = load_passphrase_words()
     return "".join(random.choices(population=passphrase_words, k=num_words))
+
+
+def generate_listing_name(dungeon_short: str, num_chars: int, guild_name):
+    """Creates a listing name from a dungeon name."""
+    random_string = ""
+    for _ in range(num_chars):
+        random_string += random.choice(string.ascii_uppercase)
+
+    if guild_name != "":
+        guild_name += " "
+
+    return f"{guild_name}{dungeon_short} {random_string}"
