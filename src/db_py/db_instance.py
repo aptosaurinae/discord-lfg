@@ -13,6 +13,7 @@ def timestamp():
     """Returns an iso formatted timestamp."""
     return datetime.now(timezone.utc).isoformat()
 
+
 @dataclass
 class Role:
     """Container for a particular role type."""
