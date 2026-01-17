@@ -1,5 +1,6 @@
 """Main DB instance control."""
 
+import asyncio
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
@@ -57,14 +58,9 @@ class DungeonInstance:
         self._setup_dungeon(**dungeon_info, config=config)
         self._roles_init(config.get("emojis", load_emojis()))
         self._state_init(config)
-        self._interaction_init(interaction)
+        self._creator_init(interaction)
 
     # --- Properties
-
-    @property
-    def creator(self) -> DungeonUser:
-        """Returns the user that created this."""
-        return self.interactions["creator"]
 
     @property
     def current_users(self) -> list:
@@ -189,14 +185,39 @@ class DungeonInstance:
             debug=bool(debug)
         )
 
-    def _interaction_init(self, interaction: discord.Interaction):
-        """Initialise interaction elements."""
-        self.interactions = {
-            "id": interaction.id,
-            "creator": _create_dungeon_user(interaction=interaction, chosen_role=RoleSpecific.none)
-        }
+    def _creator_init(self, interaction: discord.Interaction):
+        """Capture creator elements."""
+        self.creator = _create_dungeon_user(interaction=interaction, chosen_role=RoleSpecific.none)
+
+    async def _timeout(self):
+        if self.state.debug:
+            print(
+                f"{timestamp()}: _timeout\n",
+                f"created at: {self.state.created_at}\n",
+                f"timeout length: {self.state.timeout_length}\n",
+                f"timeout set to: {self.state.created_at + self.state.timeout_length}\n"
+            )
+        await asyncio.sleep(self.state.timeout_length.seconds)
+
+        current_users = ""
+        for role in self.roles.values():
+            for userid in role.userids:
+                if userid > 0:
+                    current_users += f"{', ' if current_users != '' else ''}<@{userid}>"
+
+        if self.state.debug:
+            print(f"{timestamp()}: _timeout applied for {self.dungeon_title}")
+        timeout_message = f"Group creation timed out. {self.listing_message} ({self.dungeon_title}): {current_users}"
+        await self.message.edit(content=timeout_message, view=None)
+        await self.message.reply(content=timeout_message)
 
     # --- Responses and discord message display handling
+
+    async def send_message(self, interaction: discord.Interaction):
+        """Sends the initial message for Dungeon Buddy."""
+        await interaction.response.send_message(**self.listing_message_full)
+        self.message = await interaction.original_response()
+        self._task = asyncio.create_task(self._timeout())
 
     async def send_passphrase(self, interaction: discord.Interaction, followup: bool = False):
         """Sends the passphrase."""
@@ -237,7 +258,7 @@ class DungeonInstance:
         """Updates the Discord displayed message based on the current status of the instance."""
         if self.state.debug:
             print(f"{timestamp()}: update_display", interaction.user.id, interaction.user.display_name)
-        await interaction.response.edit_message(
+        await self.message.edit(
             embed=self._dungeon_embed,
             view=self._dungeon_buttons,
         )
@@ -276,7 +297,7 @@ class DungeonInstance:
         async def btn_click(interaction: discord.Interaction):
             await self.update_role(assigned_role=role_type.name, interaction=interaction)
             await self.update_display(interaction)
-            await self.send_passphrase(interaction, True)
+            await self.send_passphrase(interaction, False)
 
         role = self.role_info(role_type.name)
         btn = _button_from_role(role, 1)

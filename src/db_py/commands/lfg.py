@@ -55,8 +55,8 @@ async def _lfg(
 
         instance = DungeonInstance(interaction=interaction, dungeon_info=dungeon_info, config=config)
         await instance.update_role(creator_role, interaction)
-        await interaction.channel.send(**instance.listing_message_full)    # type: ignore
-        await instance.send_passphrase(interaction)
+        await instance.send_message(interaction)
+        await instance.send_passphrase(interaction, True)
 
 
 async def lfg(
