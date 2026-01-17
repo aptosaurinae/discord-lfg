@@ -32,7 +32,7 @@ class DungeonDetails:
 
 
 @dataclass
-class DBUser:
+class DungeonUser:
     """Container for discord user information relevant to Dungeon Buddy."""
     id: int
     tag: str
@@ -62,9 +62,17 @@ class DungeonInstance:
     # --- Properties
 
     @property
-    def creator(self) -> DBUser:
+    def creator(self) -> DungeonUser:
         """Returns the user that created this."""
         return self.interactions["creator"]
+
+    @property
+    def current_users(self) -> list:
+        """Retrieves the current valid user IDs in the instance."""
+        tank_id = self.roles[RoleType.tank.name].userids[0]
+        healer_id = self.roles[RoleType.healer.name].userids[0]
+        dps_ids = self.roles[RoleType.dps.name].userids
+        return [tank_id] + [healer_id] + dps_ids
 
     @property
     def description(self) -> str:
@@ -101,14 +109,6 @@ class DungeonInstance:
     def passphrase(self) -> str:
         """Retrieves the passphrase for this dungeon instance."""
         return self.metadata.get("passphrase", "")
-
-    @property
-    def current_users(self) -> list:
-        """Retrieves the current valid user IDs in the instance."""
-        tank_id = self.roles[RoleType.tank.name].userids[0]
-        healer_id = self.roles[RoleType.healer.name].userids[0]
-        dps_ids = self.roles[RoleType.dps.name].userids
-        return [tank_id] + [healer_id] + dps_ids
 
     # --- General methods
 
@@ -190,7 +190,7 @@ class DungeonInstance:
         """Initialise interaction elements."""
         self.interactions = {
             "id": interaction.id,
-            "creator": _create_db_user(interaction=interaction, chosen_role=RoleSpecific.none)
+            "creator": _create_dungeon_user(interaction=interaction, chosen_role=RoleSpecific.none)
         }
 
     # --- Responses and discord message display handling
@@ -294,8 +294,8 @@ class DungeonInstance:
         return btn
 
 
-def _create_db_user(interaction: discord.Interaction, chosen_role: RoleSpecific):
-    return DBUser(
+def _create_dungeon_user(interaction: discord.Interaction, chosen_role: RoleSpecific):
+    return DungeonUser(
         id=interaction.user.id,
         tag=f"<@{interaction.user.id}>",
         name=interaction.user.name,
