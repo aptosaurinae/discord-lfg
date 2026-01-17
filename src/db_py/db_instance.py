@@ -43,7 +43,7 @@ class DungeonState:
 
 
 class DungeonInstance:
-    """Container for the primary information relating to a dungeon instance."""
+    """A listing for a specific dungeon run."""
 
     def __init__(self, interaction: discord.Interaction, dungeon_info: dict, config: dict):
         """Creates a DungeonInstance.

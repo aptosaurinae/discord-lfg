@@ -111,9 +111,9 @@ async def lfg_command(
     )
 
 
-@client.tree.command(guild=GUILD_ID, name="lfgq")
+@client.tree.command(guild=GUILD_ID, name="lfg2")
 @app_commands.describe(
-    dungeon="The dungeon you are listing a key for.",
+    dungeon="The short name of the dungeon you are listing a key for.",
     difficulty="The difficulty of the dungeon.",
     time_type="The timing type you are aiming for e.g. 'toa' for 'Time or Abandon'.",
     your_role="The role you are filling for this group.",

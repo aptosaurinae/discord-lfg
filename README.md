@@ -44,6 +44,7 @@ which should result in something like the following:
 [2026-01-04 15:24:31] [INFO    ] discord.gateway: Shard ID None has connected to Gateway (Session ID: <id number>).
 Logged in as app-commands-test#2842 (ID: <app id number>)
 ------
+Dungeon Buddy started
 ```
 
 You should find that the bot slash commands are then active in the relevant server.
@@ -67,18 +68,23 @@ expansion = "tww"
 season = "3"
 
 [emojis]
-tank = "<:tankrole:123456789>"
-healer = "<:healerrole:123456789>"
-dps = "<:dpsrole:123456789>"
+tank = "<:tankemojiname:123456789>"
+healer = "<:healeremojiname:123456789>"
+dps = "<:dpsemojiname:123456789>"
 ```
 
-where:
-
 - `guild_id` is the Discord ID of the server that you are wanting the host the bot in.
-- the expansion and season match a valid dungeon lookup file in `/resources/dungeons`.
-- the emoji numbers match the IDs of the emojis in the server you are hosting the bot.
-These can be found by right clicking on the emojis in the server you're in and opening the link,
+- The expansion and season match a valid dungeon lookup file in `/resources/dungeons`.
+- *Optional*: `emojis` dictionary for each of `tank`, `healer`, and `dps`.
+If you don't provide these then Dungeon Buddy will default to using 🛡️, 🪄, ⚔️ for each role.
+The emoji names and numbers need to match the names and IDs of the emojis in the server you are hosting the bot.
+The names need to match the name of the emoji in the server.
+The IDs can be found by right clicking on the emojis in the server you're in and opening the link,
 then looking at the number of their name in the URL.
+- *Optional*: `timeout_length`, a float in minutes. This will control how long the listing exists for before
+timing out. This is a float, so can be set to 0.1 or similar for testing purposes.
+- *Optional*: `debug`, set to 1 to turn on debug mode, which will be more verbose in the console
+and enable `/lfgdebug` which is a pre-set listing for test purposes.
 
 If you need to add a new dungeon pool, create a new `toml` file in the `/resources/dungeons` file
 where each line is a short name reference to a long name string e.g.
@@ -94,6 +100,8 @@ Once the bot is up and running, the following commands should be available from 
 `/lfg` - create a group for the dungeon. Choose desired dungeon > dungeon difficulty > timed/completed > your role >
 required roles from a drop-down style menu.
 
+`/lfg2` - create a group for the dungeon using auto-complete text.
+
 `/lfgquick` - create a group using a '_quick string_' rather than a drop-down style menu.
 
 Example quick string: `fall 10t d hdd`
@@ -102,8 +110,8 @@ Example quick string: `fall 10t d hdd`
 
 `/lfghistory` - check up-to 10 of your latest groups. Previous teammates & passphrases can be found here.
 
-`/lfgstats` - check total groups created, groups created in the last 24h, 7d, 30d & also the most popular dungeons for
-each key range.
+`/lfgstats` - check total groups created, groups created in the last 24h, 7d, 30d &
+also the most popular dungeons for each key range.
 
 ## License
 
@@ -113,11 +121,11 @@ This project is licensed under the [CC BY-NC 4.0 License](https://creativecommon
 
 ### Conditions
 
--   You **must credit** the original author in any fork, modification, or usage of this project by adding the following
-    to your Discord bot description:
+-   You **must credit** the original author in any fork, modification, or usage of this project by
+adding the following to your Discord bot description:
     > Original code by Baddadan/Kashual for NoP EU. GitHub: https://bit.ly/3ZrVj7C
--   This code **cannot** be used in any product that is sold for money or restricted by a paywall. This includes Discord
-    member sections
+-   This code **cannot** be used in any product that is sold for money or restricted by a paywall.
+This includes Discord member sections
 
-If you have questions about the licensing terms, please contact Baddadan/Kashual at the [No Pressure](https://discord.gg/nopressureeu)
-discord server.
+If you have questions about the licensing terms, please contact Baddadan/Kashual at the
+[No Pressure](https://discord.gg/nopressureeu) discord server.
