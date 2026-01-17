@@ -334,7 +334,7 @@ class DungeonInstance:
         return btn
 
     def _settings_button(self) -> discord.ui.Button:
-        """Creates an ephemeral passphrase message for valid callers."""
+        """Accesses control options for valid users."""
         async def btn_click(interaction: discord.Interaction):
             if interaction.user.id == self.creator.id:
                 await interaction.response.send_message(
