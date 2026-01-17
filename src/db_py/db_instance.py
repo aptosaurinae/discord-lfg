@@ -132,9 +132,10 @@ class DungeonInstance:
         healer_btn = self._role_button(RoleType.healer)
         dps_btn = self._role_button(RoleType.dps)
         passphrase_btn = self._passphrase_button()
+        settings_btn = self._settings_button()
 
         buttons = discord.ui.View()
-        for element in [tank_btn, healer_btn, dps_btn, passphrase_btn]:
+        for element in [tank_btn, healer_btn, dps_btn, passphrase_btn, settings_btn]:
             buttons.add_item(element)
         return buttons
 
@@ -325,6 +326,35 @@ class DungeonInstance:
         btn = discord.ui.Button(
             custom_id="passphrase",
             emoji="🔑",
+            style=discord.ButtonStyle.secondary,
+            disabled=False,
+            row=1,
+        )
+        btn.callback = btn_click
+        return btn
+
+    def _settings_button(self) -> discord.ui.Button:
+        """Creates an ephemeral passphrase message for valid callers."""
+        async def btn_click(interaction: discord.Interaction):
+            if interaction.user.id == self.creator.id:
+                await interaction.response.send_message(
+                    "You are the creator and clicked settings.",
+                    ephemeral=True
+                )
+            elif interaction.user.id in self.current_users:
+                await interaction.response.send_message(
+                    "You are a group member and clicked settings.",
+                    ephemeral=True
+                )
+            else:
+                await interaction.response.send_message(
+                    "You are not part of this group.",
+                    ephemeral=True
+                )
+
+        btn = discord.ui.Button(
+            custom_id="settings",
+            emoji="⚙️",
             style=discord.ButtonStyle.secondary,
             disabled=False,
             row=1,
