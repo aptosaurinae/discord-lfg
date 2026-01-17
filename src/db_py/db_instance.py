@@ -9,11 +9,6 @@ from db_py.resources import generate_listing_name, generate_passphrase, load_emo
 from db_py.roles import Role, RoleSpecific, RoleType
 
 
-def timestamp():
-    """Returns an iso formatted timestamp."""
-    return datetime.now(timezone.utc).isoformat()
-
-
 @dataclass
 class DungeonDetails:
     """Container for dungeon details."""
@@ -329,3 +324,8 @@ def _button_from_role(role: Role, row: int) -> discord.ui.Button:
         disabled=role.disabled,
         row=row
     )
+
+
+def timestamp():
+    """Returns an iso formatted timestamp."""
+    return datetime.now(timezone.utc).isoformat()
