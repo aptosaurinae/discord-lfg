@@ -11,6 +11,7 @@ import discord
 from discord import app_commands
 
 from db_py.autocompletion import (
+    difficulty_autocomplete,
     dungeon_autocomplete,
     dungeon_short_autocomplete,
     role_autocomplete,
@@ -47,7 +48,6 @@ TOKEN = token_data["discord"]["token"]
 GUILD_ID = discord.Object(CONFIG_DATA["guild_id"])
 CURRENT_EXPANSION = str(CONFIG_DATA.get("expansion"))
 CURRENT_SEASON = str(CONFIG_DATA.get("season"))
-CHANNEL_WHITELIST = str(CONFIG_DATA.get("channel_whitelist", []))
 
 
 # see the example app_commands/basic on the discord-py GitHub repo
@@ -123,7 +123,8 @@ async def lfg_command(
 @app_commands.autocomplete(
     dungeon=dungeon_short_autocomplete(CURRENT_EXPANSION, CURRENT_SEASON),
     time_type=time_type_autocomplete(),
-    your_role=role_autocomplete()
+    your_role=role_autocomplete(),
+    difficulty=difficulty_autocomplete,
 )
 async def lfgquick_command(
     interaction: discord.Interaction,

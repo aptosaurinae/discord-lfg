@@ -203,21 +203,26 @@ class DungeonInstance:
             ephemeral=True
         )
 
-    async def update_role(self, role_name: str, interaction: discord.Interaction):
+    async def update_role(self, assigned_role: str, interaction: discord.Interaction):
         """Update the specified role name with the given user ID and display name."""
-        role = self.roles[role_name]
-        if role_name in ["tank", "healer"]:
-            role.userids[0] = interaction.user.id
-            role.display_names[0] = interaction.user.display_name
-            role.assigned = [True]
+        role = self.roles[assigned_role]
+        userid = interaction.user.id
+
+        for role_name in [name.name for name in RoleType]:
+            remove_role = self.roles[role_name]
+            if userid in remove_role.userids:
+                role_idx = remove_role.userids.index(userid)
+                remove_role.userids[role_idx] = 0
+                remove_role.display_names[role_idx] = ""
+                remove_role.assigned[role_idx] = False
+                remove_role.disabled = False
+
+        role_idx = role.assigned.index(False)
+        role.userids[role_idx] = userid
+        role.display_names[role_idx] = interaction.user.display_name
+        role.assigned[role_idx] = True
+        if all(role.assigned):
             role.disabled = True
-        else:
-            role_idx = role.assigned.index(False)
-            role.userids[role_idx] = interaction.user.id
-            role.display_names[role_idx] = interaction.user.display_name
-            role.assigned[role_idx] = True
-            if role.assigned == [True, True, True]:
-                role.disabled = True
 
     async def update_display(self, interaction: discord.Interaction):
         """Updates the Discord displayed message based on the current status of the instance."""
@@ -258,7 +263,7 @@ class DungeonInstance:
     def _role_button(self, role_type: RoleType) -> discord.ui.Button:
         """Creates a button interactable formatted for a particular role."""
         async def btn_click(interaction: discord.Interaction):
-            await self.update_role(role_name=role_type.name, interaction=interaction)
+            await self.update_role(assigned_role=role_type.name, interaction=interaction)
             await self.update_display(interaction)
             await self.send_passphrase(interaction, True)
 

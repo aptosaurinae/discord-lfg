@@ -6,6 +6,19 @@ from db_py.db_instance import DungeonInstance
 from db_py.resources import load_dungeons, load_time_types
 
 
+async def _validate_lfg_inputs(
+    interaction: discord.Interaction,
+    difficulty: int,
+):
+    response = ""
+    if difficulty == 0:
+        response += f"Sorry {interaction.user.display_name}, you cannot use this command in this channel.\n"
+    if response != "":
+        await interaction.response.send_message(response, ephemeral=True)
+        return False
+    return True
+
+
 async def _lfg(
     interaction: discord.Interaction,
     dungeon: str,
@@ -16,32 +29,34 @@ async def _lfg(
     creator_notes: str,
     config: dict,
 ):
-    time_type = load_time_types()[time_type]
-    dungeons = load_dungeons(config.get("expansion"), config.get("season"))    # type: ignore
+    run_lfg = await _validate_lfg_inputs(interaction, difficulty)
+    if run_lfg:
+        time_type = load_time_types()[time_type]
+        dungeons = load_dungeons(config.get("expansion"), config.get("season"))    # type: ignore
 
-    if dungeon in dungeons:
-        dungeon_short = dungeon
-        dungeon_long = dungeons[dungeon]
-    else:
-        dungeon_long = dungeon
-        for key, value in dungeons.items():
-            if value == dungeon:
-                dungeon_short = key
-                break
+        if dungeon in dungeons:
+            dungeon_short = dungeon
+            dungeon_long = dungeons[dungeon]
+        else:
+            dungeon_long = dungeon
+            for key, value in dungeons.items():
+                if value == dungeon:
+                    dungeon_short = key
+                    break
 
-    dungeon_info = {
-        "dungeon_short": dungeon_short,
-        "dungeon_long": dungeon_long,
-        "listed_as": listed_as,
-        "creator_notes": creator_notes,
-        "difficulty": difficulty,
-        "time_type": time_type,
-    }
+        dungeon_info = {
+            "dungeon_short": dungeon_short,
+            "dungeon_long": dungeon_long,
+            "listed_as": listed_as,
+            "creator_notes": creator_notes,
+            "difficulty": difficulty,
+            "time_type": time_type,
+        }
 
-    instance = DungeonInstance(interaction=interaction, dungeon_info=dungeon_info, config=config)
-    await instance.update_role(creator_role, interaction)
-    await interaction.channel.send(**instance.listing_message_full)    # type: ignore
-    await instance.send_passphrase(interaction)
+        instance = DungeonInstance(interaction=interaction, dungeon_info=dungeon_info, config=config)
+        await instance.update_role(creator_role, interaction)
+        await interaction.channel.send(**instance.listing_message_full)    # type: ignore
+        await instance.send_passphrase(interaction)
 
 
 async def lfg(
