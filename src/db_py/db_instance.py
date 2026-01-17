@@ -96,6 +96,14 @@ class DungeonInstance:
         return f"{self.dungeon_details.listed_as}"
 
     @property
+    def filled_roles(self) -> str:
+        """Gets a string indicating the roles that have been filled, as emojis."""
+        filled_roles_icons = ""
+        for role_data in self.roles.values():
+            filled_roles_icons += "".join([role_data.emoji for assignment in role_data.assigned if assignment])
+        return filled_roles_icons
+
+    @property
     def listing_message(self) -> str:
         """Gets a standardised listing title for the dungeon including difficulty and time type."""
         dungeon = self.dungeon_details
@@ -266,7 +274,7 @@ class DungeonInstance:
     @property
     def _dungeon_embed(self) -> discord.Embed:
         return discord.Embed(
-            title=self.dungeon_title,
+            title=f"{self.dungeon_title} {self.filled_roles}",
             description=self.description,
             colour=606675,
         )
