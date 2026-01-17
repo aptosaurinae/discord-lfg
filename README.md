@@ -13,6 +13,21 @@ between the Discord signup and the in-game signup.
 The [original Dungeon Buddy](https://bit.ly/3ZrVj7C) was built by Baddadan/Kashual using DiscordJS for
 the [No Pressure EU](https://no-pressure.eu) Discord server. This is an implementation of the same system in Python.
 
+## To do
+
+For feature parity with the original Dungeon Buddy, the following is missing:
+
+- Add filled spots system
+- Settings button actions for a group listing (filled spots, cancel, listing name / notes edits?)
+- Add role pings when group is listed
+- Make group close once full (with timer to allow edits?) - will need `timeout` to be cancelled
+- Hook up `/lfg` command to use drop-downs
+- Create `/lfgquick` implementation
+- Log group members when group completes in any way (full, timeout, cancelled)
+- Add `/lfgstats` reporting
+- Add history for users (both personal and for mods)
+- Error handling for failed interactions?
+
 ## Installation and setup
 
 ### Installation
