@@ -6,24 +6,12 @@ from datetime import datetime, timedelta, timezone
 import discord
 
 from db_py.resources import generate_listing_name, generate_passphrase, load_emojis
-from db_py.roles import RoleSpecific, RoleType
+from db_py.roles import Role, RoleSpecific, RoleType
 
 
 def timestamp():
     """Returns an iso formatted timestamp."""
     return datetime.now(timezone.utc).isoformat()
-
-
-@dataclass
-class Role:
-    """Container for a particular role type."""
-    name: RoleType
-    userids: list[int]
-    display_names: list[str]
-    assigned: list[bool]
-    button_style: discord.ButtonStyle
-    disabled: bool
-    emoji: str
 
 
 @dataclass

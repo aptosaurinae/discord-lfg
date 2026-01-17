@@ -1,6 +1,9 @@
 """Contains role enumerations."""
 
+from dataclasses import dataclass
 from enum import Enum
+
+import discord
 
 
 class RoleType(Enum):
@@ -18,3 +21,15 @@ class RoleSpecific(Enum):
     dps1 = 3
     dps2 = 4
     dps3 = 5
+
+
+@dataclass
+class Role:
+    """Container for a particular role type."""
+    name: RoleType
+    userids: list[int]
+    display_names: list[str]
+    assigned: list[bool]
+    button_style: discord.ButtonStyle
+    disabled: bool
+    emoji: str
