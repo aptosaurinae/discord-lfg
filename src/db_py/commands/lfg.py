@@ -112,7 +112,7 @@ async def lfgdebug(
     """Creates a listing for debugging purposes."""
     return await _lfg(
         interaction=interaction,
-        dungeon=list(load_dungeons(config.get("expansion"), config.get("season")))[0],
+        dungeon=list(load_dungeons(config.get("expansion"), config.get("season")))[0],  # type: ignore
         difficulty=2,
         creator_role="dps",
         time_type="tbc",
