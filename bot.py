@@ -18,7 +18,7 @@ from db_py.autocompletion import (
     time_type_autocomplete,
 )
 from db_py.commands.help import help_response
-from db_py.commands.lfg import lfg, lfgquick
+from db_py.commands.lfg import lfg, lfgdebug, lfgquick
 
 parser = argparse.ArgumentParser(description="Configuration for discord bot")
 parser.add_argument("token_file", type=str, help="Discord Token")
@@ -146,6 +146,18 @@ async def lfgquick_command(
         creator_notes=creator_notes,
         config=CONFIG_DATA,
     )
+
+
+if CONFIG_DATA.get("debug") is not None:
+    @client.tree.command(guild=GUILD_ID, name="lfgdebug")
+    async def lfgdebug_command(
+        interaction: discord.Interaction,
+    ):
+        """Generates a Dungeon Buddy listing using a quick text-based input."""
+        await lfgdebug(
+            interaction=interaction,
+            config=CONFIG_DATA,
+        )
 
 # -- Stats
 

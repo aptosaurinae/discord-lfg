@@ -103,3 +103,20 @@ async def lfgquick(
         creator_notes=creator_notes,
         config=config,
     )
+
+
+async def lfgdebug(
+    interaction: discord.Interaction,
+    config: dict
+):
+    """Creates a listing for debugging purposes."""
+    return await _lfg(
+        interaction=interaction,
+        dungeon=list(load_dungeons(config.get("expansion"), config.get("season")))[0],
+        difficulty=2,
+        creator_role="dps",
+        time_type="tbc",
+        listed_as="Dungeon Debug Test",
+        creator_notes="debug creator notes blah blah",
+        config=config,
+    )

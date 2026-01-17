@@ -1,12 +1,17 @@
 """Main DB instance control."""
 
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 
 import discord
 
 from db_py.resources import generate_listing_name, generate_passphrase, load_emojis
 from db_py.roles import RoleSpecific, RoleType
 
+
+def timestamp():
+    """Returns an iso formatted timestamp."""
+    return datetime.now(timezone.utc).isoformat()
 
 @dataclass
 class Role:
@@ -42,6 +47,17 @@ class DungeonUser:
     chosen_role: RoleSpecific
 
 
+@dataclass
+class DungeonState:
+    """Container for the state of the dungeon."""
+    created_at: datetime
+    timeout_length: timedelta
+    empty_spots: int
+    passphrase: str
+    filled_spot_name: str
+    debug: bool
+
+
 class DungeonInstance:
     """Container for the primary information relating to a dungeon instance."""
 
@@ -56,7 +72,7 @@ class DungeonInstance:
         """
         self._setup_dungeon(**dungeon_info, config=config)
         self._roles_init(config.get("emojis", load_emojis()))
-        self._meta_init(config)
+        self._state_init(config)
         self._interaction_init(interaction)
 
     # --- Properties
@@ -82,7 +98,7 @@ class DungeonInstance:
         healer = self.roles[RoleType.healer.name]
         dps = self.roles[RoleType.dps.name]
         footer = ""
-        if self.metadata["filled_spot_counter"] < 5:
+        if self.state.empty_spots > 0:
             footer = "`/lfghelp for Dungeon Buddy help`"
 
         return f"""{dungeon.creator_notes}
@@ -108,7 +124,7 @@ class DungeonInstance:
     @property
     def passphrase(self) -> str:
         """Retrieves the passphrase for this dungeon instance."""
-        return self.metadata.get("passphrase", "")
+        return self.state.passphrase
 
     # --- General methods
 
@@ -175,16 +191,19 @@ class DungeonInstance:
             time_type=time_type,
         )
 
-    def _meta_init(self, config: dict):
-        """Initialise metadata."""
+    def _state_init(self, config: dict):
+        """Initialise state."""
         guild_name = config.get("guild_name", "")
-        self.metadata = {
-            "spot_icons": [],
-            "filled_spot": f"~~Filled {guild_name}{' ' if guild_name != '' else ''}Spot~~",
-            "filled_spot_counter": 0,
-            "roles_to_tag": "",
-            "passphrase": generate_passphrase(),
-        }
+        timeout_length = config.get("timeout_length", 30)
+        debug = config.get("debug", False)
+        self.state = DungeonState(
+            created_at=datetime.now(tz=timezone.utc),
+            timeout_length=timedelta(minutes=timeout_length),
+            empty_spots=5,
+            passphrase=generate_passphrase(),
+            filled_spot_name=f"~~Filled {guild_name}{' ' if guild_name != '' else ''}Spot~~",
+            debug=bool(debug)
+        )
 
     def _interaction_init(self, interaction: discord.Interaction):
         """Initialise interaction elements."""
@@ -197,6 +216,8 @@ class DungeonInstance:
 
     async def send_passphrase(self, interaction: discord.Interaction, followup: bool = False):
         """Sends the passphrase."""
+        if self.state.debug:
+            print(f"{timestamp()}: send_passphrase", interaction.user.id, interaction.user.display_name, self.passphrase)
         message_func = interaction.followup.send if followup else interaction.response.send_message
         await message_func(
             content=f"The passphrase for your group is: {self.passphrase}",
@@ -205,6 +226,8 @@ class DungeonInstance:
 
     async def update_role(self, assigned_role: str, interaction: discord.Interaction):
         """Update the specified role name with the given user ID and display name."""
+        if self.state.debug:
+            print(f"{timestamp()}: update_role", interaction.user.id, interaction.user.display_name, assigned_role)
         role = self.roles[assigned_role]
         userid = interaction.user.id
 
@@ -216,6 +239,7 @@ class DungeonInstance:
                 remove_role.display_names[role_idx] = ""
                 remove_role.assigned[role_idx] = False
                 remove_role.disabled = False
+                self.state.empty_spots += 1
 
         role_idx = role.assigned.index(False)
         role.userids[role_idx] = userid
@@ -223,9 +247,12 @@ class DungeonInstance:
         role.assigned[role_idx] = True
         if all(role.assigned):
             role.disabled = True
+        self.state.empty_spots -= 1
 
     async def update_display(self, interaction: discord.Interaction):
         """Updates the Discord displayed message based on the current status of the instance."""
+        if self.state.debug:
+            print(f"{timestamp()}: update_display", interaction.user.id, interaction.user.display_name)
         await interaction.response.edit_message(
             embed=self._dungeon_embed,
             view=self._dungeon_buttons,
