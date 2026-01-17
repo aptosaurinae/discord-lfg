@@ -10,8 +10,8 @@ provides a structured embed with buttons for joining groups, making it easier to
 usernames when groups are formed, providing passwords only to those who sign up enabling a link
 between the Discord signup and the in-game signup.
 
-The [original Dungeon Buddy](https://bit.ly/3ZrVj7C) was built by Baddadan/Kashual using DiscordJS for
-the [No Pressure EU](https://no-pressure.eu) Discord server. This is an implementation of the same system in Python.
+The [original Dungeon Buddy](https://bit.ly/3ZrVj7C) was built by Baddadan/Kashual using `DiscordJS` for
+the [No Pressure EU](https://no-pressure.eu) Discord server. This is an implementation of the same system in Python using [discord-py`](https://discordpy.readthedocs.io/en/latest/api.html).
 
 ## To do
 
@@ -79,6 +79,7 @@ The config file needs to look like the following:
 
 ``` toml
 guild_id = 123456789
+guild_name = "NoP"
 expansion = "tww"
 season = "3"
 
@@ -90,6 +91,7 @@ dps = "<:dpsemojiname:123456789>"
 
 - `guild_id` is the Discord ID of the server that you are wanting the host the bot in.
 - The expansion and season match a valid dungeon lookup file in `/resources/dungeons`.
+- *Optional*: `guild_name` modifies the automatic listing group names and filled spots.
 - *Optional*: `emojis` dictionary for each of `tank`, `healer`, and `dps`.
 If you don't provide these then Dungeon Buddy will default to using 🛡️, 🪄, ⚔️ for each role.
 The emoji names and numbers need to match the names and IDs of the emojis in the server you are hosting the bot.
@@ -144,3 +146,18 @@ This includes Discord member sections
 
 If you have questions about the licensing terms, please contact Baddadan/Kashual at the
 [No Pressure](https://discord.gg/nopressureeu) discord server.
+
+### Modifications
+
+As noted in the licence terms, modifications should be noted.
+Primarily for this project this is that the discord bot has been rebuilt in Python,
+which alters the structure of how many aspects are set up in and of itself.
+It would be difficult to provide a full listing of all changes as a result.
+The following list of changes has been made to functionality:
+
+- The `/lfg2` command has been added using auto-complete fields instead of drop-down menus.
+- More config flags are available, including:
+  - `debug`
+  - `timeout_length`
+  - `guild_name`
+- A default set of standard emojis (🛡️, 🪄, ⚔️) is applied if emojis are not configured.
