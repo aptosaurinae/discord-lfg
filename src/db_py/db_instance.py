@@ -36,6 +36,7 @@ class DungeonState:
     """Container for the state of the dungeon."""
     created_at: datetime
     timeout_length: timedelta
+    timed_out: bool
     empty_spots: int
     passphrase: str
     filled_spot_name: str
@@ -44,6 +45,12 @@ class DungeonState:
 
 class DungeonInstance:
     """A listing for a specific dungeon run."""
+
+    role_counts = {
+        RoleType.tank.name: 1,
+        RoleType.healer.name: 1,
+        RoleType.dps.name: 3
+    }
 
     def __init__(self, interaction: discord.Interaction, dungeon_info: dict, config: dict):
         """Creates a DungeonInstance.
@@ -77,7 +84,7 @@ class DungeonInstance:
         healer = self.roles[RoleType.healer.name]
         dps = self.roles[RoleType.dps.name]
         footer = ""
-        if self.state.empty_spots > 0:
+        if not (self.state.empty_spots == 0 or self.state.timed_out):
             footer = "`/lfghelp for Dungeon Buddy help`"
 
         def _role_string(role: Role, creator_id: int, role_idx: int = 0):
@@ -120,8 +127,9 @@ class DungeonInstance:
 
     @property
     def _dungeon_embed(self) -> discord.Embed:
+        strikethrough = "~~" if self.state.timed_out else ""
         return discord.Embed(
-            title=f"{self.dungeon_title} {self.filled_roles}",
+            title=f"{strikethrough}{self.dungeon_title}{strikethrough} {self.filled_roles}",
             description=self.description,
             colour=606675,
         )
@@ -150,36 +158,23 @@ class DungeonInstance:
 
     # --- Initialisation
 
+    def _role_constructor(self, role: RoleType, emojis: dict):
+        return Role(
+                name=role.name,
+                userids=[0 for _ in range(self.role_counts[role.name])],
+                display_names=["" for _ in range(self.role_counts[role.name])],
+                assigned=[False for _ in range(self.role_counts[role.name])],
+                button_style=discord.ButtonStyle.secondary,
+                disabled=False,
+                emoji=emojis[role.name],
+            )
+
     def _roles_init(self, emojis: dict):
         """Initialise roles information."""
         self.roles = {
-            "tank": Role(
-                name=RoleType.tank,
-                userids=[0],
-                display_names=[""],
-                assigned=[False],
-                button_style=discord.ButtonStyle.secondary,
-                disabled=False,
-                emoji=emojis[RoleType.tank.name],
-            ),
-            "healer": Role(
-                name=RoleType.healer,
-                userids=[0],
-                display_names=[""],
-                assigned=[False],
-                button_style=discord.ButtonStyle.secondary,
-                disabled=False,
-                emoji=emojis[RoleType.healer.name],
-            ),
-            "dps": Role(
-                name=RoleType.dps,
-                userids=[0, 0, 0],
-                display_names=["", "", ""],
-                assigned=[False, False, False],
-                button_style=discord.ButtonStyle.secondary,
-                disabled=False,
-                emoji=emojis[RoleType.dps.name],
-            )
+            RoleType.tank.name: self._role_constructor(RoleType.tank, emojis),
+            RoleType.healer.name: self._role_constructor(RoleType.healer, emojis),
+            RoleType.dps.name: self._role_constructor(RoleType.dps, emojis)
         }
 
     def _setup_dungeon(
@@ -212,6 +207,7 @@ class DungeonInstance:
         self.state = DungeonState(
             created_at=datetime.now(tz=timezone.utc),
             timeout_length=timedelta(minutes=timeout_length),
+            timed_out=False,
             empty_spots=5,
             passphrase=generate_passphrase(),
             filled_spot_name=f"~~Filled {guild_name}{' ' if guild_name != '' else ''}Spot~~",
@@ -232,16 +228,18 @@ class DungeonInstance:
             )
         await asyncio.sleep(self.state.timeout_length.seconds)
 
+        if self.state.debug:
+            print(f"{timestamp()}: _timeout applied for {self.dungeon_title}")
+        self.state.timed_out = True
+
         current_users = ""
         for role in self.roles.values():
             for userid in role.userids:
                 if userid > 0:
                     current_users += f"{', ' if current_users != '' else ''}<@{userid}>"
 
-        if self.state.debug:
-            print(f"{timestamp()}: _timeout applied for {self.dungeon_title}")
         timeout_message = f"Group creation timed out. {self.listing_message} ({self.dungeon_title}): {current_users}"
-        await self.message.edit(content=timeout_message, view=None)
+        await self.message.edit(content=timeout_message, embed=self._dungeon_embed, view=None)
         await self.message.reply(content=timeout_message)
 
     # --- Responses and discord message display handling
@@ -266,30 +264,54 @@ class DungeonInstance:
             ephemeral=True
         )
 
-    async def update_role(self, assigned_role: str, interaction: discord.Interaction):
-        """Update the specified role name with the given user ID and display name."""
-        if self.state.debug:
-            print(f"{timestamp()}: update_role", interaction.user.id, interaction.user.display_name, assigned_role)
-        role = self.roles[assigned_role]
-        userid = interaction.user.id
+    def fill_spots(
+            self,
+            interaction: discord.Interaction,
+            filled_spots: dict[str, int],
+    ):
+        """Fills spots in the listing based on the filled spots dictionary given."""
+        for role_name, num_filled in filled_spots.items():
+            for _ in range(num_filled):
+                self.update_role(role_name, interaction, True)
 
-        for role_name in [name.name for name in RoleType]:
-            remove_role = self.roles[role_name]
-            if userid in remove_role.userids:
-                role_idx = remove_role.userids.index(userid)
-                remove_role.userids[role_idx] = 0
-                remove_role.display_names[role_idx] = ""
-                remove_role.assigned[role_idx] = False
-                remove_role.disabled = False
-                self.state.empty_spots += 1
+    def update_role(
+        self,
+        assigned_role: str,
+        interaction: discord.Interaction,
+        filled_spot: bool = False
+    ):
+        """Update the specified role name with the given user ID and display name."""
+        user = interaction.user
+        role = self.roles[assigned_role]
+        id = -1 if filled_spot else user.id
+
+        # if self.state.debug:
+        #     print(f"{timestamp()}: update_role", user.id, user.display_name, assigned_role, filled_spot)
+        #     print(role, "\n", id, "\n", self.state, "\n")
+
+        if not filled_spot:
+            for role_name in [name.name for name in RoleType]:
+                remove_role = self.roles[role_name]
+                if id in remove_role.userids:
+                    role_idx = remove_role.userids.index(id)
+                    remove_role.userids[role_idx] = 0
+                    remove_role.display_names[role_idx] = ""
+                    remove_role.assigned[role_idx] = False
+                    remove_role.disabled = False
+                    self.state.empty_spots += 1
 
         role_idx = role.assigned.index(False)
-        role.userids[role_idx] = userid
-        role.display_names[role_idx] = interaction.user.display_name
+        role.userids[role_idx] = id
+        role.display_names[role_idx] = self.state.filled_spot_name if filled_spot else user.display_name
         role.assigned[role_idx] = True
         if all(role.assigned):
             role.disabled = True
         self.state.empty_spots -= 1
+
+        # if self.state.debug:
+        #     print("--- after update_role ---\n")
+        #     print(role, "\n", id, "\n", self.state, "\n")
+        #     print("--- finished update role --- \n")
 
     async def update_display(self, interaction: discord.Interaction):
         """Updates the Discord displayed message based on the current status of the instance."""
@@ -300,10 +322,12 @@ class DungeonInstance:
             view=self._dungeon_buttons,
         )
 
+    # --- Buttons
+
     def _role_button(self, role_type: RoleType) -> discord.ui.Button:
         """Creates a button interactable formatted for a particular role."""
         async def btn_click(interaction: discord.Interaction):
-            await self.update_role(assigned_role=role_type.name, interaction=interaction)
+            self.update_role(assigned_role=role_type.name, interaction=interaction)
             await self.update_display(interaction)
             await self.send_passphrase(interaction, False)
 
@@ -375,7 +399,7 @@ def _create_dungeon_user(interaction: discord.Interaction):
 
 def _button_from_role(role: Role, row: int) -> discord.ui.Button:
     return discord.ui.Button(
-        custom_id=role.name.name,
+        custom_id=role.name,
         emoji=role.emoji,
         style=role.button_style,
         disabled=role.disabled,

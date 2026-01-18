@@ -117,6 +117,7 @@ async def lfg_command(
     difficulty="The difficulty of the dungeon.",
     time_type="The timing type you are aiming for e.g. 'toa' for 'Time or Abandon'.",
     your_role="The role you are filling for this group.",
+    filled_spots="A string noting which spots you already have filled. 't' for tank, 'h' for healer, 'd' for dps. e.g. 'tdd' if you already have a tank and two dps as well as your role.",
     listed_as="The in-game name. Leave blank to automatically generate a name for you (recommended)",
     creator_notes="Extra notes you want to make players signing up aware of."
 )
@@ -126,12 +127,13 @@ async def lfg_command(
     your_role=role_autocomplete(),
     difficulty=difficulty_autocomplete,
 )
-async def lfgquick_command(
+async def lfgstring_command(
     interaction: discord.Interaction,
     dungeon: str,
     difficulty: int,
     time_type: str,
     your_role: str,
+    filled_spots: str,
     listed_as: str = "",
     creator_notes: str = "",
 ):
@@ -144,6 +146,7 @@ async def lfgquick_command(
         creator_role=your_role,
         listed_as=listed_as,
         creator_notes=creator_notes,
+        filled_spots=filled_spots,
         config=CONFIG_DATA,
     )
 

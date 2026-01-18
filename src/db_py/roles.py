@@ -16,7 +16,7 @@ class RoleType(Enum):
 @dataclass
 class Role:
     """Container for a particular role type."""
-    name: RoleType
+    name: str
     userids: list[int]
     display_names: list[str]
     assigned: list[bool]
