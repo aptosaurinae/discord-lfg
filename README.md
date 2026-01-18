@@ -17,7 +17,6 @@ the [No Pressure EU](https://no-pressure.eu) Discord server. This is an implemen
 
 For feature parity with the original Dungeon Buddy, the following is missing:
 
-- Add filled spots system
 - Settings button actions for a group listing (filled spots, cancel, listing name / notes edits?)
 - Add role pings when group is listed
 - Make group close once full (with timer to allow edits?) - will need `timeout` to be cancelled
@@ -102,6 +101,7 @@ then looking at the number of their name in the URL.
 timing out. This is a float, so can be set to 0.1 or similar for testing purposes.
 - *Optional*: `debug`, set to 1 to turn on debug mode, which will be more verbose in the console
 and enable `/lfgdebug` which is a pre-set listing for test purposes.
+- *Optional*: `log_folder`, set this to a folder that already exists and it will dump a log file here.
 
 If you need to add a new dungeon pool, create a new `toml` file in the `/resources/dungeons` file
 where each line is a short name reference to a long name string e.g.
