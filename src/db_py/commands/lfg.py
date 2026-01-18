@@ -51,6 +51,7 @@ async def _lfg(
         _validate_lfg_inputs(difficulty, creator_role, filled_spots)
     except LFGValidationError as e:
         await interaction.response.send_message("\n".join(e.messages), ephemeral=True)
+        return None
 
     time_type = load_time_types()[time_type]
     dungeons = load_dungeons(config.get("expansion"), config.get("season"))    # type: ignore
