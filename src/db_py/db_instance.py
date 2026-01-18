@@ -1,6 +1,7 @@
 """Main DB instance control."""
 
 import asyncio
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
@@ -92,14 +93,15 @@ class DungeonInstance:
             id = role.userids[role_idx]
             return f"{role.emoji} : {name}{'🚩' if id == creator_id else ''}"
 
-        return f"""{dungeon.creator_notes}
-
-{_role_string(tank, self.creator.id)}
-{_role_string(healer, self.creator.id)}
-{_role_string(dps, self.creator.id)}
-{_role_string(dps, self.creator.id, 1)}
-{_role_string(dps, self.creator.id, 2)}
-{footer}"""
+        return (
+            f"{dungeon.creator_notes}\n\n"
+            f"{_role_string(tank, self.creator.id)}\n"
+            f"{_role_string(healer, self.creator.id)}\n"
+            f"{_role_string(dps, self.creator.id)}\n"
+            f"{_role_string(dps, self.creator.id, 1)}\n"
+            f"{_role_string(dps, self.creator.id, 2)}\n"
+            f"{footer}"
+        )
 
     @property
     def dungeon_title(self) -> str:
@@ -219,17 +221,15 @@ class DungeonInstance:
         self.creator = _create_dungeon_user(interaction=interaction)
 
     async def _timeout(self):
-        if self.state.debug:
-            print(
-                f"{timestamp()}: _timeout\n",
-                f"created at: {self.state.created_at}\n",
-                f"timeout length: {self.state.timeout_length}\n",
-                f"timeout set to: {self.state.created_at + self.state.timeout_length}\n"
-            )
+        logging.debug(
+            f"_timeout\n"
+            f"created at: {self.state.created_at}\n"
+            f"timeout length: {self.state.timeout_length}\n"
+            f"timeout set to: {self.state.created_at + self.state.timeout_length}"
+        )
         await asyncio.sleep(self.state.timeout_length.seconds)
 
-        if self.state.debug:
-            print(f"{timestamp()}: _timeout applied for {self.dungeon_title}")
+        logging.debug(f"_timeout applied for {self.dungeon_title}")
         self.state.timed_out = True
 
         current_users = ""
@@ -256,8 +256,12 @@ class DungeonInstance:
 
     async def send_passphrase(self, interaction: discord.Interaction, followup: bool = False):
         """Sends the passphrase."""
-        if self.state.debug:
-            print(f"{timestamp()}: send_passphrase", interaction.user.id, interaction.user.display_name, self.passphrase)
+        logging.debug(
+            f"send_passphrase\n"
+            f"user_id: {interaction.user.id}\n"
+            f"display_name: {interaction.user.display_name}\n"
+            f"passphrase: {self.passphrase}"
+        )
         message_func = interaction.followup.send if followup else interaction.response.send_message
         await message_func(
             content=f"The passphrase for your group is: {self.passphrase}",
@@ -285,9 +289,14 @@ class DungeonInstance:
         role = self.roles[assigned_role]
         id = -1 if filled_spot else user.id
 
-        # if self.state.debug:
-        #     print(f"{timestamp()}: update_role", user.id, user.display_name, assigned_role, filled_spot)
-        #     print(role, "\n", id, "\n", self.state, "\n")
+        logging.debug(
+            f"update_role\n"
+            f"user_id: {user.id}\n"
+            f"display_name: {user.display_name}\n"
+            f"assigned_role: {assigned_role}\n"
+            f"filled_spot: {filled_spot}"
+        )
+        logging.debug(f"before update\nrole: {role}\nid: {id}\nstate: {self.state}")
 
         if not filled_spot:
             for role_name in [name.name for name in RoleType]:
@@ -308,15 +317,16 @@ class DungeonInstance:
             role.disabled = True
         self.state.empty_spots -= 1
 
-        # if self.state.debug:
-        #     print("--- after update_role ---\n")
-        #     print(role, "\n", id, "\n", self.state, "\n")
-        #     print("--- finished update role --- \n")
+        if self.state.debug:
+            logging.debug(f"after update\nrole: {role}\nid: {id}\nstate: {self.state}")
 
     async def update_display(self, interaction: discord.Interaction):
         """Updates the Discord displayed message based on the current status of the instance."""
-        if self.state.debug:
-            print(f"{timestamp()}: update_display", interaction.user.id, interaction.user.display_name)
+        logging.debug(
+            f"update_display; "
+            f"user_id: {interaction.user.id}, "
+            f"display_name: {interaction.user.display_name}"
+        )
         await self.message.edit(
             embed=self._dungeon_embed,
             view=self._dungeon_buttons,
@@ -405,8 +415,3 @@ def _button_from_role(role: Role, row: int) -> discord.ui.Button:
         disabled=role.disabled,
         row=row
     )
-
-
-def timestamp():
-    """Returns an iso formatted timestamp."""
-    return datetime.now(timezone.utc).isoformat()

@@ -6,6 +6,9 @@ except ModuleNotFoundError:
     import pip._vendor.tomli as tomllib
 
 import argparse
+import logging
+from datetime import datetime, timezone
+from pathlib import Path
 
 import discord
 from discord import app_commands
@@ -19,6 +22,8 @@ from db_py.autocompletion import (
 )
 from db_py.commands.help import help_response
 from db_py.commands.lfg import lfg, lfgdebug, lfgquick
+
+# --- Config setup
 
 parser = argparse.ArgumentParser(description="Configuration for discord bot")
 parser.add_argument("token_file", type=str, help="Discord Token")
@@ -48,6 +53,23 @@ TOKEN = token_data["discord"]["token"]
 GUILD_ID = discord.Object(CONFIG_DATA["guild_id"])
 CURRENT_EXPANSION = str(CONFIG_DATA.get("expansion"))
 CURRENT_SEASON = str(CONFIG_DATA.get("season"))
+DEBUG = CONFIG_DATA.get("debug", 0)
+LOG_FOLDER = Path(CONFIG_DATA.get("log_folder", ""))
+
+dt_now = datetime.now(timezone.utc)
+datetime_str = (
+    f"{dt_now.year}-{dt_now.month}-{dt_now.day}_"
+    f"{dt_now.hour}-{dt_now.minute}-{dt_now.second}"
+)
+if LOG_FOLDER != "" and LOG_FOLDER.exists():
+    log_file_path = LOG_FOLDER / f'{datetime_str}_dungeon_buddy.log'
+    logging.basicConfig(
+        level=logging.DEBUG if DEBUG == 1 else logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        handlers=[logging.FileHandler(log_file_path),]
+    )
+
+# --- Bot setup
 
 
 # see the example app_commands/basic on the discord-py GitHub repo
@@ -76,6 +98,8 @@ async def on_ready():
     print(f'Logged in as {client.user} (ID: {client.user.id})')
     print('------')
     print('Dungeon Buddy started')
+    if LOG_FOLDER != "" and LOG_FOLDER.exists():
+        print(f"logging to: {LOG_FOLDER}")
 
 # -- Help
 
@@ -187,7 +211,7 @@ async def lfguserhistory(interaction: discord.Interaction):
     response = "temp"
     await interaction.response.send_message(response, ephemeral=True)
 
-# ---
+# --- Run bot
 
 
 client.run(token=TOKEN)

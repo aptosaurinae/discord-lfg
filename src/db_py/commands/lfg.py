@@ -50,7 +50,9 @@ async def _lfg(
     try:
         _validate_lfg_inputs(difficulty, creator_role, filled_spots)
     except LFGValidationError as e:
-        await interaction.response.send_message("\n".join(e.messages), ephemeral=True)
+        response = "\n".join(e.messages)
+        await interaction.response.send_message(response, ephemeral=True)
+        print(response)
         return None
 
     time_type = load_time_types()[time_type]

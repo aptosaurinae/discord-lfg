@@ -23,3 +23,14 @@ class Role:
     button_style: discord.ButtonStyle
     disabled: bool
     emoji: str
+
+    def __str__(self):
+        """Returns a string representation of the object."""
+        return (
+            f"name: {self.name}\n"
+            f"userids: {self.userids}\n"
+            f"display_names: {self.display_names}\n"
+            f"assigned: {self.assigned}\n"
+            f"button_style: {self.button_style}\n"
+            f"disabled: {self.disabled}"
+        )
