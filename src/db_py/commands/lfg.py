@@ -137,17 +137,38 @@ async def lfgquick(
 
 async def lfgdebug(
     interaction: discord.Interaction,
-    config: dict
+    debug_type: int,
+    config: dict,
 ):
     """Creates a listing for debugging purposes."""
+    if debug_type == 1:
+        difficulty = 3
+        filled_spots = {"tank": 1, "healer": 0, "dps": 2}
+
+    if debug_type == 2:
+        difficulty = 3
+        filled_spots = {"tank": 0, "healer": 0, "dps": 0}
+
+    if debug_type == 3:
+        difficulty = 0
+        filled_spots = {"tank": 1, "healer": 0, "dps": 2}
+
+    if debug_type == 4:
+        difficulty = 3
+        filled_spots = {"tank": 1, "healer": 0, "dps": 4}
+
+    if debug_type == 5:
+        difficulty = 0
+        filled_spots = {"tank": 1, "healer": 0, "dps": 4}
+
     return await _lfg(
         interaction=interaction,
         dungeon=list(load_dungeons(config.get("expansion"), config.get("season")))[0],  # type: ignore
-        difficulty=3,
+        difficulty=difficulty,
         creator_role="dps",
         time_type="tbc",
-        listed_as="Dungeon Debug Test",
+        listed_as=f"Dungeon Debug Test {debug_type}",
         creator_notes="debug creator notes blah blah",
-        filled_spots={"tank": 1, "healer": 0, "dps": 2},
+        filled_spots=filled_spots,
         config=config,
     )

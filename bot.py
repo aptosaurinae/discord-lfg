@@ -155,10 +155,12 @@ if CONFIG_DATA.get("debug") is not None:
     @client.tree.command(guild=GUILD_ID, name="lfgdebug")
     async def lfgdebug_command(
         interaction: discord.Interaction,
+        debug_type: int,
     ):
         """Generates a Dungeon Buddy listing using a quick text-based input."""
         await lfgdebug(
             interaction=interaction,
+            debug_type=debug_type,
             config=CONFIG_DATA,
         )
 
