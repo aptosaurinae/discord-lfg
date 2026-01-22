@@ -63,10 +63,18 @@ class DungeonInstance:
             dungeon_info: A dictionary of the dungeon specific information
             config: A dictionary of configuration information for Dungeon Buddy
         """
+        logging.debug(
+            f"DungeonInstance created by "
+            f"{interaction.user.id} {interaction.user.display_name}"
+        )
         self._setup_dungeon(**dungeon_info, config=config)
         self._roles_init(config.get("emojis", load_emojis()))
         self._state_init(config)
         self._creator_init(interaction)
+        logging.debug(
+            f"DungeonInstance initialisation finished for "
+            f"{self.listing_message} {self.dungeon_title}"
+        )
 
     # --- Properties
 
@@ -77,7 +85,6 @@ class DungeonInstance:
         healer_id = self.roles[RoleType.healer.name].userids[0]
         dps_ids = self.roles[RoleType.dps.name].userids
         return [tank_id] + [healer_id] + dps_ids
-
 
     @property
     def current_user_tags(self) -> str:
@@ -106,7 +113,8 @@ class DungeonInstance:
             return f"{role.emoji} : {name}{'🚩' if id == creator_id else ''}"
 
         return (
-            f"{dungeon.creator_notes}\n\n"
+            f"**{self.listing_message}**\n"
+            f"{dungeon.creator_notes}\n"
             f"{_role_string(tank, self.creator.id)}\n"
             f"{_role_string(healer, self.creator.id)}\n"
             f"{_role_string(dps, self.creator.id)}\n"
@@ -132,7 +140,11 @@ class DungeonInstance:
     def listing_message(self) -> str:
         """Gets a standardised listing title for the dungeon including difficulty and time type."""
         dungeon = self.dungeon_details
-        return f"{dungeon.dungeon_long} +{dungeon.difficulty} ({dungeon.time_type})"
+        strikethrough = "~~" if self.state.closed else ""
+        return (
+            f"{strikethrough}{dungeon.dungeon_long} +{dungeon.difficulty} "
+            f"({dungeon.time_type}){strikethrough}"
+        )
 
     @property
     def passphrase(self) -> str:
@@ -169,6 +181,17 @@ class DungeonInstance:
             return self.roles[role_name]
         else:
             raise ValueError(f"{role_name} not in roles: {list(self.roles.keys())}")
+
+    async def cancel_group(self):
+        """Cancels the group and informs all current signups that it's been cancelled."""
+        logging.debug(
+            f"{self.dungeon_title} cancelled by {self.creator.id} / {self.creator.display_name}"
+        )
+        self.state.cancelled = True
+        listing_title = f"{self.listing_message} ({self.dungeon_title})"
+        message = f"Group cancelled by the group creator: {listing_title}"
+        await self.message.edit(content=message, embed=self._dungeon_embed, view=None)
+        await self.message.reply(content=f"{message} {self.current_user_tags}")
 
     # --- Initialisation
 
@@ -208,7 +231,7 @@ class DungeonInstance:
             dungeon_short=dungeon_short,
             dungeon_long=dungeon_long,
             listed_as=listed_as if (listed_as != "") else random_listing,
-            creator_notes="" if (creator_notes == "") else f"**Notes:** *{creator_notes}*",
+            creator_notes="" if (creator_notes == "") else f"**Notes:** *{creator_notes}*\n",
             difficulty=int(difficulty),
             time_type=time_type,
         )
@@ -232,9 +255,16 @@ class DungeonInstance:
 
     def _creator_init(self, interaction: discord.Interaction):
         """Capture creator elements."""
-        self.creator = _create_dungeon_user(interaction=interaction)
+        self.creator = DungeonUser(
+            id=interaction.user.id,
+            tag=f"<@{interaction.user.id}>",
+            name=interaction.user.name,
+            display_name=interaction.user.display_name,
+            global_name=interaction.user.global_name,
+        )
 
     async def _check_if_closed_or_timed_out(self):
+        """Closes the group if the background timer has finished and the group is not cancelled."""
         logging.debug(
             f"_timeout\n"
             f"created at: {self.state.created_at}\n"
@@ -251,24 +281,15 @@ class DungeonInstance:
         logging.debug(f"{self.dungeon_title} closed")
         self.state.closed = True
 
-        listing_title = f"{self.listing_message} ({self.dungeon_title})"
         if self.state.empty_spots > 0:
-            message = f"Group creation timed out: {listing_title} {self.current_user_tags}"
+            message = (
+                f"**Group creation timed out**: "
+                f"*{self.listing_message}, {self.dungeon_title}* ({self.current_user_tags})"
+            )
             await self.message.reply(content=message)
         else:
-            message = f"Group full: {listing_title}"
+            message = "Group full and now closed"
         await self.message.edit(content=message, embed=self._dungeon_embed, view=None)
-
-    async def cancel_group(self):
-        """Cancels the group and informs all current signups that it's been cancelled."""
-        logging.debug(
-            f"{self.dungeon_title} cancelled by {self.creator.id} / {self.creator.display_name}"
-        )
-        self.state.cancelled = True
-        listing_title = f"{self.listing_message} ({self.dungeon_title})"
-        message = f"Group cancelled by the group creator: {listing_title}"
-        await self.message.edit(content=message, embed=self._dungeon_embed, view=None)
-        await self.message.reply(content=f"{message} {self.current_user_tags}")
 
     # --- Responses and discord message display handling
 
@@ -370,7 +391,13 @@ class DungeonInstance:
             await self.send_passphrase(interaction, False)
 
         role = self.role_info(role_type.name)
-        btn = _button_from_role(role, 1)
+        btn = discord.ui.Button(
+            custom_id=role.name,
+            emoji=role.emoji,
+            style=role.button_style,
+            disabled=role.disabled,
+            row=1
+        )
         btn.callback = btn_click
         return btn
 
@@ -423,23 +450,3 @@ class DungeonInstance:
         )
         btn.callback = btn_click
         return btn
-
-
-def _create_dungeon_user(interaction: discord.Interaction):
-    return DungeonUser(
-        id=interaction.user.id,
-        tag=f"<@{interaction.user.id}>",
-        name=interaction.user.name,
-        display_name=interaction.user.display_name,
-        global_name=interaction.user.global_name,
-    )
-
-
-def _button_from_role(role: Role, row: int) -> discord.ui.Button:
-    return discord.ui.Button(
-        custom_id=role.name,
-        emoji=role.emoji,
-        style=role.button_style,
-        disabled=role.disabled,
-        row=row
-    )

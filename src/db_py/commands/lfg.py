@@ -149,7 +149,7 @@ async def lfgdebug(
         filled_spots = {"tank": 1, "healer": 0, "dps": 2}
 
     if debug_type == 2:
-        difficulty = 3
+        difficulty = 5
         filled_spots = {"tank": 0, "healer": 0, "dps": 0}
 
     if debug_type == 3:
