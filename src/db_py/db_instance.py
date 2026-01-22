@@ -37,8 +37,10 @@ class DungeonState:
     """Container for the state of the dungeon."""
     created_at: datetime
     close_group_at: datetime
+    editable_length: int
     closed: bool
     cancelled: bool
+    timed_out: bool
     empty_spots: int
     passphrase: str
     filled_spot_name: str
@@ -79,6 +81,10 @@ class DungeonInstance:
     # --- Properties
 
     @property
+    def _strikethrough(self) -> str:
+        return "~~" if (self.state.closed or self.state.cancelled or self.state.timed_out) else ""
+
+    @property
     def current_users(self) -> list:
         """Retrieves the current valid user IDs in the instance."""
         tank_id = self.roles[RoleType.tank.name].userids[0]
@@ -99,12 +105,13 @@ class DungeonInstance:
     @property
     def description(self) -> str:
         """Gets a standardised description for the dungeon including role spots."""
+        logging.debug("get description")
         dungeon = self.dungeon_details
         tank = self.roles[RoleType.tank.name]
         healer = self.roles[RoleType.healer.name]
         dps = self.roles[RoleType.dps.name]
         footer = ""
-        if not (self.state.empty_spots == 0 or self.state.closed):
+        if not (self.state.closed or self.state.cancelled or self.state.timed_out):
             footer = "`/lfghelp for Dungeon Buddy help`"
 
         def _role_string(role: Role, creator_id: int, role_idx: int = 0):
@@ -113,7 +120,7 @@ class DungeonInstance:
             return f"{role.emoji} : {name}{'🚩' if id == creator_id else ''}"
 
         return (
-            f"**{self.listing_message}**\n"
+            f"**{self._listing_message_body}**\n"
             f"{dungeon.creator_notes}\n"
             f"{_role_string(tank, self.creator.id)}\n"
             f"{_role_string(healer, self.creator.id)}\n"
@@ -137,14 +144,32 @@ class DungeonInstance:
         return filled_roles_icons
 
     @property
-    def listing_message(self) -> str:
-        """Gets a standardised listing title for the dungeon including difficulty and time type."""
+    def _listing_message_body(self) -> str:
         dungeon = self.dungeon_details
-        strikethrough = "~~" if self.state.closed else ""
         return (
-            f"{strikethrough}{dungeon.dungeon_long} +{dungeon.difficulty} "
-            f"({dungeon.time_type}){strikethrough}"
+            f"{self._strikethrough}{dungeon.dungeon_long} +{dungeon.difficulty} "
+            f"({dungeon.time_type}){self._strikethrough}"
         )
+
+    @property
+    def listing_message(self) -> str:
+        """Gets the listing message for the dungeon."""
+        logging.debug("get listing message")
+        tags = False
+        if self.state.closed:
+            message = "**Group full** and now closed. "
+        elif self.state.timed_out:
+            message = "**Group creation timed out**: "
+            tags = True
+        elif self.state.cancelled:
+            message = "**Group cancelled** by the group creator: "
+            tags = True
+        else:
+            message = ""
+
+        user_tags = self.current_user_tags if tags else ""
+
+        return f"{message}{self._listing_message_body}{user_tags}"
 
     @property
     def passphrase(self) -> str:
@@ -153,15 +178,19 @@ class DungeonInstance:
 
     @property
     def _dungeon_embed(self) -> discord.Embed:
-        strikethrough = "~~" if self.state.closed else ""
-        return discord.Embed(
-            title=f"{strikethrough}{self.dungeon_title}{strikethrough} {self.filled_roles}",
-            description=self.description,
-            colour=606675,
+        logging.debug("get dungeon embed")
+        title = (
+            f"{self._strikethrough}{self.dungeon_title}{self._strikethrough} "
+            f"{self.filled_roles}"
         )
+        return discord.Embed(title=title, description=self.description, colour=606675)
 
     @property
-    def _dungeon_buttons(self) -> discord.ui.View:
+    def _dungeon_buttons(self) -> discord.ui.View | None:
+        if self.state.closed or self.state.cancelled or self.state.timed_out:
+            logging.debug("no buttons needed")
+            return None
+        logging.debug("retrieving buttons")
         tank_btn = self._role_button(RoleType.tank)
         healer_btn = self._role_button(RoleType.healer)
         dps_btn = self._role_button(RoleType.dps)
@@ -188,10 +217,16 @@ class DungeonInstance:
             f"{self.dungeon_title} cancelled by {self.creator.id} / {self.creator.display_name}"
         )
         self.state.cancelled = True
-        listing_title = f"{self.listing_message} ({self.dungeon_title})"
-        message = f"Group cancelled by the group creator: {listing_title}"
-        await self.message.edit(content=message, embed=self._dungeon_embed, view=None)
-        await self.message.reply(content=f"{message} {self.current_user_tags}")
+        await self.edit_message()
+
+    async def is_closed(self):
+        """Starts the group closure process, leaving the group open for a set period."""
+        if self.state.empty_spots == 0 and not self.state.closed:
+            logging.debug(f"{self.listing_message} {self.dungeon_title} closed as it is full")
+            self.state.closed = True
+            self.state.close_group_at = (
+                datetime_now_utc() + timedelta(minutes=self.state.editable_length))
+            logging.debug(f"group closed but editable until {self.state.close_group_at}")
 
     # --- Initialisation
 
@@ -240,13 +275,16 @@ class DungeonInstance:
         """Initialise state."""
         guild_name = config.get("guild_name", "")
         timeout_length = config.get("timeout_length", 30)
+        editable_length = config.get("editable_length", 5)
         debug = config.get("debug", False)
-        now = datetime.now(tz=timezone.utc)
+        now = datetime_now_utc()
         self.state = DungeonState(
             created_at=now,
             close_group_at=now + timedelta(minutes=timeout_length),
+            editable_length=editable_length,
             closed=False,
             cancelled=False,
+            timed_out=False,
             empty_spots=5,
             passphrase=generate_passphrase(),
             filled_spot_name=f"~~Filled {guild_name}{' ' if guild_name != '' else ''}Spot~~",
@@ -272,36 +310,41 @@ class DungeonInstance:
         )
         while self.state.close_group_at > datetime.now(timezone.utc) and not self.state.cancelled:
             logging.debug(f"{self.dungeon_title} still active")
+            await self.is_closed()
             await asyncio.sleep(10)
 
         if self.state.cancelled:
             logging.debug(f"{self.dungeon_title} was cancelled while waiting to be closed.")
             return None
-
-        logging.debug(f"{self.dungeon_title} closed")
-        self.state.closed = True
-
-        if self.state.empty_spots > 0:
-            message = (
-                f"**Group creation timed out**: "
-                f"*{self.listing_message}, {self.dungeon_title}* ({self.current_user_tags})"
-            )
-            await self.message.reply(content=message)
+        elif self.state.closed:
+            logging.debug(f"{self.dungeon_title} closed")
         else:
-            message = "Group full and now closed"
-        await self.message.edit(content=message, embed=self._dungeon_embed, view=None)
+            logging.debug(f"{self.dungeon_title} timed out")
+            self.state.timed_out = True
+
+        await self.edit_message()
 
     # --- Responses and discord message display handling
 
+    @property
+    def _message_content(self):
+        logging.debug("retrieve message content")
+        return {
+            "content": self.listing_message,
+            "embed": self._dungeon_embed,
+            "view": self._dungeon_buttons
+        }
+
     async def send_message(self, interaction: discord.Interaction):
         """Sends the initial message for Dungeon Buddy."""
-        await interaction.response.send_message(
-            content=self.listing_message,
-            embed=self._dungeon_embed,
-            view=self._dungeon_buttons,
-        )
+        await interaction.response.send_message(**self._message_content)
         self.message = await interaction.original_response()
         self._task = asyncio.create_task(self._check_if_closed_or_timed_out())
+
+    async def edit_message(self):
+        """Updates the Discord displayed message based on the current status of the instance."""
+        logging.debug("edit_message")
+        await self.message.edit(**self._message_content)
 
     async def send_passphrase(self, interaction: discord.Interaction, followup: bool = False):
         """Sends the passphrase."""
@@ -325,69 +368,62 @@ class DungeonInstance:
         """Fills spots in the listing based on the filled spots dictionary given."""
         for role_name, num_filled in filled_spots.items():
             for _ in range(num_filled):
-                self.update_role(role_name, interaction, True)
+                self.add_role(role_name, interaction, True)
 
-    def update_role(
+    def remove_filled_spot(
+        self,
+        assigned_role: str,
+    ):
+        """Removes a filled spot from the given role."""
+        role = self.roles[assigned_role]
+        self.remove_role(role, -1)
+
+    def remove_role(self, role: Role, id: int):
+        """Removes the role from the given user."""
+        logging.debug(f"remove_role\nrole: {role}\nid: {id}\nstate: {self.state}")
+        role_idx = role.userids.index(id)
+        role.userids[role_idx] = 0
+        role.display_names[role_idx] = ""
+        role.assigned[role_idx] = False
+        role.disabled = False
+        self.state.empty_spots += 1
+
+    def add_role(
         self,
         assigned_role: str,
         interaction: discord.Interaction,
         filled_spot: bool = False
     ):
         """Update the specified role name with the given user ID and display name."""
+        # a user can only be present in a group once,
+        # so must be removed if present before being added.
         user = interaction.user
-        role = self.roles[assigned_role]
-        id = -1 if filled_spot else user.id
-
-        logging.debug(
-            f"update_role\n"
-            f"user_id: {user.id}\n"
-            f"display_name: {user.display_name}\n"
-            f"assigned_role: {assigned_role}\n"
-            f"filled_spot: {filled_spot}"
-        )
-        logging.debug(f"before update\nrole: {role}\nid: {id}\nstate: {self.state}")
-
         if not filled_spot:
             for role_name in [name.name for name in RoleType]:
                 remove_role = self.roles[role_name]
-                if id in remove_role.userids:
-                    role_idx = remove_role.userids.index(id)
-                    remove_role.userids[role_idx] = 0
-                    remove_role.display_names[role_idx] = ""
-                    remove_role.assigned[role_idx] = False
-                    remove_role.disabled = False
-                    self.state.empty_spots += 1
+                if user.id in remove_role.userids:
+                    self.remove_role(remove_role, user.id)
 
+        role = self.roles[assigned_role]
+        logging.debug(f"add_role\nrole: {role}\nid: {user.id}\nstate: {self.state}")
         role_idx = role.assigned.index(False)
-        role.userids[role_idx] = id
-        role.display_names[role_idx] = self.state.filled_spot_name if filled_spot else user.display_name
+        role.userids[role_idx] = -1 if filled_spot else user.id
+        role.display_names[role_idx] = (
+            self.state.filled_spot_name if filled_spot else user.display_name)
         role.assigned[role_idx] = True
         if all(role.assigned):
             role.disabled = True
         self.state.empty_spots -= 1
-
-        if self.state.debug:
-            logging.debug(f"after update\nrole: {role}\nid: {id}\nstate: {self.state}")
-
-    async def update_display(self, interaction: discord.Interaction):
-        """Updates the Discord displayed message based on the current status of the instance."""
-        logging.debug(
-            f"update_display; "
-            f"user_id: {interaction.user.id}, "
-            f"display_name: {interaction.user.display_name}"
-        )
-        await self.message.edit(
-            embed=self._dungeon_embed,
-            view=self._dungeon_buttons,
-        )
 
     # --- Buttons
 
     def _role_button(self, role_type: RoleType) -> discord.ui.Button:
         """Creates a button interactable formatted for a particular role."""
         async def btn_click(interaction: discord.Interaction):
-            self.update_role(assigned_role=role_type.name, interaction=interaction)
-            await self.update_display(interaction)
+            logging.debug(f"{role.name} button clicked by {interaction.user.display_name}")
+            self.add_role(assigned_role=role_type.name, interaction=interaction)
+            await self.is_closed()
+            await self.edit_message()
             await self.send_passphrase(interaction, False)
 
         role = self.role_info(role_type.name)
@@ -404,6 +440,7 @@ class DungeonInstance:
     def _passphrase_button(self) -> discord.ui.Button:
         """Creates an ephemeral passphrase message for valid callers."""
         async def btn_click(interaction: discord.Interaction):
+            logging.debug(f"passphrase button clicked by {interaction.user.display_name}")
             if interaction.user.id in self.current_users:
                 await self.send_passphrase(interaction, False)
             else:
@@ -425,6 +462,7 @@ class DungeonInstance:
     def _settings_button(self) -> discord.ui.Button:
         """Accesses control options for valid users."""
         async def btn_click(interaction: discord.Interaction):
+            logging.debug(f"settings button clicked by {interaction.user.display_name}")
             if interaction.user.id == self.creator.id:
                 await interaction.response.send_message(
                     "You are the creator and clicked settings.",
@@ -450,3 +488,8 @@ class DungeonInstance:
         )
         btn.callback = btn_click
         return btn
+
+
+def datetime_now_utc():
+    """Gets the current time using the UTC timezone."""
+    return datetime.now(tz=timezone.utc)

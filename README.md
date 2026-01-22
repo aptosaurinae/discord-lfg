@@ -17,7 +17,6 @@ the [No Pressure EU](https://no-pressure.eu) Discord server. This is an implemen
 
 For feature parity with the original Dungeon Buddy, the following is missing:
 
-- Make group close once full (with timer to allow edits?) - will need `timeout` to be cancelled
 - Settings button actions for a group listing (filled spots, cancel, listing name / notes edits?)
 - Add role pings when group is listed
 - Hook up `/lfg` command to use drop-downs
@@ -94,11 +93,13 @@ dps = "<:dpsemojiname:123456789>"
 - *Optional*: `emojis` dictionary for each of `tank`, `healer`, and `dps`.
 If you don't provide these then Dungeon Buddy will default to using 🛡️, 🪄, ⚔️ for each role.
 The emoji names and numbers need to match the names and IDs of the emojis in the server you are hosting the bot.
-The names need to match the name of the emoji in the server.
+The names can be found as the ":name:" names in the server.
 The IDs can be found by right clicking on the emojis in the server you're in and opening the link,
 then looking at the number of their name in the URL.
-- *Optional*: `timeout_length`, a float in minutes. This will control how long the listing exists for before
+- *Optional*: `timeout_length`, a float in minutes. This controls how long the listing exists for before
 timing out. This is a float, so can be set to 0.1 or similar for testing purposes.
+- *Optional*: `editable_length`, a float in minutes. This controls how long the listing is able to
+be edited for once the group is full.
 - *Optional*: `debug`, set to 1 to turn on debug mode, which will be more verbose in the console
 and enable `/lfgdebug` which is a pre-set listing for test purposes.
 - *Optional*: `log_folder`, set this to a folder that already exists and it will dump a log file here.

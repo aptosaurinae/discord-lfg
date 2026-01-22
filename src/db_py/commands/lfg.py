@@ -78,7 +78,7 @@ async def _lfg(
     }
 
     instance = DungeonInstance(interaction=interaction, dungeon_info=dungeon_info, config=config)
-    instance.update_role(creator_role, interaction)
+    instance.add_role(creator_role, interaction)
     instance.fill_spots(interaction, filled_spots)
     await instance.send_message(interaction)
     await instance.send_passphrase(interaction, True)
@@ -163,6 +163,10 @@ async def lfgdebug(
     if debug_type == 5:
         difficulty = 0
         filled_spots = {"tank": 1, "healer": 0, "dps": 4}
+
+    if debug_type == 6:
+        difficulty = 4
+        filled_spots = {"tank": 1, "healer": 1, "dps": 2}
 
     return await _lfg(
         interaction=interaction,
