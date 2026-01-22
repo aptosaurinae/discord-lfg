@@ -36,8 +36,9 @@ class DungeonUser:
 class DungeonState:
     """Container for the state of the dungeon."""
     created_at: datetime
-    timeout_length: timedelta
-    timed_out: bool
+    close_group_at: datetime
+    closed: bool
+    cancelled: bool
     empty_spots: int
     passphrase: str
     filled_spot_name: str
@@ -77,6 +78,17 @@ class DungeonInstance:
         dps_ids = self.roles[RoleType.dps.name].userids
         return [tank_id] + [healer_id] + dps_ids
 
+
+    @property
+    def current_user_tags(self) -> str:
+        """Retrieves a string tagging all current users listed in the group."""
+        tagged_users = ""
+        for role in self.roles.values():
+            for userid in role.userids:
+                if userid > 0:
+                    tagged_users += f"<@{userid}> "
+        return tagged_users
+
     @property
     def description(self) -> str:
         """Gets a standardised description for the dungeon including role spots."""
@@ -85,7 +97,7 @@ class DungeonInstance:
         healer = self.roles[RoleType.healer.name]
         dps = self.roles[RoleType.dps.name]
         footer = ""
-        if not (self.state.empty_spots == 0 or self.state.timed_out):
+        if not (self.state.empty_spots == 0 or self.state.closed):
             footer = "`/lfghelp for Dungeon Buddy help`"
 
         def _role_string(role: Role, creator_id: int, role_idx: int = 0):
@@ -129,7 +141,7 @@ class DungeonInstance:
 
     @property
     def _dungeon_embed(self) -> discord.Embed:
-        strikethrough = "~~" if self.state.timed_out else ""
+        strikethrough = "~~" if self.state.closed else ""
         return discord.Embed(
             title=f"{strikethrough}{self.dungeon_title}{strikethrough} {self.filled_roles}",
             description=self.description,
@@ -206,10 +218,12 @@ class DungeonInstance:
         guild_name = config.get("guild_name", "")
         timeout_length = config.get("timeout_length", 30)
         debug = config.get("debug", False)
+        now = datetime.now(tz=timezone.utc)
         self.state = DungeonState(
-            created_at=datetime.now(tz=timezone.utc),
-            timeout_length=timedelta(minutes=timeout_length),
-            timed_out=False,
+            created_at=now,
+            close_group_at=now + timedelta(minutes=timeout_length),
+            closed=False,
+            cancelled=False,
             empty_spots=5,
             passphrase=generate_passphrase(),
             filled_spot_name=f"~~Filled {guild_name}{' ' if guild_name != '' else ''}Spot~~",
@@ -220,27 +234,41 @@ class DungeonInstance:
         """Capture creator elements."""
         self.creator = _create_dungeon_user(interaction=interaction)
 
-    async def _timeout(self):
+    async def _check_if_closed_or_timed_out(self):
         logging.debug(
             f"_timeout\n"
             f"created at: {self.state.created_at}\n"
-            f"timeout length: {self.state.timeout_length}\n"
-            f"timeout set to: {self.state.created_at + self.state.timeout_length}"
+            f"timeout set to: {self.state.close_group_at}"
         )
-        await asyncio.sleep(self.state.timeout_length.seconds)
+        while self.state.close_group_at > datetime.now(timezone.utc) and not self.state.cancelled:
+            logging.debug(f"{self.dungeon_title} still active")
+            await asyncio.sleep(10)
 
-        logging.debug(f"_timeout applied for {self.dungeon_title}")
-        self.state.timed_out = True
+        if self.state.cancelled:
+            logging.debug(f"{self.dungeon_title} was cancelled while waiting to be closed.")
+            return None
 
-        current_users = ""
-        for role in self.roles.values():
-            for userid in role.userids:
-                if userid > 0:
-                    current_users += f"{', ' if current_users != '' else ''}<@{userid}>"
+        logging.debug(f"{self.dungeon_title} closed")
+        self.state.closed = True
 
-        timeout_message = f"Group creation timed out. {self.listing_message} ({self.dungeon_title}): {current_users}"
-        await self.message.edit(content=timeout_message, embed=self._dungeon_embed, view=None)
-        await self.message.reply(content=timeout_message)
+        listing_title = f"{self.listing_message} ({self.dungeon_title})"
+        if self.state.empty_spots > 0:
+            message = f"Group creation timed out: {listing_title} {self.current_user_tags}"
+            await self.message.reply(content=message)
+        else:
+            message = f"Group full: {listing_title}"
+        await self.message.edit(content=message, embed=self._dungeon_embed, view=None)
+
+    async def cancel_group(self):
+        """Cancels the group and informs all current signups that it's been cancelled."""
+        logging.debug(
+            f"{self.dungeon_title} cancelled by {self.creator.id} / {self.creator.display_name}"
+        )
+        self.state.cancelled = True
+        listing_title = f"{self.listing_message} ({self.dungeon_title})"
+        message = f"Group cancelled by the group creator: {listing_title}"
+        await self.message.edit(content=message, embed=self._dungeon_embed, view=None)
+        await self.message.reply(content=f"{message} {self.current_user_tags}")
 
     # --- Responses and discord message display handling
 
@@ -252,7 +280,7 @@ class DungeonInstance:
             view=self._dungeon_buttons,
         )
         self.message = await interaction.original_response()
-        self._task = asyncio.create_task(self._timeout())
+        self._task = asyncio.create_task(self._check_if_closed_or_timed_out())
 
     async def send_passphrase(self, interaction: discord.Interaction, followup: bool = False):
         """Sends the passphrase."""

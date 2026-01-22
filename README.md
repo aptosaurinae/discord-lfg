@@ -17,9 +17,9 @@ the [No Pressure EU](https://no-pressure.eu) Discord server. This is an implemen
 
 For feature parity with the original Dungeon Buddy, the following is missing:
 
+- Make group close once full (with timer to allow edits?) - will need `timeout` to be cancelled
 - Settings button actions for a group listing (filled spots, cancel, listing name / notes edits?)
 - Add role pings when group is listed
-- Make group close once full (with timer to allow edits?) - will need `timeout` to be cancelled
 - Hook up `/lfg` command to use drop-downs
 - Create `/lfgquick` implementation
 - Log group members when group completes in any way (full, timeout, cancelled)
