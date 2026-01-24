@@ -19,7 +19,6 @@ For feature parity with the original Dungeon Buddy, the following is missing:
 
 - Settings button actions for a group listing (filled spots, cancel, listing name / notes edits?)
 - Add role pings when group is listed
-- Hook up `/lfg` command to use drop-downs
 - Create `/lfgquick` implementation to match the original
 - Log group members when group completes in any way (full, timeout, cancelled)
 - Add `/lfgstats` reporting
