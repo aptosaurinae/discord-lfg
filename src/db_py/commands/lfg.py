@@ -65,9 +65,8 @@ async def _lfg(
         return None
 
     time_types = load_time_types()
-    if time_type not in time_types:
-        time_types_reverse = {value: key for key, value in time_types.items()}
-        time_type = time_types_reverse.get(time_type, "")
+    if time_type not in time_types.values():
+        time_type = time_types.get(time_type, "")
 
     dungeons = load_dungeons(config.get("expansion"), config.get("season"))    # type: ignore
 

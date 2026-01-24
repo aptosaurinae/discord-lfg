@@ -145,12 +145,14 @@ class LFGOptions(discord.ui.View):
     @discord.ui.button(label="Create group", style=discord.ButtonStyle.green, row=4)
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Confirm the menu selections."""
-        if not (
+        if (
             self.difficulty == 0
-            and self.time_type == ""
-            and self.creator_role == ""
-            and self.required_roles == {}
+            or self.time_type == ""
+            or self.creator_role == ""
+            or self.required_roles == {}
         ):
+            await interaction.response.defer()
+        else:
             self.confirmed = True
             await interaction.response.edit_message(content="Group created.", view=None)
             self.stop()
