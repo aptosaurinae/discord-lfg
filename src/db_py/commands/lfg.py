@@ -1,8 +1,11 @@
 """Controls the LFG system."""
 
+import logging
+
 import discord
 
 from db_py.db_instance import DungeonInstance
+from db_py.lfg_options import LFGOptions
 from db_py.resources import load_dungeons, load_time_types
 from db_py.roles import RoleType
 from db_py.utils import get_difficulty_start_and_end_from_channel_name
@@ -17,12 +20,17 @@ class LFGValidationError(Exception):
 
 def _validate_lfg_inputs(
     difficulty: int,
+    time_type: str,
     creator_role: str,
     filled_spots: dict[str, int],
 ):
     errors = []
     if difficulty == 0:
         errors.append("You cannot use this command in this channel.")
+
+    time_types = load_time_types()
+    if time_type not in time_types and time_type not in time_types.values():
+        errors.append(f"time_type not recognised, given: {time_type}, valid: {time_types}")
 
     max_counts = DungeonInstance.role_counts.copy()
     max_counts[creator_role] -= 1
@@ -48,14 +56,19 @@ async def _lfg(
     filled_spots: dict[str, int],
     config: dict,
 ):
+    logging.debug("".join([str((key, value)) for key, value in locals().items()]))
     try:
-        _validate_lfg_inputs(difficulty, creator_role, filled_spots)
+        _validate_lfg_inputs(difficulty, time_type, creator_role, filled_spots)
     except LFGValidationError as e:
         response = "\n".join(e.messages)
         await interaction.response.send_message(response, ephemeral=True)
         return None
 
-    time_type = load_time_types()[time_type]
+    time_types = load_time_types()
+    if time_type not in time_types:
+        time_types_reverse = {value: key for key, value in time_types.items()}
+        time_type = time_types_reverse.get(time_type, "")
+
     dungeons = load_dungeons(config.get("expansion"), config.get("season"))    # type: ignore
 
     if dungeon in dungeons:
@@ -76,69 +89,17 @@ async def _lfg(
         "difficulty": difficulty,
         "time_type": time_type,
     }
+    logging.debug(dungeon_info)
 
     instance = DungeonInstance(interaction=interaction, dungeon_info=dungeon_info, config=config)
     instance.add_role(creator_role, interaction)
     instance.fill_spots(interaction, filled_spots)
     await instance.send_message(interaction)
-    await instance.send_passphrase(interaction, True)
+    await instance.send_passphrase(interaction)
 
 
 def _parse_filled_spots(input: str) -> dict:
     return {role: input.count(role[:1]) for role in [name.name for name in RoleType]}
-
-
-def _lfg_dropdowns(difficulties: list):
-    difficulty = discord.ui.Select(
-        placeholder="Select a difficulty",
-        min_values=1,
-        max_values=1,
-        options=[discord.SelectOption(label=str(num)) for num in difficulties],
-        disabled=False,
-        row=1
-    )
-    time_type = discord.ui.Select(
-        placeholder="Time / Complete / Abandon?",
-        min_values=1,
-        max_values=1,
-        options=[discord.SelectOption(label=value) for value in load_time_types()],
-        disabled=False,
-        row=2
-    )
-    creator_role = discord.ui.Select(
-        placeholder="Select your role",
-        min_values=1,
-        max_values=1,
-        options=[discord.SelectOption(label=value.name) for value in RoleType],
-        disabled=False,
-        row=3
-    )
-    roles_required = discord.ui.Select(
-        placeholder="What roles are you looking for?",
-        min_values=0,
-        max_values=4,
-        options=[
-            discord.SelectOption(label=key)
-            for key, value
-            in DungeonInstance.role_counts.items()
-            for _ in range(value)
-        ],
-        disabled=False,
-        row=4
-    )
-    confirm_button = discord.ui.Button(
-        custom_id="confirm",
-        label="Confirm",
-        emoji="✔️",
-        style=discord.ButtonStyle.primary,
-    )
-    cancel_button = discord.ui.Button(
-        custom_id="Cancel",
-        label="Cancel",
-        emoji="❌",
-        style=discord.ButtonStyle.danger,
-    )
-    discord.ui.ActionRow()
 
 
 async def lfg(
@@ -154,16 +115,25 @@ async def lfg(
         response = "You cannot use the LFG command in this channel"
         await interaction.response.send_message(response, ephemeral=True)
         return None
-    difficulty = difficulties[0]
-    time_type = "vc"
-    creator_role = "tank"
-    filled_spots = {"tank": 0, "healer": 0, "dps": 0}
+
+    view = LFGOptions(difficulties, config)
+    await interaction.response.send_message(view=view, ephemeral=True)
+    await view.wait()
+    if not view.confirmed:
+        logging.debug("Dungeon group creation cancelled.")
+        return None
+
+    filled_spots = DungeonInstance.role_counts.copy()
+    filled_spots[view.creator_role] -= 1
+    for role, required_num in view.required_roles.items():
+        filled_spots[role] -= required_num
+
     return await _lfg(
         interaction=interaction,
         dungeon=dungeon,
-        difficulty=difficulty,
-        creator_role=creator_role,
-        time_type=time_type,
+        difficulty=view.difficulty,
+        creator_role=view.creator_role,
+        time_type=view.time_type,
         listed_as=listed_as,
         creator_notes=creator_notes,
         filled_spots=filled_spots,

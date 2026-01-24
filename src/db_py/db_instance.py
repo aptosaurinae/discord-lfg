@@ -344,8 +344,11 @@ class DungeonInstance:
 
     async def send_message(self, interaction: discord.Interaction):
         """Sends the initial message for Dungeon Buddy."""
-        await interaction.response.send_message(**self._message_content)
-        self.message = await interaction.original_response()
+        if not interaction.response.is_done():
+            await interaction.response.send_message(**self._message_content)
+            self.message = await interaction.original_response()
+        else:
+            self.message = await interaction.followup.send(**self._message_content)
         self._task = asyncio.create_task(self._check_if_closed_or_timed_out())
 
     async def edit_message(self):
@@ -353,7 +356,7 @@ class DungeonInstance:
         logging.debug("edit_message")
         await self.message.edit(**self._message_content)
 
-    async def send_passphrase(self, interaction: discord.Interaction, followup: bool = False):
+    async def send_passphrase(self, interaction: discord.Interaction):
         """Sends the passphrase."""
         logging.debug(
             f"send_passphrase\n"
@@ -361,7 +364,11 @@ class DungeonInstance:
             f"display_name: {interaction.user.display_name}\n"
             f"passphrase: {self.passphrase}"
         )
-        message_func = interaction.followup.send if followup else interaction.response.send_message
+        message_func = (
+            interaction.followup.send
+            if interaction.response.is_done()
+            else interaction.response.send_message
+        )
         await message_func(
             content=f"The passphrase for your group is: {self.passphrase}",
             ephemeral=True
@@ -431,7 +438,7 @@ class DungeonInstance:
             self.add_role(assigned_role=role_type.name, interaction=interaction)
             self.is_closed()
             await self.edit_message()
-            await self.send_passphrase(interaction, False)
+            await self.send_passphrase(interaction)
 
         role = self.role_info(role_type.name)
         btn = discord.ui.Button(
@@ -449,7 +456,7 @@ class DungeonInstance:
         async def btn_click(interaction: discord.Interaction):
             logging.debug(f"passphrase button clicked by {interaction.user.display_name}")
             if interaction.user.id in self.current_users:
-                await self.send_passphrase(interaction, False)
+                await self.send_passphrase(interaction)
             else:
                 await interaction.response.send_message(
                     "You are not part of this group.",
