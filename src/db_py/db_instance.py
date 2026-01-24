@@ -8,7 +8,8 @@ from datetime import datetime, timedelta, timezone
 import discord
 
 from db_py.resources import generate_listing_name, generate_passphrase, load_emojis
-from db_py.roles import DungeonUserRole, RoleType
+from db_py.roles import DungeonRole, RoleType
+from db_py.utils import get_guild_role_mention_for_dungeon_role
 
 
 @dataclass
@@ -70,7 +71,11 @@ class DungeonInstance:
             f"{interaction.user.id} {interaction.user.display_name}"
         )
         self._setup_dungeon(**dungeon_info, config=config)
-        self._roles_init(config.get("emojis", load_emojis()))
+        self._roles_init(
+            config.get("emojis", load_emojis()),
+            config.get("roles", {}),
+            interaction.channel.name if isinstance(interaction.channel.name, str) else "",  # type: ignore
+        )
         self._state_init(config)
         self._creator_init(interaction)
         logging.debug(
@@ -85,7 +90,7 @@ class DungeonInstance:
         return "~~" if (self.state.closed or self.state.cancelled or self.state.timed_out) else ""
 
     @property
-    def current_users(self) -> list:
+    def current_user_ids(self) -> list:
         """Retrieves the current valid user IDs in the instance."""
         tank_id = self.roles[RoleType.tank.name].userids[0]
         healer_id = self.roles[RoleType.healer.name].userids[0]
@@ -103,6 +108,11 @@ class DungeonInstance:
         return tagged_users
 
     @property
+    def current_role_tags(self) -> str:
+        """Retrieves a string tagging all current required roles listed in the group."""
+        return "".join([role.role_mention for role in self.roles.values() if not role.disabled])
+
+    @property
     def description(self) -> str:
         """Gets a standardised description for the dungeon including role spots."""
         logging.debug("get description")
@@ -114,7 +124,7 @@ class DungeonInstance:
         if not (self.state.closed or self.state.cancelled or self.state.timed_out):
             footer = "`/lfghelp for Dungeon Buddy help`"
 
-        def _role_string(role: DungeonUserRole, creator_id: int, role_idx: int = 0):
+        def _role_string(role: DungeonRole, creator_id: int, role_idx: int = 0):
             name = role.display_names[role_idx]
             id = role.userids[role_idx]
             return f"{role.emoji} : {name}{'🚩' if id == creator_id else ''}"
@@ -148,26 +158,24 @@ class DungeonInstance:
         dungeon = self.dungeon_details
         return (
             f"{self._strikethrough}{dungeon.dungeon_long} +{dungeon.difficulty} "
-            f"({dungeon.time_type}){self._strikethrough}"
+            f"({dungeon.time_type}){self._strikethrough} {self.current_role_tags}"
         )
 
     @property
     def listing_message(self) -> str:
         """Gets the listing message for the dungeon."""
         logging.debug("get listing message")
-        tags = False
-        if self.state.closed:
-            message = "**Group full** and now closed. "
-        elif self.state.timed_out:
+        tag_users = False
+        if self.state.timed_out:
             message = "**Group creation timed out**: "
-            tags = True
+            tag_users = True
         elif self.state.cancelled:
             message = "**Group cancelled** by the group creator: "
-            tags = True
+            tag_users = True
         else:
             message = ""
 
-        user_tags = self.current_user_tags if tags else ""
+        user_tags = self.current_user_tags if tag_users else ""
 
         return f"{message}{self._listing_message_body}{user_tags}"
 
@@ -237,8 +245,14 @@ class DungeonInstance:
 
     # --- Initialisation
 
-    def _role_constructor(self, role: RoleType, emojis: dict):
-        return DungeonUserRole(
+    def _role_constructor(
+        self,
+        role: RoleType,
+        emojis: dict,
+        guild_roles: list[discord.Role],
+        channel_name: str,
+    ):
+        return DungeonRole(
                 name=role.name,
                 userids=[0 for _ in range(self.role_counts[role.name])],
                 display_names=["" for _ in range(self.role_counts[role.name])],
@@ -246,14 +260,29 @@ class DungeonInstance:
                 button_style=discord.ButtonStyle.secondary,
                 disabled=False,
                 emoji=emojis[role.name],
+                role_mention=get_guild_role_mention_for_dungeon_role(
+                    dungeon_role=role,
+                    guild_roles=guild_roles,
+                    channel_name=channel_name,
+                )
             )
 
-    def _roles_init(self, emojis: dict):
+    def _roles_init(
+        self,
+        emojis: dict,
+        guild_roles: list[discord.Role],
+        channel_name: str
+    ):
         """Initialise roles information."""
+        constructor_info = {
+            "emojis": emojis,
+            "guild_roles": guild_roles,
+            "channel_name": channel_name,
+        }
         self.roles = {
-            RoleType.tank.name: self._role_constructor(RoleType.tank, emojis),
-            RoleType.healer.name: self._role_constructor(RoleType.healer, emojis),
-            RoleType.dps.name: self._role_constructor(RoleType.dps, emojis)
+            RoleType.tank.name: self._role_constructor(RoleType.tank, **constructor_info),
+            RoleType.healer.name: self._role_constructor(RoleType.healer, **constructor_info),
+            RoleType.dps.name: self._role_constructor(RoleType.dps, **constructor_info)
         }
 
     def _setup_dungeon(
@@ -335,7 +364,7 @@ class DungeonInstance:
 
     @property
     def _message_content(self):
-        logging.debug("retrieve message content")
+        logging.debug(f"retrieve message content: {self.listing_message}")
         return {
             "content": self.listing_message,
             "embed": self._dungeon_embed,
@@ -392,7 +421,7 @@ class DungeonInstance:
         role = self.roles[assigned_role]
         self.remove_role(role, -1)
 
-    def remove_role(self, role: DungeonUserRole, id: int):
+    def remove_role(self, role: DungeonRole, id: int):
         """Removes the role from the given user."""
         logging.debug(f"remove_role\nrole: {role}\nid: {id}\nstate: {self.state}")
         role_idx = role.userids.index(id)

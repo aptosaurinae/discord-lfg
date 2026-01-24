@@ -14,7 +14,7 @@ class RoleType(Enum):
 
 
 @dataclass
-class DungeonUserRole:
+class DungeonRole:
     """Container for a particular role type."""
     name: str
     userids: list[int]
@@ -23,6 +23,7 @@ class DungeonUserRole:
     button_style: discord.ButtonStyle
     disabled: bool
     emoji: str
+    role_mention: str
 
     def __str__(self):
         """Returns a string representation of the object."""
@@ -33,4 +34,5 @@ class DungeonUserRole:
             f"assigned: {self.assigned}\n"
             f"button_style: {self.button_style}\n"
             f"disabled: {self.disabled}"
+            f"role: {self.role_mention}"
         )
