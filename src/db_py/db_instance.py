@@ -219,14 +219,20 @@ class DungeonInstance:
         self.state.cancelled = True
         await self.edit_message()
 
-    async def is_closed(self):
-        """Starts the group closure process, leaving the group open for a set period."""
+    def is_closed(self):
+        """Checks if the group should be closed or re-opened and sets a timer accordingly."""
         if self.state.empty_spots == 0 and not self.state.closed:
             logging.debug(f"{self.listing_message} {self.dungeon_title} closed as it is full")
             self.state.closed = True
             self.state.close_group_at = (
                 datetime_now_utc() + timedelta(minutes=self.state.editable_length))
             logging.debug(f"group closed but editable until {self.state.close_group_at}")
+        elif self.state.empty_spots > 0 and self.state.closed:
+            logging.debug(f"{self.listing_message} {self.dungeon_title} reopened as it has space")
+            self.state.closed = False
+            self.state.close_group_at = (
+                datetime_now_utc() + timedelta(minutes=self.state.editable_length))
+            logging.debug(f"group reopened and editable until {self.state.close_group_at}")
 
     # --- Initialisation
 
@@ -310,7 +316,7 @@ class DungeonInstance:
         )
         while self.state.close_group_at > datetime.now(timezone.utc) and not self.state.cancelled:
             logging.debug(f"{self.dungeon_title} still active")
-            await self.is_closed()
+            self.is_closed()
             await asyncio.sleep(10)
 
         if self.state.cancelled:
@@ -422,7 +428,7 @@ class DungeonInstance:
         async def btn_click(interaction: discord.Interaction):
             logging.debug(f"{role.name} button clicked by {interaction.user.display_name}")
             self.add_role(assigned_role=role_type.name, interaction=interaction)
-            await self.is_closed()
+            self.is_closed()
             await self.edit_message()
             await self.send_passphrase(interaction, False)
 

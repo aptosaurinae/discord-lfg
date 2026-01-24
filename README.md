@@ -20,7 +20,7 @@ For feature parity with the original Dungeon Buddy, the following is missing:
 - Settings button actions for a group listing (filled spots, cancel, listing name / notes edits?)
 - Add role pings when group is listed
 - Hook up `/lfg` command to use drop-downs
-- Create `/lfgquick` implementation
+- Create `/lfgquick` implementation to match the original
 - Log group members when group completes in any way (full, timeout, cancelled)
 - Add `/lfgstats` reporting
 - Add history for users (both personal and for mods)
@@ -88,7 +88,7 @@ dps = "<:dpsemojiname:123456789>"
 ```
 
 - `guild_id` is the Discord ID of the server that you are wanting the host the bot in.
-- The expansion and season match a valid dungeon lookup file in `/resources/dungeons`.
+- The `expansion` and `season` match a valid dungeon lookup file in `/resources/dungeons`.
 - *Optional*: `guild_name` modifies the automatic listing group names and filled spots.
 - *Optional*: `emojis` dictionary for each of `tank`, `healer`, and `dps`.
 If you don't provide these then Dungeon Buddy will default to using 🛡️, 🪄, ⚔️ for each role.
