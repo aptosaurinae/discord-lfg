@@ -5,6 +5,7 @@ import discord
 from db_py.db_instance import DungeonInstance
 from db_py.resources import load_dungeons, load_time_types
 from db_py.roles import RoleType
+from db_py.utils import get_difficulty_start_and_end_from_channel_name
 
 
 class LFGValidationError(Exception):
@@ -52,7 +53,6 @@ async def _lfg(
     except LFGValidationError as e:
         response = "\n".join(e.messages)
         await interaction.response.send_message(response, ephemeral=True)
-        print(response)
         return None
 
     time_type = load_time_types()[time_type]
@@ -88,6 +88,59 @@ def _parse_filled_spots(input: str) -> dict:
     return {role: input.count(role[:1]) for role in [name.name for name in RoleType]}
 
 
+def _lfg_dropdowns(difficulties: list):
+    difficulty = discord.ui.Select(
+        placeholder="Select a difficulty",
+        min_values=1,
+        max_values=1,
+        options=[discord.SelectOption(label=str(num)) for num in difficulties],
+        disabled=False,
+        row=1
+    )
+    time_type = discord.ui.Select(
+        placeholder="Time / Complete / Abandon?",
+        min_values=1,
+        max_values=1,
+        options=[discord.SelectOption(label=value) for value in load_time_types()],
+        disabled=False,
+        row=2
+    )
+    creator_role = discord.ui.Select(
+        placeholder="Select your role",
+        min_values=1,
+        max_values=1,
+        options=[discord.SelectOption(label=value.name) for value in RoleType],
+        disabled=False,
+        row=3
+    )
+    roles_required = discord.ui.Select(
+        placeholder="What roles are you looking for?",
+        min_values=0,
+        max_values=4,
+        options=[
+            discord.SelectOption(label=key)
+            for key, value
+            in DungeonInstance.role_counts.items()
+            for _ in range(value)
+        ],
+        disabled=False,
+        row=4
+    )
+    confirm_button = discord.ui.Button(
+        custom_id="confirm",
+        label="Confirm",
+        emoji="✔️",
+        style=discord.ButtonStyle.primary,
+    )
+    cancel_button = discord.ui.Button(
+        custom_id="Cancel",
+        label="Cancel",
+        emoji="❌",
+        style=discord.ButtonStyle.danger,
+    )
+    discord.ui.ActionRow()
+
+
 async def lfg(
     interaction: discord.Interaction,
     dungeon: str,
@@ -96,7 +149,12 @@ async def lfg(
     config: dict,
 ):
     """Creates a LFG listing using an interactable interface."""
-    difficulty = 1
+    difficulties = get_difficulty_start_and_end_from_channel_name(interaction.channel.name)  # type: ignore
+    if difficulties is None:
+        response = "You cannot use the LFG command in this channel"
+        await interaction.response.send_message(response, ephemeral=True)
+        return None
+    difficulty = difficulties[0]
     time_type = "vc"
     creator_role = "tank"
     filled_spots = {"tank": 0, "healer": 0, "dps": 0}

@@ -218,6 +218,7 @@ class DungeonInstance:
         )
         self.state.cancelled = True
         await self.edit_message()
+        await self.message.channel.send(content=self.listing_message)
 
     def is_closed(self):
         """Checks if the group should be closed or re-opened and sets a timer accordingly."""
