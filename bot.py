@@ -100,6 +100,8 @@ async def on_ready():
     print('Dungeon Buddy started')
     if LOG_FOLDER != "" and LOG_FOLDER.exists():
         print(f"logging to: {LOG_FOLDER}")
+    global CONFIG_DATA
+    CONFIG_DATA["roles"] = {guild.id: guild.roles for guild in client.guilds}[CONFIG_DATA["guild_id"]]
 
 # -- Help
 

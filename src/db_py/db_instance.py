@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 import discord
 
 from db_py.resources import generate_listing_name, generate_passphrase, load_emojis
-from db_py.roles import Role, RoleType
+from db_py.roles import DungeonUserRole, RoleType
 
 
 @dataclass
@@ -114,7 +114,7 @@ class DungeonInstance:
         if not (self.state.closed or self.state.cancelled or self.state.timed_out):
             footer = "`/lfghelp for Dungeon Buddy help`"
 
-        def _role_string(role: Role, creator_id: int, role_idx: int = 0):
+        def _role_string(role: DungeonUserRole, creator_id: int, role_idx: int = 0):
             name = role.display_names[role_idx]
             id = role.userids[role_idx]
             return f"{role.emoji} : {name}{'🚩' if id == creator_id else ''}"
@@ -238,7 +238,7 @@ class DungeonInstance:
     # --- Initialisation
 
     def _role_constructor(self, role: RoleType, emojis: dict):
-        return Role(
+        return DungeonUserRole(
                 name=role.name,
                 userids=[0 for _ in range(self.role_counts[role.name])],
                 display_names=["" for _ in range(self.role_counts[role.name])],
@@ -392,7 +392,7 @@ class DungeonInstance:
         role = self.roles[assigned_role]
         self.remove_role(role, -1)
 
-    def remove_role(self, role: Role, id: int):
+    def remove_role(self, role: DungeonUserRole, id: int):
         """Removes the role from the given user."""
         logging.debug(f"remove_role\nrole: {role}\nid: {id}\nstate: {self.state}")
         role_idx = role.userids.index(id)

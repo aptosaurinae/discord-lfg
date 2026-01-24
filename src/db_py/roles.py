@@ -14,7 +14,7 @@ class RoleType(Enum):
 
 
 @dataclass
-class Role:
+class DungeonUserRole:
     """Container for a particular role type."""
     name: str
     userids: list[int]
