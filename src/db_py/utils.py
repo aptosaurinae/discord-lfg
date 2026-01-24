@@ -1,5 +1,7 @@
 """Utilities for Dungeon Buddy."""
 
+import logging
+
 import discord
 
 from db_py.roles import RoleType
@@ -33,6 +35,7 @@ def get_guild_role_mention_for_dungeon_role(
     channel_name: str,
 ) -> str:
     """Generates an expected role and retrieves this if it matches a real one."""
+    logging.debug(f"getting role mentions: {dungeon_role}, {channel_name}")
     if channel_name[:5] != "lfg-m":
         return ""
     channel_parts = channel_name.split("-")
@@ -40,7 +43,10 @@ def get_guild_role_mention_for_dungeon_role(
     if len(channel_parts) > 2:
         # we need to strip out the extra "m" as roles don't have this
         difficulty_end = f"-{channel_parts[2][1:]}"
-    mention_expected = f"{dungeon_role.name}-{difficulty_start}{difficulty_end}"
-    if mention_expected in [role.mention for role in guild_roles]:
-        return mention_expected
+    mention_expected = f"{dungeon_role.name}-{difficulty_start}{difficulty_end}".lower()
+    logging.debug(f"expected: {mention_expected}")
+    logging.debug(f"guild_roles mentions: {[role.name for role in guild_roles]}")
+    guild_role_tags = {role.name.lower(): role.mention for role in guild_roles}
+    if mention_expected in guild_role_tags:
+        return guild_role_tags[mention_expected]
     return ""

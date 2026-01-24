@@ -110,7 +110,11 @@ class DungeonInstance:
     @property
     def current_role_tags(self) -> str:
         """Retrieves a string tagging all current required roles listed in the group."""
-        return "".join([role.role_mention for role in self.roles.values() if not role.disabled])
+        current_role_tags = (
+            "".join([role.role_mention for role in self.roles.values() if not role.disabled])
+        )
+        logging.debug(f"current role tags: {current_role_tags}")
+        return current_role_tags
 
     @property
     def description(self) -> str:
@@ -158,7 +162,7 @@ class DungeonInstance:
         dungeon = self.dungeon_details
         return (
             f"{self._strikethrough}{dungeon.dungeon_long} +{dungeon.difficulty} "
-            f"({dungeon.time_type}){self._strikethrough} {self.current_role_tags}"
+            f"({dungeon.time_type}){self._strikethrough}"
         )
 
     @property
@@ -166,6 +170,7 @@ class DungeonInstance:
         """Gets the listing message for the dungeon."""
         logging.debug("get listing message")
         tag_users = False
+        tag_roles = False
         if self.state.timed_out:
             message = "**Group creation timed out**: "
             tag_users = True
@@ -174,10 +179,12 @@ class DungeonInstance:
             tag_users = True
         else:
             message = ""
+            tag_roles = True
 
         user_tags = self.current_user_tags if tag_users else ""
+        role_tags = self.current_role_tags if tag_roles else ""
 
-        return f"{message}{self._listing_message_body}{user_tags}"
+        return f"{message}{self._listing_message_body}{role_tags}{user_tags}"
 
     @property
     def passphrase(self) -> str:
@@ -373,11 +380,7 @@ class DungeonInstance:
 
     async def send_message(self, interaction: discord.Interaction):
         """Sends the initial message for Dungeon Buddy."""
-        if not interaction.response.is_done():
-            await interaction.response.send_message(**self._message_content)
-            self.message = await interaction.original_response()
-        else:
-            self.message = await interaction.followup.send(**self._message_content)
+        self.message = await interaction.channel.send(**self._message_content)  # type: ignore
         self._task = asyncio.create_task(self._check_if_closed_or_timed_out())
 
     async def edit_message(self):
@@ -484,7 +487,7 @@ class DungeonInstance:
         """Creates an ephemeral passphrase message for valid callers."""
         async def btn_click(interaction: discord.Interaction):
             logging.debug(f"passphrase button clicked by {interaction.user.display_name}")
-            if interaction.user.id in self.current_users:
+            if interaction.user.id in self.current_user_ids:
                 await self.send_passphrase(interaction)
             else:
                 await interaction.response.send_message(
@@ -511,7 +514,7 @@ class DungeonInstance:
                     "You are the creator and clicked settings.",
                     ephemeral=True
                 )
-            elif interaction.user.id in self.current_users:
+            elif interaction.user.id in self.current_user_ids:
                 await interaction.response.send_message(
                     "You are a group member and clicked settings.",
                     ephemeral=True
