@@ -530,11 +530,8 @@ class DungeonInstance:
             if interaction.user.id == self.creator.id:
                 view = DBEditOptions(self)
                 await interaction.response.send_message(view=view, ephemeral=True)
+                view.message = await interaction.original_response()    # type: ignore
                 await view.wait()
-                # await interaction.response.send_message(
-                #     "You are the creator and clicked settings.",
-                #     ephemeral=True
-                # )
             elif interaction.user.id in self.current_user_ids:
                 await interaction.response.send_message(
                     "You are a group member and clicked settings.",
@@ -569,15 +566,19 @@ class EditRemoveUser(discord.ui.Select):
             for user_name, role_name, user_id, creator, spot
             in users
         ]
+        disabled = False
+        if len(options) == 0:
+            disabled = True
+            options = [discord.SelectOption(label="placeholder")]
 
         super().__init__(
-            placeholder="Select the people you want to remove from the group",
-            min_values=0,
+            placeholder="Choose people to remove from the group",
+            min_values=1,
             max_values=len(options),
             options=options,
             row=0,
             required=False,
-            disabled=len(options) == 0
+            disabled=disabled
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -592,7 +593,8 @@ class DBEditOptions(discord.ui.View):
     """LFG options menu."""
     def __init__(self, db_instance: DungeonInstance):
         """Initialisation."""
-        super().__init__(timeout=120)
+        super().__init__(timeout=60)
+        self.message = None
         self.db_instance = db_instance
         user_roles = db_instance.current_user_roles
         self.creator_role = [item[1] for item in user_roles if item[3]][0]
@@ -620,14 +622,15 @@ class DBEditOptions(discord.ui.View):
                 else:
                     self.db_instance.remove_role(
                         self.db_instance.roles[role_name], int(user_id))
-        await interaction.response.edit_message(content="Changes applied.", view=None)
+        await self.db_instance.edit_message()
+        await self.message.edit(content="Changes applied.", view=None)  # type: ignore
         self.stop()
 
     @discord.ui.button(label="Abort changes", style=discord.ButtonStyle.secondary, row=4)
     async def cancel_edit(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Cancel the menu."""
         self.confirmed = False
-        await interaction.response.edit_message(content="Group editing cancelled.", view=None)
+        await self.message.edit(content="Group editing cancelled.", view=None)  # type: ignore
         self.stop()
 
     @discord.ui.button(label="Cancel group", style=discord.ButtonStyle.danger, row=4)
@@ -636,7 +639,15 @@ class DBEditOptions(discord.ui.View):
         self.cancel_group_state += 1
         self.confirmed = False
         if self.cancel_group_state == 2:
-            await interaction.response.edit_message(content="Group cancelled.", view=None)
+            await self.message.edit(content="Group cancelled.", view=None)  # type: ignore
+            await self.db_instance.cancel_group()
             self.stop()
         else:
             await interaction.response.defer()
+
+    async def on_timeout(self) -> None:
+        """Do stuff when timeout occurs."""
+        logging.debug("edit menu timed out.")
+        if self.message:
+            await self.message.edit(content="This menu has timed out.", view=None)  # type: ignore
+        self.stop()
