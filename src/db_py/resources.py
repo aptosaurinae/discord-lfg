@@ -6,7 +6,6 @@ except ModuleNotFoundError:
     import pip._vendor.tomli as tomllib
 
 import random
-import string
 from pathlib import Path
 
 RESOURCES = Path(__file__).parent.parent.parent / "resources"
@@ -24,30 +23,29 @@ def _load_resource(filename: str, folders: str | None = None):
         return tomllib.load(resource_file)
 
 
-def load_messages() -> dict:
+def load_messages() -> dict[str, str]:
     """Loads standard messages."""
     return _load_resource("messages")
 
 
-def _load_lists() -> dict:
-    """Loads standard lists."""
-    return _load_resource("lists")
-
-
-def load_emojis() -> dict:
+def load_emojis() -> dict[str, str]:
     """Loads standard emojis."""
-    emojis: dict = _load_lists()["emojis"]
-    return emojis
+    return _load_resource("emojis")
 
 
-def load_time_types() -> dict:
+def load_time_types() -> dict[str, str]:
     """Loads time types for dungeons."""
-    return _load_lists()["time_types"]
+    return _load_resource("time_types")
 
 
-def load_passphrase_words() -> list:
+def load_passphrase_words() -> list[str]:
     """Loads passphrase words."""
-    return _load_lists()["passphrase_words"]
+    return _load_resource("passphrases")["passphrase_words"]
+
+
+def load_name_suffix_words() -> list[str]:
+    """Loads passphrase words."""
+    return _load_resource("names")["alphabet_names"]
 
 
 def load_dungeons(expansion: str, season: str | int) -> dict:
@@ -64,8 +62,9 @@ def generate_passphrase(num_words: int = 3) -> str:
 def generate_listing_name(dungeon_short: str, num_chars: int, guild_name):
     """Creates a listing name from a dungeon name."""
     random_string = ""
+    random_words = [word.capitalize() for word in load_name_suffix_words()]
     for _ in range(num_chars):
-        random_string += random.choice(string.ascii_uppercase)
+        random_string += random.choice(random_words)
 
     if guild_name != "":
         guild_name += " "
