@@ -73,7 +73,7 @@ class DungeonInstance:
         self._setup_dungeon(**dungeon_info, config=config)
         self._roles_init(
             config.get("emojis", load_emojis()),
-            config.get("roles", {}),
+            config.get("guild_roles", {}),
             interaction.channel.name if isinstance(interaction.channel.name, str) else "",  # type: ignore
         )
         self._state_init(config)
@@ -88,6 +88,18 @@ class DungeonInstance:
     @property
     def _strikethrough(self) -> str:
         return "~~" if (self.state.closed or self.state.cancelled or self.state.timed_out) else ""
+
+    @property
+    def current_user_roles(self) -> dict[str, tuple[str, int]]:
+        """Retrieves the current active user display names with role and id info."""
+        user_roles = {}
+        for role_name, role_info in self.roles.items():
+            for idx in role_info.userids:
+                if role_info.userids[idx] != 0:
+                    user_roles[role_info.display_names[idx]] = (
+                        (role_name, role_info.userids[idx])
+                    )
+        return user_roles
 
     @property
     def current_user_ids(self) -> list:
@@ -276,7 +288,7 @@ class DungeonInstance:
 
     def _roles_init(
         self,
-        emojis: dict,
+        emojis: dict[str, str],
         guild_roles: list[discord.Role],
         channel_name: str
     ):
@@ -286,6 +298,7 @@ class DungeonInstance:
             "guild_roles": guild_roles,
             "channel_name": channel_name,
         }
+        self.role_emojis = emojis
         self.roles = {
             RoleType.tank.name: self._role_constructor(RoleType.tank, **constructor_info),
             RoleType.healer.name: self._role_constructor(RoleType.healer, **constructor_info),
@@ -534,6 +547,8 @@ class DungeonInstance:
         )
         btn.callback = btn_click
         return btn
+
+    # --- Settings
 
 
 def datetime_now_utc():

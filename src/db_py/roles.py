@@ -34,5 +34,5 @@ class DungeonRole:
             f"assigned: {self.assigned}\n"
             f"button_style: {self.button_style}\n"
             f"disabled: {self.disabled}"
-            f"role: {self.role_mention}"
+            f"role_mention: {self.role_mention}"
         )
