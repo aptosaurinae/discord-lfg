@@ -1,6 +1,7 @@
 """Utilities for Dungeon Buddy."""
 
 import logging
+from datetime import datetime, timezone
 
 import discord
 
@@ -49,3 +50,8 @@ def get_guild_role_mention_for_dungeon_role(
     if mention_expected in guild_role_tags:
         return guild_role_tags[mention_expected]
     return ""
+
+
+def datetime_now_utc():
+    """Gets the current time using the UTC timezone."""
+    return datetime.now(tz=timezone.utc)

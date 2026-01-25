@@ -3,13 +3,13 @@
 import asyncio
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 import discord
 
 from db_py.resources import generate_listing_name, generate_passphrase, load_emojis
 from db_py.roles import DungeonRole, RoleType
-from db_py.utils import get_guild_role_mention_for_dungeon_role
+from db_py.utils import datetime_now_utc, get_guild_role_mention_for_dungeon_role
 
 
 @dataclass
@@ -90,15 +90,20 @@ class DungeonInstance:
         return "~~" if (self.state.closed or self.state.cancelled or self.state.timed_out) else ""
 
     @property
-    def current_user_roles(self) -> dict[str, tuple[str, int]]:
-        """Retrieves the current active user display names with role and id info."""
-        user_roles = {}
+    def current_user_roles(self) -> list[tuple[str, str, int, bool, int]]:
+        """Retrieves the current active user display names with role name, id, and creator (bool)."""
+        user_roles = []
         for role_name, role_info in self.roles.items():
-            for idx in role_info.userids:
+            for idx in range(len(role_info.userids)):
                 if role_info.userids[idx] != 0:
-                    user_roles[role_info.display_names[idx]] = (
-                        (role_name, role_info.userids[idx])
-                    )
+                    user_roles.append(
+                        (
+                            role_info.display_names[idx],
+                            role_name,
+                            role_info.userids[idx],
+                            role_info.userids[idx] == self.creator.id,
+                            idx
+                        ))
         return user_roles
 
     @property
@@ -364,7 +369,7 @@ class DungeonInstance:
             f"created at: {self.state.created_at}\n"
             f"timeout set to: {self.state.close_group_at}"
         )
-        while self.state.close_group_at > datetime.now(timezone.utc) and not self.state.cancelled:
+        while self.state.close_group_at > datetime_now_utc() and not self.state.cancelled:
             logging.debug(f"{self.dungeon_title} still active")
             self.is_closed()
             await asyncio.sleep(10)
@@ -523,10 +528,13 @@ class DungeonInstance:
         async def btn_click(interaction: discord.Interaction):
             logging.debug(f"settings button clicked by {interaction.user.display_name}")
             if interaction.user.id == self.creator.id:
-                await interaction.response.send_message(
-                    "You are the creator and clicked settings.",
-                    ephemeral=True
-                )
+                view = DBEditOptions(self)
+                await interaction.response.send_message(view=view, ephemeral=True)
+                await view.wait()
+                # await interaction.response.send_message(
+                #     "You are the creator and clicked settings.",
+                #     ephemeral=True
+                # )
             elif interaction.user.id in self.current_user_ids:
                 await interaction.response.send_message(
                     "You are a group member and clicked settings.",
@@ -548,9 +556,87 @@ class DungeonInstance:
         btn.callback = btn_click
         return btn
 
-    # --- Settings
+
+class EditRemoveUser(discord.ui.Select):
+    """Creator role selector."""
+    def __init__(self, users: list[tuple[str, str, int, bool, int]]):
+        """Initialisation."""
+        options = [
+            discord.SelectOption(
+                label=f"{role_name}: {user_name}",
+                value=f"{spot} {role_name} {user_id} {user_name} "
+            )
+            for user_name, role_name, user_id, creator, spot
+            in users
+        ]
+
+        super().__init__(
+            placeholder="Select the people you want to remove from the group",
+            min_values=0,
+            max_values=len(options),
+            options=options,
+            row=0,
+            required=False,
+            disabled=len(options) == 0
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        """Does the thing."""
+        logging.debug("creator callback")
+        assert self.view is not None
+        self.view.remove_users = self.values
+        await interaction.response.defer()
 
 
-def datetime_now_utc():
-    """Gets the current time using the UTC timezone."""
-    return datetime.now(tz=timezone.utc)
+class DBEditOptions(discord.ui.View):
+    """LFG options menu."""
+    def __init__(self, db_instance: DungeonInstance):
+        """Initialisation."""
+        super().__init__(timeout=120)
+        self.db_instance = db_instance
+        user_roles = db_instance.current_user_roles
+        self.creator_role = [item[1] for item in user_roles if item[3]][0]
+        self.new_creator_role = self.creator_role
+        self.remove_users: list[str] = []
+        self.confirmed = False
+        self.cancel_group_state = 0
+
+        self.edit_remove_users = EditRemoveUser([item for item in user_roles if not item[3]])
+
+        self.add_item(self.edit_remove_users)
+
+    @discord.ui.button(label="Confirm changes", style=discord.ButtonStyle.green, row=4)
+    async def confirm_edit(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Confirm the edits."""
+        self.confirmed = True
+        if len(self.remove_users) > 0:
+            for user in self.remove_users:
+                user_elements = user.split(" ", 4)
+                role_name = user_elements[1]
+                user_id = user_elements[2]
+                user_name = user_elements[3]
+                if user_name == self.db_instance.state.filled_spot_name:
+                    self.db_instance.remove_filled_spot(role_name)
+                else:
+                    self.db_instance.remove_role(
+                        self.db_instance.roles[role_name], int(user_id))
+        await interaction.response.edit_message(content="Changes applied.", view=None)
+        self.stop()
+
+    @discord.ui.button(label="Abort changes", style=discord.ButtonStyle.secondary, row=4)
+    async def cancel_edit(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Cancel the menu."""
+        self.confirmed = False
+        await interaction.response.edit_message(content="Group editing cancelled.", view=None)
+        self.stop()
+
+    @discord.ui.button(label="Cancel group", style=discord.ButtonStyle.danger, row=4)
+    async def cancel_group(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Cancel the menu."""
+        self.cancel_group_state += 1
+        self.confirmed = False
+        if self.cancel_group_state == 2:
+            await interaction.response.edit_message(content="Group cancelled.", view=None)
+            self.stop()
+        else:
+            await interaction.response.defer()
