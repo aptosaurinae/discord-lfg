@@ -17,7 +17,6 @@ the [No Pressure EU](https://no-pressure.eu) Discord server. This is an implemen
 
 For feature parity with the original Dungeon Buddy, the following is missing:
 
-- Fix difficulty as 0 should be allowed
 - Settings button actions for a group listing (filled spots, cancel, listing name / notes edits?)
 - Create `/lfgquick` implementation to match the original
 - Log group members when group completes in any way (full, timeout, cancelled)

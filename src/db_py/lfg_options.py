@@ -103,17 +103,20 @@ class LFGRolesRequired(discord.ui.Select):
             ]
 
         super().__init__(
-            placeholder="Select the roles you require",
+            placeholder="Choose your role first",
             min_values=1,
             max_values=max_values,
             options=options,
-            row=3
+            row=3,
+            disabled=True,
         )
 
     async def callback(self, interaction: discord.Interaction):
         """Does the thing."""
         logging.debug("roles required callback")
         assert self.view is not None
+        if self.values[0] == "Choose your role first.":
+            return await interaction.response.defer()
         required_roles = {role.name: 0 for role in RoleType}
         for item in self.values:
             item_name = item.split("_")[0]
@@ -153,7 +156,12 @@ class LFGOptions(discord.ui.View):
             or self.creator_role == ""
             or self.required_roles == {}
         ):
-            await interaction.response.defer()
+            message_func = (
+                interaction.followup.send
+                if interaction.response.is_done()
+                else interaction.response.send_message
+            )
+            await message_func(content="You must select options from all menus.", ephemeral=True)
         else:
             self.confirmed = True
             await interaction.response.edit_message(content="Group created.", view=None)
@@ -176,6 +184,8 @@ class LFGOptions(discord.ui.View):
         if not self.creator_role:
             max_values = 1
             options = [discord.SelectOption(label="Choose your role first.")]
+            disabled = True
+            placeholder = "Choose your role first"
         else:
             max_values = 4
             role_counts = DungeonInstance.role_counts.copy()
@@ -186,7 +196,11 @@ class LFGOptions(discord.ui.View):
                 for key, value in role_counts.items()
                 for idx in range(value)
             ]
+            disabled = False
+            placeholder = "Select the roles you require"
 
+        self.lfg_roles_required.disabled = disabled
+        self.lfg_roles_required.placeholder = placeholder
         self.lfg_roles_required.options = options
         self.lfg_roles_required.max_values = max_values
         self._restore_options(self.lfg_difficulties, self.difficulty)
