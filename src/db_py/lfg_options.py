@@ -14,13 +14,15 @@ class LFGDifficulty(discord.ui.Select):
     def __init__(self, difficulties: list[int]):
         """Initialisation."""
         options = [discord.SelectOption(label=str(num)) for num in difficulties]
+        if len(options) == 1:
+            options[0].default = True
 
         super().__init__(
             placeholder="Select a difficulty",
             min_values=1,
             max_values=1,
             options=options,
-            row=0
+            row=0,
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -125,7 +127,7 @@ class LFGOptions(discord.ui.View):
     def __init__(self, difficulties: list[int], config: dict):
         """Initialisation."""
         super().__init__(timeout=120)
-        self.difficulty = 0
+        self.difficulty = -1
         self.time_type = ""
         self.creator_role = ""
         self.required_roles = {}
@@ -146,7 +148,7 @@ class LFGOptions(discord.ui.View):
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Confirm the menu selections."""
         if (
-            self.difficulty == 0
+            self.difficulty == -1
             or self.time_type == ""
             or self.creator_role == ""
             or self.required_roles == {}

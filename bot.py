@@ -159,7 +159,7 @@ async def lfgstring_command(
     difficulty: int,
     time_type: str,
     your_role: str,
-    filled_spots: str,
+    filled_spots: str = "",
     listed_as: str = "",
     creator_notes: str = "",
 ):

@@ -40,9 +40,8 @@ def get_guild_role_mention_for_dungeon_role(
         return ""
     channel_parts = channel_name.split("-")
     difficulty_start = channel_parts[1]
-    if len(channel_parts) > 2:
-        # we need to strip out the extra "m" as roles don't have this
-        difficulty_end = f"-{channel_parts[2][1:]}"
+    # we need to strip out the extra "m" as roles don't have this
+    difficulty_end = f"-{channel_parts[2][1:]}" if len(channel_parts) > 2 else ""
     mention_expected = f"{dungeon_role.name}-{difficulty_start}{difficulty_end}".lower()
     logging.debug(f"expected: {mention_expected}")
     logging.debug(f"guild_roles mentions: {[role.name for role in guild_roles]}")

@@ -25,7 +25,7 @@ def _validate_lfg_inputs(
     filled_spots: dict[str, int],
 ):
     errors = []
-    if difficulty == 0:
+    if difficulty == -1:
         errors.append("You cannot use this command in this channel.")
 
     time_types = load_time_types()
@@ -61,7 +61,12 @@ async def _lfg(
         _validate_lfg_inputs(difficulty, time_type, creator_role, filled_spots)
     except LFGValidationError as e:
         response = "\n".join(e.messages)
-        await interaction.response.send_message(response, ephemeral=True)
+        message_func = (
+            interaction.followup.send
+            if interaction.response.is_done()
+            else interaction.response.send_message
+        )
+        await message_func(response, ephemeral=True)
         return None
 
     time_types = load_time_types()
@@ -188,7 +193,7 @@ async def lfgdebug(
         filled_spots = {"tank": 1, "healer": 0, "dps": 4}
 
     if debug_type == 5:
-        difficulty = 0
+        difficulty = -1
         filled_spots = {"tank": 1, "healer": 0, "dps": 4}
 
     if debug_type == 6:
