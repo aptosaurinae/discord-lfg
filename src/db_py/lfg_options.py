@@ -23,6 +23,7 @@ class LFGDifficulty(discord.ui.Select):
             max_values=1,
             options=options,
             row=0,
+            disabled=len(options) == 1
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -130,7 +131,7 @@ class LFGOptions(discord.ui.View):
     def __init__(self, difficulties: list[int], config: dict):
         """Initialisation."""
         super().__init__(timeout=120)
-        self.difficulty = -1
+        self.difficulty = -1 if len(difficulties) > 1 else difficulties[0]
         self.time_type = ""
         self.creator_role = ""
         self.required_roles = {}
@@ -176,8 +177,9 @@ class LFGOptions(discord.ui.View):
 
     def _restore_options(self, select: discord.ui.Select, current_selection):
         logging.debug(f"restoring options for {select}: {current_selection}")
-        for opt in select.options:
-            opt.default = (opt.value == str(current_selection))
+        if any([opt.value == str(current_selection) for opt in select.options]):
+            for opt in select.options:
+                opt.default = (opt.value == str(current_selection))
         logging.debug([(item.value, item.default) for item in select.options])
 
     def _update_roles_required_selector(self):
