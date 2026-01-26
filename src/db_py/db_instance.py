@@ -529,7 +529,8 @@ class DungeonInstance:
             logging.debug(f"settings button clicked by {interaction.user.display_name}")
             if interaction.user.id == self.creator.id:
                 view = DBEditOptions(self)
-                await interaction.response.send_message(view=view, ephemeral=True)
+                content = "Make changes to your group below.\n*To cancel your group click the 'Cancel Group' button 2x."
+                await interaction.response.send_message(content=content, view=view, ephemeral=True)
                 view.message = await interaction.original_response()    # type: ignore
                 await view.wait()
             elif interaction.user.id in self.current_user_ids:
