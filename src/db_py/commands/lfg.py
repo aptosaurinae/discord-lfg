@@ -40,6 +40,8 @@ def _validate_lfg_inputs(
                 f"You cannot assign that many filled spots to that role "
                 f"({role}, {count}, max: {max_counts[role]})"
             )
+    if sum(filled_spots.values()) > sum(max_counts.values()):
+        errors.append("You cannot list a group with no available spots")
 
     if errors:
         raise LFGValidationError(errors)
