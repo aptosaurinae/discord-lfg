@@ -23,9 +23,9 @@ def _load_resource(filename: str, folders: str | None = None):
         return tomllib.load(resource_file)
 
 
-def load_messages() -> dict[str, str]:
-    """Loads standard messages."""
-    return _load_resource("messages")
+def load_help_message() -> dict[str, str]:
+    """Loads the help message."""
+    return _load_resource("messages")["help"]
 
 
 def load_emojis() -> dict[str, str]:

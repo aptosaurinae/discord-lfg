@@ -116,14 +116,16 @@ async def lfg(
         await interaction.response.send_message(response, ephemeral=True)
         return None
 
-    view = LFGOptions(difficulties, config)
+    role_counts = DungeonInstance.role_counts.copy()
+
+    view = LFGOptions(difficulties, config, role_counts)
     await interaction.response.send_message(view=view, ephemeral=True)
     await view.wait()
     if not view.confirmed:
         logging.debug("Dungeon group creation cancelled.")
         return None
 
-    filled_spots = DungeonInstance.role_counts.copy()
+    filled_spots = role_counts.copy()
     filled_spots[view.creator_role] -= 1
     for role, required_num in view.required_roles.items():
         filled_spots[role] -= required_num

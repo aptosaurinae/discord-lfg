@@ -4,7 +4,6 @@ import logging
 
 import discord
 
-from db_py.db_instance import DungeonInstance
 from db_py.resources import load_emojis, load_time_types
 from db_py.roles import RoleType
 
@@ -85,7 +84,7 @@ class LFGCreatorRole(discord.ui.Select):
 
 class LFGRolesRequired(discord.ui.Select):
     """Roles required selector."""
-    def __init__(self, emojis: dict, creator_role: str | None = None):
+    def __init__(self, emojis: dict, role_counts: dict[str, int], creator_role: str | None = None):
         """Initialisation."""
         if creator_role is None:
             logging.debug("roles required not given creator role")
@@ -94,7 +93,7 @@ class LFGRolesRequired(discord.ui.Select):
         else:
             logging.debug("creator role chosen, updating role required dropdown")
             max_values = 4
-            role_counts = DungeonInstance.role_counts.copy()
+            role_counts = role_counts.copy()
             role_counts[creator_role] -= 1
             options = [
                 discord.SelectOption(label=key.capitalize(), value=f"{key}_{idx}", emoji=emojis[key])
@@ -128,9 +127,10 @@ class LFGRolesRequired(discord.ui.Select):
 
 class LFGOptions(discord.ui.View):
     """LFG options menu."""
-    def __init__(self, difficulties: list[int], config: dict):
+    def __init__(self, difficulties: list[int], config: dict, role_counts: dict[str, int]):
         """Initialisation."""
         super().__init__(timeout=120)
+        self.role_counts = role_counts.copy()
         self.difficulty = -1 if len(difficulties) > 1 else difficulties[0]
         self.time_type = ""
         self.creator_role = ""
@@ -141,7 +141,7 @@ class LFGOptions(discord.ui.View):
         self.lfg_difficulties = LFGDifficulty(difficulties)
         self.lfg_time_types = LFGTimeType()
         self.lfg_creator_role = LFGCreatorRole(self.emojis)
-        self.lfg_roles_required = LFGRolesRequired(self.emojis)
+        self.lfg_roles_required = LFGRolesRequired(self.emojis, self.role_counts)
 
         self.add_item(self.lfg_difficulties)
         self.add_item(self.lfg_time_types)
@@ -190,7 +190,7 @@ class LFGOptions(discord.ui.View):
             placeholder = "Choose your role first"
         else:
             max_values = 4
-            role_counts = DungeonInstance.role_counts.copy()
+            role_counts = self.role_counts.copy()
             role_counts[self.creator_role] -= 1
             options = [
                 discord.SelectOption(
