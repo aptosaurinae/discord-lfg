@@ -102,10 +102,6 @@ async def _lfg(
     await instance.send_passphrase(interaction)
 
 
-def _parse_filled_spots(input: str) -> dict:
-    return {role: input.count(role[:1]) for role in [name.name for name in RoleType]}
-
-
 async def lfg(
     interaction: discord.Interaction,
     dungeon: str,
@@ -151,12 +147,17 @@ async def lfgquick(
     difficulty: int,
     time_type: str,
     creator_role: str,
-    filled_spots: str,
+    required_spots: str,
     listed_as: str,
     creator_notes: str,
     config: dict
 ):
     """Creates a LFG listing using a quick-string."""
+    filled_spots = {
+        role: required_spots.count(role[:1])
+        for role
+        in [name.name for name in RoleType]
+    }
     return await _lfg(
         interaction=interaction,
         dungeon=dungeon,
@@ -165,7 +166,7 @@ async def lfgquick(
         time_type=time_type,
         listed_as=listed_as,
         creator_notes=creator_notes,
-        filled_spots=_parse_filled_spots(filled_spots),
+        filled_spots=filled_spots,
         config=config,
     )
 

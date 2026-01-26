@@ -137,13 +137,13 @@ async def lfg_command(
     )
 
 
-@client.tree.command(guild=GUILD_ID, name="lfg2")
+@client.tree.command(guild=GUILD_ID, name="lfgquick")
 @app_commands.describe(
     dungeon="The short name of the dungeon you are listing a key for.",
     difficulty="The difficulty of the dungeon.",
     time_type="The timing type you are aiming for e.g. 'toa' for 'Time or Abandon'.",
     your_role="The role you are filling for this group.",
-    filled_spots="A string noting which spots you already have filled. 't' for tank, 'h' for healer, 'd' for dps. e.g. 'tdd' if you already have a tank and two dps as well as your role.",
+    required_spots="A string noting which spots you need. 't' for tank, 'h' for healer, 'd' for dps. e.g. 'tdd' if you need a tank and two dps as well as your role.",
     listed_as="The in-game name. Leave blank to automatically generate a name for you (recommended)",
     creator_notes="Extra notes you want to make players signing up aware of."
 )
@@ -159,7 +159,7 @@ async def lfgstring_command(
     difficulty: int,
     time_type: str,
     your_role: str,
-    filled_spots: str = "",
+    required_spots: str,
     listed_as: str = "",
     creator_notes: str = "",
 ):
@@ -172,7 +172,7 @@ async def lfgstring_command(
         creator_role=your_role,
         listed_as=listed_as,
         creator_notes=creator_notes,
-        filled_spots=filled_spots,
+        required_spots=required_spots,
         config=CONFIG_DATA,
     )
 
@@ -183,7 +183,7 @@ if CONFIG_DATA.get("debug") is not None:
         interaction: discord.Interaction,
         debug_type: int,
     ):
-        """Generates a Dungeon Buddy listing using a quick text-based input."""
+        """Some quick-fire group listings for debug purposes (including what should be invalid setups)."""
         await lfgdebug(
             interaction=interaction,
             debug_type=debug_type,
