@@ -40,7 +40,7 @@ def _validate_lfg_inputs(
                 f"You cannot assign that many filled spots to that role "
                 f"({role}, {count}, max: {max_counts[role]})"
             )
-    if sum(filled_spots.values()) > sum(max_counts.values()):
+    if sum(filled_spots.values()) == sum(max_counts.values()):
         errors.append("You cannot list a group with no available spots")
 
     if errors:
@@ -181,29 +181,35 @@ async def lfgdebug(
     config: dict,
 ):
     """Creates a listing for debugging purposes."""
-    if debug_type == 1:
+    if debug_type == 0:
         difficulty = 3
         filled_spots = {"tank": 1, "healer": 0, "dps": 2}
+        await interaction.channel.send("Difficulty 3 group with 1 tank and 2 dps")  # type: ignore
 
-    if debug_type == 2:
+    if debug_type == 1:
         difficulty = 5
         filled_spots = {"tank": 0, "healer": 0, "dps": 0}
+        await interaction.channel.send("Difficulty 5 group with 1 tank, 1 healer, and 2 dps")  # type: ignore
 
-    if debug_type == 3:
+    if debug_type == 2:
         difficulty = 0
         filled_spots = {"tank": 1, "healer": 0, "dps": 2}
+        await interaction.channel.send("Difficulty 0 group with 1 tank, and 2 dps")  # type: ignore
 
-    if debug_type == 4:
+    if debug_type == 3:
         difficulty = 3
         filled_spots = {"tank": 1, "healer": 0, "dps": 4}
+        await interaction.channel.send("Invalid group (4 dps spots)")  # type: ignore
 
-    if debug_type == 5:
+    if debug_type == 4:
         difficulty = -1
         filled_spots = {"tank": 1, "healer": 0, "dps": 4}
+        await interaction.channel.send("Invalid group (4 dps spots and -1 difficulty)")  # type: ignore
 
-    if debug_type == 6:
+    if debug_type == 5:
         difficulty = 4
         filled_spots = {"tank": 1, "healer": 1, "dps": 2}
+        await interaction.channel.send("Invalid group (no available spots)")  # type: ignore
 
     return await _lfg(
         interaction=interaction,
