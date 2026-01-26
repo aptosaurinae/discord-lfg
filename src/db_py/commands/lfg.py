@@ -98,8 +98,8 @@ async def _lfg(
     logging.debug(dungeon_info)
 
     instance = DungeonInstance(interaction=interaction, dungeon_info=dungeon_info, config=config)
-    instance.add_role(creator_role, interaction)
-    instance.fill_spots(interaction, filled_spots)
+    instance.add_role(creator_role, interaction.user.id, interaction.user.display_name)
+    instance.fill_spots(interaction.user.id, interaction.user.display_name, filled_spots)
     await instance.send_message(interaction)
     await instance.send_passphrase(interaction)
 
@@ -157,11 +157,19 @@ async def lfgquick(
     config: dict
 ):
     """Creates a LFG listing using a quick-string."""
-    filled_spots = {
+    role_counts = DungeonInstance.role_counts.copy()
+    required_spots_roles = {
         role: required_spots.count(role[:1])
         for role
         in [name.name for name in RoleType]
     }
+    filled_spots = {}
+    for role_name, role_count in role_counts.items():
+        filled_spots[role_name] = role_count - required_spots_roles[role_name]
+    filled_spots[creator_role] -= 1
+    logging.debug(f"required_spots: {required_spots}")
+    logging.debug(f"required_spots_roles: {required_spots_roles}")
+    logging.debug(f"filled_spots: {filled_spots}")
     return await _lfg(
         interaction=interaction,
         dungeon=dungeon,

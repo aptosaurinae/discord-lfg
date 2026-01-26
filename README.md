@@ -17,6 +17,7 @@ the [No Pressure EU](https://no-pressure.eu) Discord server. This is an implemen
 
 For feature parity with the original Dungeon Buddy, the following is missing:
 
+- Add an input to give a reason for removing users from the group
 - Log group members when group completes in any way (full, timeout, cancelled)
 - Add `/lfgstats` reporting
 - Add history for users (both personal and for mods)
@@ -152,9 +153,14 @@ which alters the structure of how many aspects are set up in and of itself.
 It would be difficult to provide a full listing of all changes as a result.
 The following list of changes has been made to functionality:
 
-- The `/lfg2` command has been added using auto-complete fields instead of drop-down menus.
+- The `/lfgquick` command has been changed to use auto-complete fields instead of a pure-string.
 - More config flags are available, including:
   - `debug`
   - `timeout_length`
   - `guild_name`
 - A default set of standard emojis (🛡️, 🪄, ⚔️) is applied if emojis are not configured.
+- The embed has a colour stripe that matches the state of the group:
+  - Green for open
+  - Yellow for full but editable
+  - Blue for full and finished
+  - Red for cancelled or timed out
