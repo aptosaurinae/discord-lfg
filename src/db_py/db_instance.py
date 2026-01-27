@@ -78,6 +78,7 @@ class DungeonInstance:
         )
         self._state_init(config)
         self._creator_init(interaction)
+        self.removed_users = {}
         logging.debug(
             f"DungeonInstance initialisation finished for "
             f"{self.listing_message} {self.dungeon_title}"
@@ -141,8 +142,14 @@ class DungeonInstance:
         tank = self.roles[RoleType.tank.name]
         healer = self.roles[RoleType.healer.name]
         dps = self.roles[RoleType.dps.name]
+        removed_users = "\n".join([
+            f"{user_name}: {removal_reason}" for user_name, removal_reason in self.removed_users.items()])
+        if removed_users != "":
+            removed_users = f"\nRemoved users:\n{removed_users}"
         footer = ""
         if not (self.state.closed or self.state.cancelled or self.state.timed_out):
+            if removed_users != "":
+                removed_users += "\n"
             footer = "`/lfghelp for Dungeon Buddy help`"
 
         def _role_string(role: DungeonRole, creator_id: int, role_idx: int = 0):
@@ -158,6 +165,7 @@ class DungeonInstance:
             f"{_role_string(dps, self.creator.id)}\n"
             f"{_role_string(dps, self.creator.id, 1)}\n"
             f"{_role_string(dps, self.creator.id, 2)}\n"
+            # f"{removed_users}"
             f"{footer}"
         )
 
@@ -254,6 +262,10 @@ class DungeonInstance:
             return self.roles[role_name]
         else:
             raise ValueError(f"{role_name} not in roles: {list(self.roles.keys())}")
+
+    def log_removal(self, display_name: str, removal_reason: str):
+        """Logs the removal of a user with the reason why."""
+        self.removed_users[display_name] = removal_reason
 
     async def cancel_group(self):
         """Cancels the group and informs all current signups that it's been cancelled."""
@@ -504,6 +516,12 @@ class DungeonInstance:
         async def btn_click(interaction: discord.Interaction):
             logging.debug(
                 f"{self.dungeon_title} {role.name} button clicked by {interaction.user.display_name}")
+            if interaction.user.display_name in self.removed_users:
+                removal_reason = self.removed_users[interaction.user.display_name]
+                await interaction.response.send_message(
+                    f"You cannot rejoin a group you were removed from\nRemoval reason: {removal_reason}",
+                    ephemeral=True)
+                return None
             self.add_role(
                 assigned_role=role_type.name,
                 user_id=interaction.user.id,
@@ -556,7 +574,10 @@ class DungeonInstance:
                 f"{self.dungeon_title} settings button clicked by {interaction.user.display_name}")
             if interaction.user.id == self.creator.id:
                 view = DBEditOptions(self)
-                content = "Make changes to your group below.\n*To cancel your group click the 'Cancel Group' button 2x."
+                content = (
+                    f"Make changes to {self.dungeon_title} below.\n"
+                    f"*To cancel your group click the 'Cancel Group' button 2x."
+                )
                 await interaction.response.send_message(content=content, view=view, ephemeral=True)
                 view.message = await interaction.original_response()    # type: ignore
                 view.interaction = interaction
@@ -572,7 +593,7 @@ class DungeonInstance:
                 self.is_closed()
                 await self.edit_message()
                 await interaction.response.send_message(
-                    "You have been removed from the group.",
+                    f"You have removed yourself from {self.dungeon_title}.",
                     ephemeral=True
                 )
             else:
@@ -593,21 +614,21 @@ class DungeonInstance:
 
 
 class EditRemoveUser(discord.ui.Select):
-    """Creator role selector."""
+    """Select which users to remove."""
     def __init__(self, users: list[tuple[str, str, int, bool, int]]):
         """Initialisation."""
-        options = [
-            discord.SelectOption(
-                label=f"{role_name}: {user_name}",
-                value=f"{spot} {role_name} {user_id} {user_name} "
-            )
-            for user_name, role_name, user_id, _, spot
-            in users
-        ]
-        disabled = False
-        if len(options) == 0:
-            disabled = True
-            options = [discord.SelectOption(label="placeholder")]
+        disabled = True
+        options = [discord.SelectOption(label="placeholder")]
+        if len(users) > 0:
+            options = [
+                discord.SelectOption(
+                    label=f"{role_name}: {user_name}",
+                    value=f"{spot} {role_name} {user_id} {user_name} "
+                )
+                for user_name, role_name, user_id, _, spot
+                in users
+            ]
+            disabled = False
 
         super().__init__(
             placeholder="Choose people to remove from the group",
@@ -624,6 +645,42 @@ class EditRemoveUser(discord.ui.Select):
         assert self.view is not None
         logging.debug(f"EditRemoveUser callback {self.view.db_instance.dungeon_title}")
         self.view.remove_users = self.values
+        await interaction.response.defer()
+
+
+class EditRemoveUserReason(discord.ui.Select):
+    """Provide a reason for removing users."""
+    def __init__(self, users: list[tuple[str, str, int, bool, int]], filled_spot_name: str):
+        """Initialisation."""
+        disabled = True
+        options = [discord.SelectOption(label="placeholder")]
+        if len(users) > 0 and any([user[0] != filled_spot_name for user in users]):
+            reasons = [
+                "Low itemlevel",
+                "Not experienced enough in this dungeon",
+                "Want bloodlust",
+                "Want combat resurrection",
+                "Other - please message separately",
+            ]
+            options = [discord.SelectOption(label=reason) for reason in reasons]
+            disabled = False
+
+        super().__init__(
+            placeholder="Choose a reason for removing people",
+            min_values=1,
+            max_values=1,
+            options=options,
+            row=1,
+            required=False,
+            disabled=disabled
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        """Does the thing."""
+        assert self.view is not None
+        logging.debug(f"EditRemoveUserReason callback {self.view.db_instance.dungeon_title}")
+        if self.values:
+            self.view.remove_users_reason = self.values[0]
         await interaction.response.defer()
 
 
@@ -670,33 +727,55 @@ class DBEditOptions(discord.ui.View):
         self.message: discord.InteractionMessage = None     # type: ignore
         self.interaction: discord.Interaction = None        # type: ignore
         self.db_instance = db_instance
+        self.filled_spot_name = self.db_instance.state.filled_spot_name
         user_roles = db_instance.current_user_roles
         self.creator_role = [item[1] for item in user_roles if item[3]][0]
         self.new_creator_role = self.creator_role
         self.open_roles = [role.name for role in self.db_instance.roles.values() if not all(role.assigned)]
         self.remove_users: list[str] = []
+        self.remove_users_reason = ""
         self.confirmed = False
         self.cancel_group_state = 0
 
-        self.edit_remove_users = EditRemoveUser([item for item in user_roles if not item[3]])
+        removeable_users = [item for item in user_roles if not item[3]]
+        self.edit_remove_users = EditRemoveUser(removeable_users)
+        self.edit_remove_users_reason = EditRemoveUserReason(removeable_users, self.filled_spot_name)
         self.edit_creator_role = EditCreatorRole(self.open_roles)
 
         self.add_item(self.edit_remove_users)
+        self.add_item(self.edit_remove_users_reason)
         self.add_item(self.edit_creator_role)
 
-    def _remove_users(self):
+    def _remove_users(self) -> bool | None:
+        logging.debug(f"Attempting to remove users from {self.db_instance.dungeon_title}")
+        logging.debug(f"remove users: {self.remove_users}")
         if len(self.remove_users) > 0:
+            users_to_remove = {}
             for user in self.remove_users:
-                user_elements = user.split(" ", 4)
-                role_name = user_elements[1]
-                user_id = user_elements[2]
-                user_name = user_elements[3]
-                if user_name == self.db_instance.state.filled_spot_name:
+                user_elements = user.split(" ")
+                users_to_remove = {" ".join(user_elements[3:]): (user_elements[1], user_elements[2])}
+            logging.debug(f"users_to_remove: {users_to_remove}, filled_spot_name: {self.filled_spot_name}")
+            logging.debug(f"{[user_name != self.filled_spot_name for user_name in users_to_remove]}")
+            is_not_all_filled = any([
+                user_name != self.filled_spot_name
+                for user_name
+                in users_to_remove
+            ])
+            logging.debug(f"is_not_all_filled: {is_not_all_filled}, self.remove_users_reason: {self.remove_users_reason}")
+            if is_not_all_filled and self.remove_users_reason == "":
+                return False
+            for user_name, user_info in users_to_remove.items():
+                role_name, user_id = user_info
+                if user_name == self.filled_spot_name:
                     self.db_instance.remove_filled_spot(role_name)
                 else:
                     self.db_instance.remove_role(
                         self.db_instance.roles[role_name], int(user_id))
+                    self.db_instance.log_removal(user_name, self.remove_users_reason)
+            self.user_names_removed = {user_name: self.remove_users_reason for user_name in users_to_remove}
             self.db_instance.is_closed()
+            return True
+        return None
 
     def _change_creator_role(self):
         if self.new_creator_role != self.creator_role:
@@ -708,21 +787,46 @@ class DBEditOptions(discord.ui.View):
                     self.db_instance.creator.id,
                     self.db_instance.creator.display_name,
                 )
-        return True
+            return True
+        return None
 
     @discord.ui.button(label="Confirm changes", style=discord.ButtonStyle.green, row=4)
     async def confirm_edit(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Confirm the edits."""
         self.confirmed = True
-        creator_role_swapped = self._change_creator_role()
-        self._remove_users()
+        is_creator_role_swapped = self._change_creator_role()
+        is_removed_users = self._remove_users()
         self.db_instance.is_closed()
         await self.db_instance.edit_message()
+        logging.debug(f"edit confirm {self.db_instance.dungeon_title}: {is_creator_role_swapped}, {is_removed_users}")
 
-        if not creator_role_swapped:
+        return_content = "Editing complete."
+
+        if is_creator_role_swapped is not None and not is_creator_role_swapped:
+            logging.debug("not is_creator_role_swapped")
             await self.interaction.followup.send(
-                content="The role you wanted to swap to is no longer available", ephemeral=True)
-        await self.message.edit(content="Editing complete.", view=None)  # type: ignore
+                content="The role you wanted to swap to is no longer available",
+                ephemeral=True
+            )
+            await interaction.response.defer()
+            return None
+        elif is_creator_role_swapped is not None:
+            logging.debug("is_creator_role_swapped is not None")
+            return_content += f"\nCreator role swapped from {self.creator_role} to {self.new_creator_role}"
+
+        if is_removed_users is not None and not is_removed_users:
+            logging.debug("not is_removed_users")
+            await self.interaction.followup.send(
+                content="You must provide a removal reason if you are removing users",
+                ephemeral=True
+            )
+            await interaction.response.defer()
+            return None
+        elif is_removed_users is not None:
+            logging.debug("is_removed_users is not None")
+            return_content += f"\nUsers removed: {self.user_names_removed}"
+
+        await self.message.edit(content=return_content, view=None)  # type: ignore
         self.stop()
 
     @discord.ui.button(label="Abort changes", style=discord.ButtonStyle.secondary, row=4)
