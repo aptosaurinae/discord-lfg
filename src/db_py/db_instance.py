@@ -91,31 +91,6 @@ class DungeonInstance:
         return "~~" if (self.state.cancelled or self.state.timed_out) else ""
 
     @property
-    def current_user_roles(self) -> list[tuple[str, str, int, bool, int]]:
-        """Retrieves the current active user display names with role name, id, and creator (bool)."""
-        user_roles = []
-        for role_name, role_info in self.roles.items():
-            for idx in range(len(role_info.userids)):
-                if role_info.userids[idx] != 0:
-                    user_roles.append(
-                        (
-                            role_info.display_names[idx],
-                            role_name,
-                            role_info.userids[idx],
-                            role_info.userids[idx] == self.creator.id,
-                            idx
-                        ))
-        return user_roles
-
-    @property
-    def current_user_ids(self) -> list:
-        """Retrieves the current valid user IDs in the instance."""
-        tank_id = self.roles[RoleType.tank.name].userids[0]
-        healer_id = self.roles[RoleType.healer.name].userids[0]
-        dps_ids = self.roles[RoleType.dps.name].userids
-        return [tank_id] + [healer_id] + dps_ids
-
-    @property
     def current_user_tags(self) -> str:
         """Retrieves a string tagging all current users listed in the group."""
         tagged_users = ""
@@ -135,55 +110,13 @@ class DungeonInstance:
         return current_role_tags
 
     @property
-    def description(self) -> str:
-        """Gets a standardised description for the dungeon including role spots."""
-        logging.debug(f"get description {self.dungeon_title}")
-        dungeon = self.dungeon_details
-        tank = self.roles[RoleType.tank.name]
-        healer = self.roles[RoleType.healer.name]
-        dps = self.roles[RoleType.dps.name]
-        removed_users = "\n".join([
-            f"{user_name}: {removal_reason}" for user_name, removal_reason in self.removed_users.items()])
-        if removed_users != "":
-            removed_users = f"\nRemoved users:\n{removed_users}"
-        footer = ""
-        if not (self.state.closed or self.state.cancelled or self.state.timed_out):
-            if removed_users != "":
-                removed_users += "\n"
-            footer = "`/lfghelp for Dungeon Buddy help`"
-
-        def _role_string(role: DungeonRole, creator_id: int, role_idx: int = 0):
-            name = role.display_names[role_idx]
-            id = role.userids[role_idx]
-            return f"{role.emoji} : {name}{'🚩' if id == creator_id else ''}"
-
-        return (
-            f"**{self._listing_message_body}**\n"
-            f"{dungeon.creator_notes}\n"
-            f"{_role_string(tank, self.creator.id)}\n"
-            f"{_role_string(healer, self.creator.id)}\n"
-            f"{_role_string(dps, self.creator.id)}\n"
-            f"{_role_string(dps, self.creator.id, 1)}\n"
-            f"{_role_string(dps, self.creator.id, 2)}\n"
-            # f"{removed_users}"
-            f"{footer}"
-        )
-
-    @property
     def dungeon_title(self) -> str:
         """Gets a standardised title string for the dungeon."""
         return f"{self.dungeon_details.listed_as}"
 
     @property
-    def filled_roles(self) -> str:
-        """Gets a string indicating the roles that have been filled, as emojis."""
-        filled_roles_icons = ""
-        for role_data in self.roles.values():
-            filled_roles_icons += " ".join([role_data.emoji for assignment in role_data.assigned if assignment])
-        return filled_roles_icons
-
-    @property
-    def _listing_message_body(self) -> str:
+    def listing_message_body(self) -> str:
+        """Body of the listing message."""
         dungeon = self.dungeon_details
         return (
             f"{self._strikethrough}{dungeon.dungeon_long} +{dungeon.difficulty} "
@@ -209,15 +142,54 @@ class DungeonInstance:
         user_tags = f" {self.current_user_tags}" if tag_users else ""
         role_tags = f" {self.current_role_tags}" if tag_roles else ""
 
-        return f"{message}{self._listing_message_body}{role_tags}{user_tags}"
+        return f"{message}{self.listing_message_body}{role_tags}{user_tags}"
 
     @property
-    def passphrase(self) -> str:
-        """Retrieves the passphrase for this dungeon instance."""
-        return self.state.passphrase
+    def description(self) -> str:
+        """Gets a standardised description for the dungeon including role spots."""
+        logging.debug(f"get description {self.dungeon_title}")
+        dungeon = self.dungeon_details
+        tank = self.roles[RoleType.tank.name]
+        healer = self.roles[RoleType.healer.name]
+        dps = self.roles[RoleType.dps.name]
+        removed_users = "\n".join([
+            f"{user_name}: {removal_reason}" for user_name, removal_reason in self.removed_users.items()])
+        if removed_users != "":
+            removed_users = f"\nRemoved users:\n{removed_users}"
+        footer = ""
+        if not (self.state.closed or self.state.cancelled or self.state.timed_out):
+            if removed_users != "":
+                removed_users += "\n"
+            footer = "`/lfghelp for Dungeon Buddy help`"
+
+        def _role_string(role: DungeonRole, creator_id: int, role_idx: int = 0):
+            name = role.display_names[role_idx]
+            id = role.userids[role_idx]
+            return f"{role.emoji} : {name}{' 🚩' if id == creator_id else ''}"
+
+        return (
+            f"**{self.listing_message_body}**\n"
+            f"{dungeon.creator_notes}\n"
+            f"{_role_string(tank, self.creator.id)}\n"
+            f"{_role_string(healer, self.creator.id)}\n"
+            f"{_role_string(dps, self.creator.id)}\n"
+            f"{_role_string(dps, self.creator.id, 1)}\n"
+            f"{_role_string(dps, self.creator.id, 2)}\n"
+            # f"{removed_users}"
+            f"{footer}"
+        )
 
     @property
-    def _dungeon_embed(self) -> discord.Embed:
+    def filled_roles(self) -> str:
+        """Gets a string indicating the roles that have been filled, as emojis."""
+        filled_roles_icons = ""
+        for role_data in self.roles.values():
+            filled_roles_icons += " ".join([role_data.emoji for assignment in role_data.assigned if assignment])
+        return filled_roles_icons
+
+    @property
+    def dungeon_embed(self) -> discord.Embed:
+        """Gets a Discord Embed of the current dungeon user state."""
         logging.debug(f"get dungeon embed {self.dungeon_title}")
         title = (
             f"{self._strikethrough}{self.dungeon_title}{self._strikethrough} "
@@ -233,27 +205,6 @@ class DungeonInstance:
             colour = discord.Colour.green()
         return discord.Embed(title=title, description=self.description, colour=colour)
 
-    @property
-    def _dungeon_buttons(self) -> discord.ui.View | None:
-        if self._is_finished or self.state.cancelled:
-            logging.debug(f"no buttons needed {self.dungeon_title}")
-            return None
-        logging.debug(f"retrieving buttons {self.dungeon_title}")
-        tank_btn = self._role_button(RoleType.tank)
-        healer_btn = self._role_button(RoleType.healer)
-        dps_btn = self._role_button(RoleType.dps)
-        passphrase_btn = self._passphrase_button()
-        settings_btn = self._settings_button()
-
-        buttons = discord.ui.View()
-        for element in [tank_btn, healer_btn, dps_btn, passphrase_btn, settings_btn]:
-            buttons.add_item(element)
-        return buttons
-
-    @property
-    def _is_finished(self) -> bool:
-        return self.state.close_group_at <= datetime_now_utc()
-
     # --- General methods
 
     def role_info(self, role_name):
@@ -262,34 +213,6 @@ class DungeonInstance:
             return self.roles[role_name]
         else:
             raise ValueError(f"{role_name} not in roles: {list(self.roles.keys())}")
-
-    def log_removal(self, display_name: str, removal_reason: str):
-        """Logs the removal of a user with the reason why."""
-        self.removed_users[display_name] = removal_reason
-
-    async def cancel_group(self):
-        """Cancels the group and informs all current signups that it's been cancelled."""
-        logging.debug(
-            f"{self.dungeon_title} cancelled by {self.creator.id} / {self.creator.display_name}"
-        )
-        self.state.cancelled = True
-        await self.edit_message()
-        await self.message.channel.send(content=self.listing_message)
-
-    def is_closed(self):
-        """Checks if the group should be closed or re-opened and sets a timer accordingly."""
-        if self.state.empty_spots == 0 and not self.state.closed:
-            logging.debug(f"{self.listing_message} {self.dungeon_title} closed as it is full")
-            self.state.closed = True
-            self.state.close_group_at = (
-                datetime_now_utc() + timedelta(minutes=self.state.editable_length))
-            logging.debug(f"group closed but editable until {self.state.close_group_at}")
-        elif self.state.empty_spots > 0 and self.state.closed:
-            logging.debug(f"{self.listing_message} {self.dungeon_title} reopened as it has space")
-            self.state.closed = False
-            self.state.close_group_at = (
-                datetime_now_utc() + timedelta(minutes=self.state.editable_length))
-            logging.debug(f"group reopened and editable until {self.state.close_group_at}")
 
     # --- Initialisation
 
@@ -386,6 +309,12 @@ class DungeonInstance:
             global_name=interaction.user.global_name,
         )
 
+    # --- Group finishing methods (timeout, cancel, close because full)
+
+    @property
+    def _is_finished(self) -> bool:
+        return self.state.close_group_at <= datetime_now_utc()
+
     async def _check_if_closed_or_timed_out(self):
         """Closes the group if the background timer has finished and the group is not cancelled."""
         logging.debug(
@@ -409,6 +338,30 @@ class DungeonInstance:
 
         await self.edit_message()
 
+    async def cancel_group(self):
+        """Cancels the group and informs all current signups that it's been cancelled."""
+        logging.debug(
+            f"{self.dungeon_title} cancelled by {self.creator.id} / {self.creator.display_name}"
+        )
+        self.state.cancelled = True
+        await self.edit_message()
+        await self.message.channel.send(content=self.listing_message)
+
+    def is_closed(self):
+        """Checks if the group should be closed or re-opened and sets a timer accordingly."""
+        if self.state.empty_spots == 0 and not self.state.closed:
+            logging.debug(f"{self.listing_message} {self.dungeon_title} closed as it is full")
+            self.state.closed = True
+            self.state.close_group_at = (
+                datetime_now_utc() + timedelta(minutes=self.state.editable_length))
+            logging.debug(f"group closed but editable until {self.state.close_group_at}")
+        elif self.state.empty_spots > 0 and self.state.closed:
+            logging.debug(f"{self.listing_message} {self.dungeon_title} reopened as it has space")
+            self.state.closed = False
+            self.state.close_group_at = (
+                datetime_now_utc() + timedelta(minutes=self.state.editable_length))
+            logging.debug(f"group reopened and editable until {self.state.close_group_at}")
+
     # --- Responses and discord message display handling
 
     @property
@@ -416,8 +369,8 @@ class DungeonInstance:
         logging.debug(f"retrieve message content: {self.listing_message}")
         return {
             "content": self.listing_message,
-            "embed": self._dungeon_embed,
-            "view": self._dungeon_buttons
+            "embed": self.dungeon_embed,
+            "view": self.dungeon_buttons
         }
 
     async def send_message(self, interaction: discord.Interaction):
@@ -429,6 +382,11 @@ class DungeonInstance:
         """Updates the Discord displayed message based on the current status of the instance."""
         logging.debug("edit_message")
         await self.message.edit(**self._message_content)
+
+    @property
+    def passphrase(self) -> str:
+        """Retrieves the passphrase for this dungeon instance."""
+        return self.state.passphrase
 
     async def send_passphrase(self, interaction: discord.Interaction):
         """Sends the passphrase."""
@@ -447,6 +405,12 @@ class DungeonInstance:
             content=f"The passphrase for your group is: {self.passphrase}",
             ephemeral=True
         )
+
+    # --- Adding and removing users
+
+    def log_removal(self, display_name: str, removal_reason: str):
+        """Logs the removal of a user with the reason why."""
+        self.removed_users[display_name] = removal_reason
 
     def fill_spots(
             self,
@@ -510,6 +474,49 @@ class DungeonInstance:
         self.state.empty_spots -= 1
 
     # --- Buttons
+
+    @property
+    def current_user_ids(self) -> list:
+        """Retrieves the current valid user IDs in the instance."""
+        tank_id = self.roles[RoleType.tank.name].userids[0]
+        healer_id = self.roles[RoleType.healer.name].userids[0]
+        dps_ids = self.roles[RoleType.dps.name].userids
+        return [tank_id] + [healer_id] + dps_ids
+
+    @property
+    def current_user_roles(self) -> list[tuple[str, str, int, bool, int]]:
+        """Retrieves the current active user display names with role name, id, and creator (bool)."""
+        user_roles = []
+        for role_name, role_info in self.roles.items():
+            for idx in range(len(role_info.userids)):
+                if role_info.userids[idx] != 0:
+                    user_roles.append(
+                        (
+                            role_info.display_names[idx],
+                            role_name,
+                            role_info.userids[idx],
+                            role_info.userids[idx] == self.creator.id,
+                            idx
+                        ))
+        return user_roles
+
+    @property
+    def dungeon_buttons(self) -> discord.ui.View | None:
+        """A set of buttons for manipulating the group while it's open."""
+        if self._is_finished or self.state.cancelled:
+            logging.debug(f"no buttons needed {self.dungeon_title}")
+            return None
+        logging.debug(f"retrieving buttons {self.dungeon_title}")
+        tank_btn = self._role_button(RoleType.tank)
+        healer_btn = self._role_button(RoleType.healer)
+        dps_btn = self._role_button(RoleType.dps)
+        passphrase_btn = self._passphrase_button()
+        settings_btn = self._settings_button()
+
+        buttons = discord.ui.View()
+        for element in [tank_btn, healer_btn, dps_btn, passphrase_btn, settings_btn]:
+            buttons.add_item(element)
+        return buttons
 
     def _role_button(self, role_type: RoleType) -> discord.ui.Button:
         """Creates a button interactable formatted for a particular role."""
@@ -612,6 +619,8 @@ class DungeonInstance:
         btn.callback = btn_click
         return btn
 
+# --- Editing menus for DB instance (creator can access from settings)
+
 
 class EditRemoveUser(discord.ui.Select):
     """Select which users to remove."""
@@ -623,7 +632,7 @@ class EditRemoveUser(discord.ui.Select):
             options = [
                 discord.SelectOption(
                     label=f"{role_name}: {user_name}",
-                    value=f"{spot} {role_name} {user_id} {user_name} "
+                    value=f"{spot} {role_name} {user_id} {user_name}"
                 )
                 for user_name, role_name, user_id, _, spot
                 in users
