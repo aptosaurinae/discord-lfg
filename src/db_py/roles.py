@@ -1,9 +1,6 @@
 """Contains role enumerations."""
 
-from dataclasses import dataclass
 from enum import Enum
-
-import discord
 
 
 class RoleType(Enum):
@@ -11,28 +8,3 @@ class RoleType(Enum):
     tank = 1
     healer = 2
     dps = 3
-
-
-@dataclass
-class DungeonRole:
-    """Container for a particular role type."""
-    name: str
-    userids: list[int]
-    display_names: list[str]
-    assigned: list[bool]
-    button_style: discord.ButtonStyle
-    disabled: bool
-    emoji: str
-    role_mention: str
-
-    def __str__(self):
-        """Returns a string representation of the object."""
-        return (
-            f"name: {self.name}\n"
-            f"userids: {self.userids}\n"
-            f"display_names: {self.display_names}\n"
-            f"assigned: {self.assigned}\n"
-            f"button_style: {self.button_style}\n"
-            f"disabled: {self.disabled}"
-            f"role_mention: {self.role_mention}"
-        )

@@ -98,8 +98,8 @@ async def _lfg(
     logging.debug(dungeon_info)
 
     instance = DungeonInstance(interaction=interaction, dungeon_info=dungeon_info, config=config)
-    instance.add_role(creator_role, interaction.user.id, interaction.user.display_name)
-    instance.fill_spots(interaction.user.id, interaction.user.display_name, filled_spots)
+    instance.add_role(creator_role, instance.create_user_from_interaction(interaction))
+    instance.fill_spots(filled_spots)
     await instance.send_message(interaction)
     await instance.send_passphrase(interaction)
 
