@@ -17,7 +17,6 @@ the [No Pressure EU](https://no-pressure.eu) Discord server. This is an implemen
 
 For feature parity with the original Dungeon Buddy, the following is missing:
 
-- Add an input to give a reason for removing users from the group
 - Log group members when group completes in any way (full, timeout, cancelled)
 - Add `/lfgstats` reporting
 - Add history for users (both personal and for mods)

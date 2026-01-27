@@ -163,12 +163,16 @@ async def lfgquick(
         for role
         in [name.name for name in RoleType]
     }
+    logging.debug(f"required_spots: {required_spots}")
+    logging.debug(f"required_spots_roles: {required_spots_roles}")
+    if required_spots_roles[creator_role] + 1 > role_counts[creator_role]:
+        response = "You cannot assign that many filled roles when you are in that role"
+        await interaction.response.send_message(response, ephemeral=True)
+        return None
     filled_spots = {}
     for role_name, role_count in role_counts.items():
         filled_spots[role_name] = role_count - required_spots_roles[role_name]
     filled_spots[creator_role] -= 1
-    logging.debug(f"required_spots: {required_spots}")
-    logging.debug(f"required_spots_roles: {required_spots_roles}")
     logging.debug(f"filled_spots: {filled_spots}")
     return await _lfg(
         interaction=interaction,
