@@ -101,7 +101,7 @@ async def _lfg(
         interaction=interaction,
         dungeon_info=dungeon_info,
         config=config,
-        creator_role=RoleType(creator_role)
+        creator_role=creator_role
     )
     instance.fill_spots(filled_spots)
     await instance.send_message(interaction)

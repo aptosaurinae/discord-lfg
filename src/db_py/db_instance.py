@@ -33,7 +33,7 @@ class DungeonUser:
     global_name: str | None
     interaction: discord.Interaction | None
     creator: bool
-    role: RoleType
+    role: str
     removal_reason: str = ""
 
 
@@ -90,7 +90,7 @@ class DungeonInstance:
         interaction: discord.Interaction,
         dungeon_info: dict,
         config: dict,
-        creator_role: RoleType
+        creator_role: str
     ):
         """Creates a DungeonInstance.
 
@@ -105,15 +105,15 @@ class DungeonInstance:
             f"DungeonInstance created by "
             f"{interaction.user.id} {interaction.user.display_name}"
         )
+        self._state_init(config)
         self._setup_dungeon(**dungeon_info, config=config)
         self._roles_init(
             config.get("emojis", load_emojis()),
             config.get("guild_roles", {}),
             interaction.channel.name if isinstance(interaction.channel.name, str) else "",  # type: ignore
         )
-        self._state_init(config)
         self.creator = self.create_user_from_interaction(interaction, creator_role, True)
-        self.add_role(creator_role.name, self.creator)
+        self.add_role(creator_role, self.creator)
         self.kicked_users: list[DungeonUser] = []
         logging.debug(
             f"DungeonInstance initialisation finished for "
@@ -134,6 +134,7 @@ class DungeonInstance:
             for userid in [user.id for user in role.users]:
                 if userid > 0:
                     tagged_users += f"<@{userid}> "
+        logging.debug(f"current user tags: {tagged_users}")
         return tagged_users
 
     @property
@@ -261,7 +262,7 @@ class DungeonInstance:
     ):
         return DungeonRole(
                 name=role.name,
-                users=[self._create_empty_spot_user(role) for _ in range(self.role_counts[role.name])],
+                users=[self._create_empty_spot_user(role.name) for _ in range(self.role_counts[role.name])],
                 assigned=[False for _ in range(self.role_counts[role.name])],
                 button_style=discord.ButtonStyle.secondary,
                 disabled=False,
@@ -394,7 +395,6 @@ class DungeonInstance:
 
     @property
     def _message_content(self):
-        logging.debug(f"retrieve message content: {self.listing_message}")
         return {
             "content": self.listing_message,
             "embed": self.dungeon_embed,
@@ -436,7 +436,7 @@ class DungeonInstance:
 
     # --- User creation
 
-    def _create_filled_spot_user(self, role: RoleType):
+    def _create_filled_spot_user(self, role: str):
         return DungeonUser(
             self.state.filled_spots * -1,
             "",
@@ -448,7 +448,7 @@ class DungeonInstance:
             role,
         )
 
-    def _create_empty_spot_user(self, role: RoleType):
+    def _create_empty_spot_user(self, role: str):
         return DungeonUser(
             (self.state.empty_spots + 1000) * -1,
             "",
@@ -463,7 +463,7 @@ class DungeonInstance:
     def create_user_from_interaction(
         self,
         interaction: discord.Interaction,
-        role: RoleType,
+        role: str,
         creator: bool = False
     ):
         """Creates a DungeonUser from a given discord interaction."""
@@ -506,24 +506,24 @@ class DungeonInstance:
                 self.state.filled_spots += 1
                 self.add_role(
                     assigned_role=role_name,
-                    dungeon_user=self._create_filled_spot_user(RoleType(role_name)),
+                    dungeon_user=self._create_filled_spot_user(role_name),
                     filled_spot=True
                 )
 
     def remove_filled_spot(
         self,
-        assigned_role: str,
+        user: DungeonUser,
     ):
         """Removes a filled spot from the given role."""
         self.state.filled_spots -= 1
-        role = self.roles[assigned_role]
-        self.remove_role(role, -1)
+        role = self.roles[user.role]
+        self.remove_role(role, user.id)
 
     def remove_role(self, role: DungeonRole, id: int):
         """Removes the role from the given user."""
         logging.debug(f"remove_role {self.dungeon_title}\nrole: {role}\nid: {id}\nstate: {self.state}")
         role_idx = [user.id for user in role.users].index(id)
-        role.users[role_idx] = self._create_empty_spot_user(RoleType(role.name))
+        role.users[role_idx] = self._create_empty_spot_user(role.name)
         role.assigned[role_idx] = False
         role.disabled = False
         self.state.empty_spots += 1
@@ -547,7 +547,7 @@ class DungeonInstance:
         logging.debug(f"add_role {self.dungeon_title}\nrole: {role}\nid: {dungeon_user.id}\nstate: {self.state}")
         role_idx = role.assigned.index(False)
         role.users[role_idx] = (
-            self._create_filled_spot_user(RoleType(role.name)) if filled_spot else dungeon_user)
+            self._create_filled_spot_user(role.name) if filled_spot else dungeon_user)
         role.assigned[role_idx] = True
         if all(role.assigned):
             role.disabled = True
@@ -588,6 +588,7 @@ class DungeonInstance:
             logging.debug(
                 f"{self.dungeon_title} {role.name} button clicked by {interaction.user.display_name}")
             if interaction.user.id in [user.id for user in self.kicked_users]:
+                logging.debug(f"Sending kicked user message: {interaction.user.id}")
                 for user in self.kicked_users:
                     if user.id == interaction.user.id:
                         removal_reason = user.removal_reason
@@ -595,15 +596,20 @@ class DungeonInstance:
                             f"You cannot rejoin a group you were removed from\nRemoval reason: {removal_reason}",
                             ephemeral=True)
                         return None
-            self.add_role(
-                assigned_role=role_type.name,
-                dungeon_user=self.create_user_from_interaction(interaction, role_type),
-                filled_spot=interaction.user.id == self.creator.id
-            )
+            if interaction.user.id == self.creator.id:
+                logging.debug("Filling spots because creator clicked button")
+                self.fill_spots({role_type.name: 1})
+            else:
+                logging.debug("Adding user because non-creator clicked button")
+                self.add_role(
+                    assigned_role=role_type.name,
+                    dungeon_user=self.create_user_from_interaction(interaction, role_type.name),
+                )
             self.is_closed()
             await self.edit_message()
             if interaction.user.id != self.creator.id:
                 await self.send_passphrase(interaction)
+            await interaction.response.defer()
 
         role = self.role_info(role_type.name)
         btn = discord.ui.Button(
@@ -691,7 +697,7 @@ class EditRemoveUser(discord.ui.Select):
         if len(users) > 0:
             options = [
                 discord.SelectOption(
-                    label=f"{dungeon_user.role.name.capitalize()}: {dungeon_user.display_name}",
+                    label=f"{dungeon_user.role.capitalize()}: {dungeon_user.display_name}",
                     value=f"{user_id}"
                 )
                 for user_id, dungeon_user
@@ -713,7 +719,9 @@ class EditRemoveUser(discord.ui.Select):
         """Does the thing."""
         assert self.view is not None
         logging.debug(f"EditRemoveUser callback {self.view.db_instance.dungeon_title}")
-        self.view.remove_users = self.values
+        for user_id in self.values:
+            user_id = int(user_id)
+            self.view.remove_users.append(self.view.db_instance.get_user_by_id(user_id))
         await interaction.response.defer()
 
 
@@ -834,13 +842,12 @@ class DBEditOptions(discord.ui.View):
                 return False
             for user in self.remove_users:
                 if user.id < 0:
-                    self.db_instance.remove_filled_spot(user.role.name)
+                    self.db_instance.remove_filled_spot(user)
                 else:
                     self.db_instance.remove_role(
-                        self.db_instance.roles[user.role.name], user.id)
+                        self.db_instance.roles[user.role], user.id)
                     user.removal_reason = self.remove_users_reason
                     self.db_instance.kicked_users.append(user)
-            self.remove_users = [user for user in self.remove_users if user.id > 0]
             self.db_instance.is_closed()
             return True
         return None
@@ -899,18 +906,20 @@ class DBEditOptions(discord.ui.View):
             users_removed_str = '\n'.join(users_removed_str)
             return_content += f"\nUsers removed: \n{users_removed_str}"
             for user in self.remove_users:
-                assert user.interaction is not None
-                message_func = (
-                    user.interaction.followup.send
-                    if user.interaction.response.is_done()
-                    else user.interaction.response.send_message
-                )
-                message_func(
-                    content=(
-                        f"{user.tag} You have been removed from the group with the reason: "
-                        f"{user.removal_reason}"
+                if user.id > 0:
+                    assert user.interaction is not None
+                    message_func = (
+                        user.interaction.followup.send
+                        if user.interaction.response.is_done()
+                        else user.interaction.response.send_message
                     )
-                )
+                    await message_func(
+                        content=(
+                            f"{user.tag} You have been removed from the group with the reason: "
+                            f"{user.removal_reason}"
+                        ),
+                        ephemeral=True
+                    )
 
         await self.message.edit(content=return_content, view=None)  # type: ignore
         self.stop()
