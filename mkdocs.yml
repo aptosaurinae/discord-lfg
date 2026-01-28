@@ -7,11 +7,6 @@ nav:
   - Reference: []
 theme:
   name: material
-  custom_dir: docs/overrides
-  features:
-    - navigation.indexes
-    - navigation.top
-    - content.code.copy
 repo_url: https://github.com/aptosaurinae/dungeon-buddy-py/
 site_dir: .docs
 markdown_extensions:
