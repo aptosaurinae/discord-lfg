@@ -114,7 +114,7 @@ class DungeonInstance:
         self._state_init(config)
         self.creator = self.create_user_from_interaction(interaction, creator_role, True)
         self.add_role(creator_role.name, self.creator)
-        self.removed_users = {}
+        self.kicked_users: list[DungeonUser] = []
         logging.debug(
             f"DungeonInstance initialisation finished for "
             f"{self.listing_message} {self.dungeon_title}"
@@ -188,14 +188,14 @@ class DungeonInstance:
         tank = self.roles[RoleType.tank.name]
         healer = self.roles[RoleType.healer.name]
         dps = self.roles[RoleType.dps.name]
-        removed_users = "\n".join([
-            f"{user_name}: {removal_reason}" for user_name, removal_reason in self.removed_users.items()])
-        if removed_users != "":
-            removed_users = f"\nRemoved users:\n{removed_users}"
+        kicked_users = "\n".join([
+            f"{user.display_name}: {user.removal_reason}" for user in self.kicked_users])
+        if kicked_users != "":
+            kicked_users = f"\nRemoved users:\n{kicked_users}"
         footer = ""
         if not (self.state.closed or self.state.cancelled or self.state.timed_out):
-            if removed_users != "":
-                removed_users += "\n"
+            if kicked_users != "":
+                kicked_users += "\n"
             footer = "`/lfghelp for Dungeon Buddy help`"
 
         def _role_string(role: DungeonRole, creator_id: int, role_idx: int = 0):
@@ -211,7 +211,7 @@ class DungeonInstance:
             f"{_role_string(dps, self.creator.id)}\n"
             f"{_role_string(dps, self.creator.id, 1)}\n"
             f"{_role_string(dps, self.creator.id, 2)}\n"
-            # f"{removed_users}"
+            # f"{kicked_users}"
             f"{footer}"
         )
 
@@ -587,12 +587,14 @@ class DungeonInstance:
         async def btn_click(interaction: discord.Interaction):
             logging.debug(
                 f"{self.dungeon_title} {role.name} button clicked by {interaction.user.display_name}")
-            if interaction.user.display_name in self.removed_users:
-                removal_reason = self.removed_users[interaction.user.display_name]
-                await interaction.response.send_message(
-                    f"You cannot rejoin a group you were removed from\nRemoval reason: {removal_reason}",
-                    ephemeral=True)
-                return None
+            if interaction.user.id in [user.id for user in self.kicked_users]:
+                for user in self.kicked_users:
+                    if user.id == interaction.user.id:
+                        removal_reason = user.removal_reason
+                        await interaction.response.send_message(
+                            f"You cannot rejoin a group you were removed from\nRemoval reason: {removal_reason}",
+                            ephemeral=True)
+                        return None
             self.add_role(
                 assigned_role=role_type.name,
                 dungeon_user=self.create_user_from_interaction(interaction, role_type),
@@ -837,6 +839,7 @@ class DBEditOptions(discord.ui.View):
                     self.db_instance.remove_role(
                         self.db_instance.roles[user.role.name], user.id)
                     user.removal_reason = self.remove_users_reason
+                    self.db_instance.kicked_users.append(user)
             self.remove_users = [user for user in self.remove_users if user.id > 0]
             self.db_instance.is_closed()
             return True
