@@ -73,7 +73,7 @@ This will enable `pre-commit` and `pytest`.
 To run the bot you can then do the following:
 
 ``` shell
-python bot.py path/to/token.toml path/to/config.toml
+python src/db_py/bot.py path/to/token.toml path/to/config.toml
 ```
 
 which should result in something like the following:
