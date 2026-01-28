@@ -5,13 +5,13 @@ This is a Python implementation of Dungeon Buddy, using the library [`discord-py
 ## Background
 
 Dungeon Buddy is a Discord bot for easy creation of groups for World of Warcraft dungeons.
-These groups have one tank, one healer, and three damage dealers in each group. Dungeon Buddy
+These groups typically have one tank, one healer, and three damage dealers in each group. Dungeon Buddy
 provides a structured embed with buttons for joining groups, making it easier to track Discord
 usernames when groups are formed, providing passwords only to those who sign up enabling a link
 between the Discord signup and the in-game signup.
 
 The [original Dungeon Buddy](https://bit.ly/3ZrVj7C) was built by Baddadan/Kashual using `DiscordJS` for
-the [No Pressure EU](https://no-pressure.eu) Discord server. This is an implementation of the same system in Python using [discord-py`](https://discordpy.readthedocs.io/en/latest/api.html).
+the [No Pressure EU](https://no-pressure.eu) Discord server. This is an implementation of the same system in Python using [discord-py](https://discordpy.readthedocs.io/en/latest/api.html).
 
 ## To do
 

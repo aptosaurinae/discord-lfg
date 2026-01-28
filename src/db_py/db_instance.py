@@ -587,7 +587,8 @@ class DungeonInstance:
             await self.edit_message()
             if interaction.user.id != self.creator.id:
                 await self.send_passphrase(interaction)
-            await interaction.response.defer()
+            if not interaction.response.is_done():
+                await interaction.response.defer()
 
         role = self.role_info(role_type.name)
         btn = discord.ui.Button(
@@ -634,8 +635,8 @@ class DungeonInstance:
             if interaction.user.id == self.creator.id:
                 view = DBEditOptions(self)
                 content = (
-                    f"Make changes to {self.dungeon_title} below.\n"
-                    f"*To cancel your group click the 'Cancel Group' button 2x."
+                    f"\nMake changes to {self.dungeon_title} below.\n"
+                    f"**To cancel your group click the 'Cancel Group' button 2x.**"
                 )
                 await interaction.response.send_message(content=content, view=view, ephemeral=True)
                 view.message = await interaction.original_response()  # type: ignore
