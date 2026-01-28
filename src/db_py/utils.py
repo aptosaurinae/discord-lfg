@@ -31,9 +31,7 @@ def get_difficulty_start_and_end_from_channel_name(channel_name: str) -> None | 
 
 
 def get_guild_role_mention_for_dungeon_role(
-    dungeon_role: RoleType,
-    guild_roles: list[discord.Role],
-    channel_name: str,
+    dungeon_role: RoleType, guild_roles: list[discord.Role], channel_name: str
 ) -> str:
     """Generates an expected role and retrieves this if it matches a real one."""
     logging.debug(f"getting role mentions: {dungeon_role}, {channel_name}")

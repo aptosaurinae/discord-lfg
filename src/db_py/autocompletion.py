@@ -10,27 +10,24 @@ from db_py.utils import get_difficulty_start_and_end_from_channel_name
 
 def _autocomplete_choice(choices: list):
     """Creates an autocompletion choice interactable."""
+
     async def autocompleter(interaction: discord.Interaction, current: str):
         return [
             app_commands.Choice(name=item, value=item)
-            for item in choices if current.lower() in item.lower()
+            for item in choices
+            if current.lower() in item.lower()
         ]
+
     return autocompleter
 
 
-def dungeon_autocomplete(
-    expansion: str,
-    season: str
-):
+def dungeon_autocomplete(expansion: str, season: str):
     """Autocompletion system for dungeon strings."""
     dungeons = load_dungeons(expansion, season)
     return _autocomplete_choice(list(dungeons.values()))
 
 
-def dungeon_short_autocomplete(
-    expansion: str,
-    season: str
-):
+def dungeon_short_autocomplete(expansion: str, season: str):
     """Autocompletion system for short dungeon strings."""
     dungeons = load_dungeons(expansion, season)
     return _autocomplete_choice(list(dungeons.keys()))
@@ -50,11 +47,12 @@ def role_autocomplete():
 
 async def difficulty_autocomplete(interaction: discord.Interaction, current: str):
     """Autocompletion system for getting difficulty numbers from a channel name."""
-    if isinstance(interaction.channel.name, str):   # type: ignore
+    if isinstance(interaction.channel.name, str):  # type: ignore
         choices = get_difficulty_start_and_end_from_channel_name(interaction.channel.name)  # type: ignore
         if choices is None:
             return [app_commands.Choice(name="Invalid channel for LFG command", value=0)]
     return [
         app_commands.Choice(name=item, value=int(item))
-        for item in choices if current.lower() in item.lower()
+        for item in choices
+        if current.lower() in item.lower()
     ]

@@ -10,6 +10,7 @@ from db_py.roles import RoleType
 
 class LFGDifficulty(discord.ui.Select):
     """Difficulty selector."""
+
     def __init__(self, difficulties: list[int]):
         """Initialisation."""
         options = [discord.SelectOption(label=str(num)) for num in difficulties]
@@ -22,7 +23,7 @@ class LFGDifficulty(discord.ui.Select):
             max_values=1,
             options=options,
             row=0,
-            disabled=len(options) == 1
+            disabled=len(options) == 1,
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -35,6 +36,7 @@ class LFGDifficulty(discord.ui.Select):
 
 class LFGTimeType(discord.ui.Select):
     """Time type selector."""
+
     def __init__(self):
         """Initialisation."""
         options = [discord.SelectOption(label=value) for value in load_time_types().values()]
@@ -44,7 +46,7 @@ class LFGTimeType(discord.ui.Select):
             min_values=1,
             max_values=1,
             options=options,
-            row=1
+            row=1,
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -57,20 +59,18 @@ class LFGTimeType(discord.ui.Select):
 
 class LFGCreatorRole(discord.ui.Select):
     """Creator role selector."""
-    def __init__(self, emojis: dict,):
+
+    def __init__(self, emojis: dict):
         """Initialisation."""
         options = [
             discord.SelectOption(
-                label=value.name.capitalize(), value=value.name, emoji=emojis[value.name])
+                label=value.name.capitalize(), value=value.name, emoji=emojis[value.name]
+            )
             for value in RoleType
         ]
 
         super().__init__(
-            placeholder="Select your role",
-            min_values=1,
-            max_values=1,
-            options=options,
-            row=2
+            placeholder="Select your role", min_values=1, max_values=1, options=options, row=2
         )
 
     async def callback(self, interaction: discord.Interaction):
@@ -84,6 +84,7 @@ class LFGCreatorRole(discord.ui.Select):
 
 class LFGRolesRequired(discord.ui.Select):
     """Roles required selector."""
+
     def __init__(self, emojis: dict, role_counts: dict[str, int], creator_role: str | None = None):
         """Initialisation."""
         if creator_role is None:
@@ -96,9 +97,10 @@ class LFGRolesRequired(discord.ui.Select):
             role_counts = role_counts.copy()
             role_counts[creator_role] -= 1
             options = [
-                discord.SelectOption(label=key.capitalize(), value=f"{key}_{idx}", emoji=emojis[key])
-                for key, value
-                in role_counts.items()
+                discord.SelectOption(
+                    label=key.capitalize(), value=f"{key}_{idx}", emoji=emojis[key]
+                )
+                for key, value in role_counts.items()
                 for idx in range(value)
             ]
 
@@ -127,6 +129,7 @@ class LFGRolesRequired(discord.ui.Select):
 
 class LFGOptions(discord.ui.View):
     """LFG options menu."""
+
     def __init__(self, difficulties: list[int], config: dict, role_counts: dict[str, int]):
         """Initialisation."""
         super().__init__(timeout=120)
@@ -179,7 +182,7 @@ class LFGOptions(discord.ui.View):
         logging.debug(f"restoring options for {select}: {current_selection}")
         if any([opt.value == str(current_selection) for opt in select.options]):
             for opt in select.options:
-                opt.default = (opt.value == str(current_selection))
+                opt.default = opt.value == str(current_selection)
         logging.debug([(item.value, item.default) for item in select.options])
 
     def _update_roles_required_selector(self):
@@ -194,7 +197,8 @@ class LFGOptions(discord.ui.View):
             role_counts[self.creator_role] -= 1
             options = [
                 discord.SelectOption(
-                    label=key.capitalize(), value=f"{key}_{idx}", emoji=self.emojis[key])
+                    label=key.capitalize(), value=f"{key}_{idx}", emoji=self.emojis[key]
+                )
                 for key, value in role_counts.items()
                 for idx in range(value)
             ]
