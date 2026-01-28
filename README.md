@@ -29,13 +29,32 @@ For feature parity with the original Dungeon Buddy, the following is missing:
 To install dungeon-buddy-py (db_py), we recommend using the [conda](https://docs.conda.io/en/latest/) package manager,
 accessible from the terminal by installing [miniforge](https://github.com/conda-forge/miniforge?tab=readme-ov-file#download).
 
+Note that the `discord-py` package is not up to date on conda, so you will need to add this from `pip` after
+setting up the environment initially with `conda`.
+
+#### As a user
+
 ``` shell
 git clone git@github.com:aptosaurinae/dungeon-buddy-py.git
 cd dungeon-buddy-py
-conda env create -f environment.yml
-conda activate discord-bot-db
+conda env create -n dungeon-buddy-py -f requirements/base.txt
+conda activate dungeon-buddy-py
+pip install discord-py
 pip install --no-deps -e .
 ```
+
+#### Development / Contributing
+
+``` shell
+git clone git@github.com:aptosaurinae/dungeon-buddy-py.git
+cd dungeon-buddy-py
+conda env create -n dungeon-buddy-py -f requirements/base.txt -f dev.txt
+conda activate dungeon-buddy-py
+pip install discord-py
+pip install --no-deps -e .
+```
+
+This will enable `pre-commit` and `pytest`.
 
 ### Running
 
@@ -56,7 +75,8 @@ Logged in as app-commands-test#2842 (ID: <app id number>)
 Dungeon Buddy started
 ```
 
-You should find that the bot slash commands are then active in the relevant server.
+You should find that the bot slash commands are then active in the relevant server when it's given
+a valid configuration file.
 
 ### File setup
 
@@ -114,17 +134,11 @@ Once the bot is up and running, the following commands should be available from 
 `/lfg` - create a group for the dungeon. Choose desired dungeon > dungeon difficulty > timed/completed > your role >
 required roles from a drop-down style menu.
 
-`/lfg2` - create a group for the dungeon using auto-complete text.
+`/lfgquick` - create a group using autocomplete fields instead of an interactive drop down menu system.
 
-`/lfgquick` - create a group using a '_quick string_' rather than a drop-down style menu.
+[NYI] `/lfghistory` - check up-to 10 of your latest groups. Previous teammates & passphrases can be found here.
 
-Example quick string: `fall 10t d hdd`
-
-    <dungeonShorthand> <keyLevel><timed/completed> <yourRole> <requiredRoles>
-
-`/lfghistory` - check up-to 10 of your latest groups. Previous teammates & passphrases can be found here.
-
-`/lfgstats` - check total groups created, groups created in the last 24h, 7d, 30d &
+[NYI] `/lfgstats` - check total groups created, groups created in the last 24h, 7d, 30d &
 also the most popular dungeons for each key range.
 
 ## License
@@ -161,5 +175,5 @@ The following list of changes has been made to functionality:
 - The embed has a colour stripe that matches the state of the group:
   - Green for open
   - Yellow for full but editable
-  - Blue for full and finished
+  - Blue for full and not editable
   - Red for cancelled or timed out

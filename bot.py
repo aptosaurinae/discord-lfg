@@ -39,11 +39,13 @@ with open(args["config"], "rb") as config_file:
 def _validate_config(CONFIG_DATA: dict):
     config_errors = []
     if CONFIG_DATA.get("expansion") is None:
-        config_errors.append("You must define an expansion in the config using the 'expansion' argument")
+        config_errors.append(
+            "You must define an expansion in the config using the 'expansion' argument"
+        )
     if CONFIG_DATA.get("season") is None:
         config_errors.append("You must define a season in the config using the 'season' argument")
     if len(config_errors) > 0:
-        conf_errors = "".join([f'{err}\n' for err in config_errors])
+        conf_errors = "".join([f"{err}\n" for err in config_errors])
         raise ValueError(f"Config is missing required arguments: \n{conf_errors}")
 
 
@@ -58,15 +60,14 @@ LOG_FOLDER = Path(CONFIG_DATA.get("log_folder", ""))
 
 dt_now = datetime.now(timezone.utc)
 datetime_str = (
-    f"{dt_now.year}-{dt_now.month}-{dt_now.day}_"
-    f"{dt_now.hour}-{dt_now.minute}-{dt_now.second}"
+    f"{dt_now.year}-{dt_now.month}-{dt_now.day}_{dt_now.hour}-{dt_now.minute}-{dt_now.second}"
 )
 if LOG_FOLDER != "" and LOG_FOLDER.exists():
-    log_file_path = LOG_FOLDER / f'{datetime_str}_dungeon_buddy.log'
+    log_file_path = LOG_FOLDER / f"{datetime_str}_dungeon_buddy.log"
     logging.basicConfig(
         level=logging.DEBUG if DEBUG == 1 else logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        handlers=[logging.FileHandler(log_file_path),]
+        handlers=[logging.FileHandler(log_file_path)],
     )
 
 # --- Bot setup
@@ -75,6 +76,7 @@ if LOG_FOLDER != "" and LOG_FOLDER.exists():
 # see the example app_commands/basic on the discord-py GitHub repo
 class DungeonBuddyClient(discord.Client):
     """Main client for Discord."""
+
     # Suppress error on the User attribute being None since it fills up later
     user: discord.ClientUser
 
@@ -95,13 +97,16 @@ client = DungeonBuddyClient(intents=intents)
 @client.event
 async def on_ready():
     """Startup tasks."""
-    print(f'Logged in as {client.user} (ID: {client.user.id})')
-    print('------')
-    print('Dungeon Buddy started')
+    print(f"Logged in as {client.user} (ID: {client.user.id})")
+    print("------")
+    print("Dungeon Buddy started")
     if LOG_FOLDER != "" and LOG_FOLDER.exists():
         print(f"logging to: {LOG_FOLDER}")
     global CONFIG_DATA
-    CONFIG_DATA["guild_roles"] = {guild.id: guild.roles for guild in client.guilds}[CONFIG_DATA["guild_id"]]
+    CONFIG_DATA["guild_roles"] = {guild.id: guild.roles for guild in client.guilds}[
+        CONFIG_DATA["guild_id"]
+    ]
+
 
 # -- Help
 
@@ -111,6 +116,7 @@ async def lfghelp(interaction: discord.Interaction):
     """Help with using Dungeon Buddy."""
     await help_response(interaction)
 
+
 # -- LFG
 
 
@@ -118,14 +124,11 @@ async def lfghelp(interaction: discord.Interaction):
 @app_commands.describe(
     dungeon="The dungeon you are listing a key for.",
     listed_as="The in-game name. Leave blank to automatically generate a name for you (recommended)",
-    creator_notes="Extra notes you want to make players signing up aware of."
+    creator_notes="Extra notes you want to make players signing up aware of.",
 )
 @app_commands.autocomplete(dungeon=dungeon_autocomplete(CURRENT_EXPANSION, CURRENT_SEASON))
 async def lfg_command(
-    interaction: discord.Interaction,
-    dungeon: str,
-    listed_as: str = "",
-    creator_notes: str = "",
+    interaction: discord.Interaction, dungeon: str, listed_as: str = "", creator_notes: str = ""
 ):
     """Generates a Dungeon Buddy listing using a guided wizard."""
     await lfg(
@@ -145,7 +148,7 @@ async def lfg_command(
     your_role="The role you are filling for this group.",
     required_spots="'t' for tank, 'h' for healer, 'd' for dps. e.g. 'thdd' for all spots if you're dps",
     listed_as="The in-game name. Leave blank to automatically generate a name for you (recommended)",
-    creator_notes="Extra notes you want to make players signing up aware of."
+    creator_notes="Extra notes you want to make players signing up aware of.",
 )
 @app_commands.autocomplete(
     dungeon=dungeon_short_autocomplete(CURRENT_EXPANSION, CURRENT_SEASON),
@@ -178,15 +181,12 @@ async def lfgstring_command(
 
 
 if CONFIG_DATA.get("debug") is not None:
+
     @client.tree.command(guild=GUILD_ID, name="lfgdebug")
-    async def lfgdebug_command(interaction: discord.Interaction,):
+    async def lfgdebug_command(interaction: discord.Interaction):
         """Some quick-fire group listings for debug purposes (including what should be invalid setups)."""
         for num in range(6):
-            await lfgdebug(
-                interaction=interaction,
-                debug_type=num,
-                config=CONFIG_DATA,
-            )
+            await lfgdebug(interaction=interaction, debug_type=num, config=CONFIG_DATA)
 
 # -- Stats
 
@@ -210,6 +210,7 @@ async def lfguserhistory(interaction: discord.Interaction):
     """Review a specific users dungeon buddy signup history."""
     response = "temp"
     await interaction.response.send_message(response, ephemeral=True)
+
 
 # --- Run bot
 

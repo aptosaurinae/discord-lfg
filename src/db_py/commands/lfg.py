@@ -13,16 +13,14 @@ from db_py.utils import get_difficulty_start_and_end_from_channel_name
 
 class LFGValidationError(Exception):
     """LFG validation error message handler."""
+
     def __init__(self, messages):
         """Initialisation."""
         self.messages = messages
 
 
 def _validate_lfg_inputs(
-    difficulty: int,
-    time_type: str,
-    creator_role: str,
-    filled_spots: dict[str, int],
+    difficulty: int, time_type: str, creator_role: str, filled_spots: dict[str, int]
 ):
     errors = []
     if difficulty == -1:
@@ -75,7 +73,7 @@ async def _lfg(
     if time_type not in time_types.values():
         time_type = time_types.get(time_type, "")
 
-    dungeons = load_dungeons(config.get("expansion"), config.get("season"))    # type: ignore
+    dungeons = load_dungeons(config.get("expansion"), config.get("season"))  # type: ignore
 
     if dungeon in dungeons:
         dungeon_short = dungeon
@@ -98,10 +96,7 @@ async def _lfg(
     logging.debug(dungeon_info)
 
     instance = DungeonInstance(
-        interaction=interaction,
-        dungeon_info=dungeon_info,
-        config=config,
-        creator_role=creator_role
+        interaction=interaction, dungeon_info=dungeon_info, config=config, creator_role=creator_role
     )
     instance.fill_spots(filled_spots)
     await instance.send_message(interaction)
@@ -109,11 +104,7 @@ async def _lfg(
 
 
 async def lfg(
-    interaction: discord.Interaction,
-    dungeon: str,
-    listed_as: str,
-    creator_notes: str,
-    config: dict,
+    interaction: discord.Interaction, dungeon: str, listed_as: str, creator_notes: str, config: dict
 ):
     """Creates a LFG listing using an interactable interface."""
     difficulties = get_difficulty_start_and_end_from_channel_name(interaction.channel.name)  # type: ignore
@@ -158,14 +149,12 @@ async def lfgquick(
     required_spots: str,
     listed_as: str,
     creator_notes: str,
-    config: dict
+    config: dict,
 ):
     """Creates a LFG listing using a quick-string."""
     role_counts = DungeonInstance.role_counts.copy()
     required_spots_roles = {
-        role: required_spots.count(role[:1])
-        for role
-        in [name.name for name in RoleType]
+        role: required_spots.count(role[:1]) for role in [name.name for name in RoleType]
     }
     logging.debug(f"required_spots: {required_spots}")
     logging.debug(f"required_spots_roles: {required_spots_roles}")
@@ -191,11 +180,7 @@ async def lfgquick(
     )
 
 
-async def lfgdebug(
-    interaction: discord.Interaction,
-    debug_type: int,
-    config: dict,
-):
+async def lfgdebug(interaction: discord.Interaction, debug_type: int, config: dict):
     """Creates a listing for debugging purposes."""
     if debug_type == 0:
         difficulty = 3
