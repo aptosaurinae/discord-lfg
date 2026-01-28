@@ -26,13 +26,19 @@ For feature parity with the original Dungeon Buddy, the following is missing:
 
 ### Installation
 
+<!--- --8<-- [start:docs-install-general] -->
+
 To install dungeon-buddy-py (db_py), we recommend using the [conda](https://docs.conda.io/en/latest/) package manager,
 accessible from the terminal by installing [miniforge](https://github.com/conda-forge/miniforge?tab=readme-ov-file#download).
 
 Note that the `discord-py` package is not up to date on conda, so you will need to add this from `pip` after
 setting up the environment initially with `conda`.
 
+<!--- --8<-- [end:docs-install-general] -->
+
 #### As a user
+
+<!--- --8<-- [start:docs-install-user] -->
 
 ``` shell
 git clone git@github.com:aptosaurinae/dungeon-buddy-py.git
@@ -43,7 +49,11 @@ pip install discord-py
 pip install --no-deps -e .
 ```
 
+<!--- --8<-- [end:docs-install-user] -->
+
 #### Development / Contributing
+
+<!--- --8<-- [start:docs-install-dev] -->
 
 ``` shell
 git clone git@github.com:aptosaurinae/dungeon-buddy-py.git
@@ -55,6 +65,8 @@ pip install --no-deps -e .
 ```
 
 This will enable `pre-commit` and `pytest`.
+
+<!--- --8<-- [end:docs-install-dev] -->
 
 ### Running
 
