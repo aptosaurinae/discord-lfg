@@ -129,16 +129,14 @@ async def lfg(
         await interaction.response.send_message(response, ephemeral=True)
         return None
 
-    role_counts = {role["name"]: role["count"] for role in config.get("roles", {})}
-
-    view = LFGOptions(difficulties, config, role_counts)
+    view = LFGOptions(difficulties, roles)
     await interaction.response.send_message(view=view, ephemeral=True)
     await view.wait()
     if not view.confirmed:
         logging.debug("Group creation cancelled.")
         return None
 
-    filled_spots = role_counts.copy()
+    filled_spots = {role.name: role.count for role in roles.values()}
     filled_spots[view.creator_role] -= 1
     for role, required_num in view.required_roles.items():
         filled_spots[role] -= required_num

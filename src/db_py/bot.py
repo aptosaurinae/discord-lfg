@@ -48,7 +48,6 @@ def _validate_config(CONFIG_DATA: dict):
     if CONFIG_DATA.get("role") is None:
         config_errors.append("You must define roles in the config, see readme for details")
     for role_data in CONFIG_DATA.get("role", {}).values():
-        print(role_data)
         if (
             role_data.get("count") is None
             or role_data.get("emoji") is None
