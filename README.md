@@ -109,21 +109,29 @@ guild_name = "NoP"
 expansion = "tww"
 season = "3"
 
-[emojis]
-tank = "<:tankemojiname:123456789>"
-healer = "<:healeremojiname:123456789>"
-dps = "<:dpsemojiname:123456789>"
+[role.tank]
+emoji = "<:tankemojiname:123456789>"
+count = 1
+indicator = "t"
+
+[role.healer]
+emoji = "<:healeremojiname:123456789>"
+count = 1
+indicator = "h"
+
+[role.dps]
+emoji = "<:dpsemojiname:123456789>"
+count = 3
+indicator = "d"
 ```
 
 - `guild_id` is the Discord ID of the server that you are wanting the host the bot in.
 - The `expansion` and `season` match a valid dungeon lookup file in `/resources/dungeons`.
+- `role` dictionary for each of the required roles you want in the group.
+  - `emoji`: The emoji names and numbers need to match the names and IDs of the emojis in the server you are hosting the bot. The names can be found as the ":name:" names in the server. The IDs can be found by right clicking on the emojis in the server you're in and opening the link, then looking at the number of their name in the URL.
+  - `count`: the number of spots in the group for this role.
+  - `indicator`: the single character indicator for quick group building.
 - *Optional*: `guild_name` modifies the automatic listing group names and filled spots.
-- *Optional*: `emojis` dictionary for each of `tank`, `healer`, and `dps`.
-If you don't provide these then Dungeon Buddy will default to using 🛡️, 🪄, ⚔️ for each role.
-The emoji names and numbers need to match the names and IDs of the emojis in the server you are hosting the bot.
-The names can be found as the ":name:" names in the server.
-The IDs can be found by right clicking on the emojis in the server you're in and opening the link,
-then looking at the number of their name in the URL.
 - *Optional*: `timeout_length`, a float in minutes. This controls how long the listing exists for before
 timing out. This is a float, so can be set to 0.1 or similar for testing purposes.
 - *Optional*: `editable_length`, a float in minutes. This controls how long the listing is able to
