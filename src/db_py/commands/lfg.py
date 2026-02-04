@@ -172,7 +172,8 @@ async def lfgquick(
     """Creates a LFG listing using a quick-string."""
     role_counts = {role.name: role.count for role in roles.values()}
     required_spots_roles = {
-        role_name: required_spots.count(role_def.indicator) for role_name, role_def in roles.items()
+        role_name: required_spots.count(role_def.identifier)
+        for role_name, role_def in roles.items()
     }
     logging.debug(f"required_spots: {required_spots}")
     logging.debug(f"required_spots_roles: {required_spots_roles}")

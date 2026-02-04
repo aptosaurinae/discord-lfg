@@ -47,11 +47,15 @@ def _validate_config(CONFIG_DATA: dict):
         config_errors.append("You must define a season in the config using the 'season' argument")
     if CONFIG_DATA.get("role") is None:
         config_errors.append("You must define roles in the config, see readme for details")
-    for role in CONFIG_DATA.get("role", {}):
-        role: dict = role
-        if role.get("count") is None or role.get("emoji") is None or role.get("indicator") is None:
+    for role_data in CONFIG_DATA.get("role", {}).values():
+        print(role_data)
+        if (
+            role_data.get("count") is None
+            or role_data.get("emoji") is None
+            or role_data.get("identifier") is None
+        ):
             config_errors.append(
-                "Role input is missing data, needs ['count', 'emoji', 'indicator']"
+                "Role input is missing data, needs ['count', 'emoji', 'identifier']"
             )
     if len(config_errors) > 0:
         conf_errors = "".join([f"{err}\n" for err in config_errors])

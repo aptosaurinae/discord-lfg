@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 import discord
 
-from db_py.resources import generate_listing_name, generate_passphrase, load_emojis
+from db_py.resources import generate_listing_name, generate_passphrase
 from db_py.roles import RoleDefinition
 from db_py.utils import datetime_now_utc, get_guild_role_mention_for_group_role
 
@@ -115,7 +115,7 @@ class GroupBuilder:
         self._state_init(guild_name, timeout_length, editable_length, debug)
         self._setup_group(**group_info, guild_name=guild_name)
         self._roles_init(
-            config.get("emojis", load_emojis()),
+            roles,
             config.get("guild_roles", {}),
             interaction.channel.name if isinstance(interaction.channel.name, str) else "",  # type: ignore
         )

@@ -10,7 +10,7 @@ class RoleDefinition:
     name: str
     count: int
     emoji: str
-    indicator: str
+    identifier: str
 
 
 def create_roles_from_config(roles: dict[str, dict[str, str | int]]) -> dict[str, RoleDefinition]:
@@ -22,7 +22,7 @@ def create_roles_from_config(roles: dict[str, dict[str, str | int]]) -> dict[str
                 name: {
                     emoji: emoji string,
                     count: count integer,
-                    indicator: single-character indicator,
+                    identifier: single-character indicator,
                 }
             }
 
@@ -31,7 +31,7 @@ def create_roles_from_config(roles: dict[str, dict[str, str | int]]) -> dict[str
     """
     return {
         role_name: RoleDefinition(
-            role_name, int(role["count"]), str(role["emoji"]), str(role["indicator"])
+            role_name, int(role["count"]), str(role["emoji"]), str(role["identifier"])
         )
         for role_name, role in roles.items()
     }
