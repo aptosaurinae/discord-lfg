@@ -80,7 +80,7 @@ if LOG_FOLDER != "" and LOG_FOLDER.exists():
     logging.basicConfig(
         level=logging.DEBUG if DEBUG == 1 else logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        handlers=[logging.FileHandler(log_file_path)],
+        handlers=[logging.FileHandler(log_file_path, encoding="utf-8")],
     )
 
 # --- Bot setup

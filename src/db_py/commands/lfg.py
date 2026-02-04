@@ -63,9 +63,7 @@ async def _lfg(
 ):
     logging.debug("".join([str((key, value)) for key, value in locals().items()]))
     try:
-        _validate_lfg_inputs(
-            difficulty, time_type, creator_role, filled_spots, config.get("role", {})
-        )
+        _validate_lfg_inputs(difficulty, time_type, creator_role, filled_spots, roles)
     except LFGValidationError as e:
         response = "\n".join(e.messages)
         message_func = (
@@ -200,10 +198,10 @@ async def lfgquick(
 
 async def lfgdebug(interaction: discord.Interaction, debug_type: int, config: dict):
     """Creates a listing for debugging purposes."""
-    config["roles"] = {
+    roles = {
         "tank": RoleDefinition("tank", 1, "🛡️", "t"),
         "healer": RoleDefinition("healer", 1, "🪄", "h"),
-        "dps": RoleDefinition("dps", 1, "⚔️", "t"),
+        "dps": RoleDefinition("dps", 3, "⚔️", "t"),
     }
     if debug_type == 0:
         difficulty = 3
@@ -244,5 +242,6 @@ async def lfgdebug(interaction: discord.Interaction, debug_type: int, config: di
         listed_as=f"Dungeon Debug Test {debug_type}",
         creator_notes="debug creator notes blah blah",
         filled_spots=filled_spots,
+        roles=roles,
         config=config,
     )
