@@ -28,11 +28,6 @@ def load_help_message() -> dict[str, str]:
     return _load_resource("messages")["help"]
 
 
-def load_emojis() -> dict[str, str]:
-    """Loads standard emojis."""
-    return _load_resource("emojis")
-
-
 def load_time_types() -> dict[str, str]:
     """Loads time types for dungeons."""
     return _load_resource("time_types")
