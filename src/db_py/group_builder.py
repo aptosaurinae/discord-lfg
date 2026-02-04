@@ -199,8 +199,9 @@ class GroupBuilder:
         logging.debug(f"get description {self.group_title}")
         group = self.group_details
         role_string = ""
-        for role_name in self.role_counts:
-            role_string += f"{_role_string(self.roles[role_name], self.creator.id)}\n"
+        for role_name, role_count in self.role_counts.items():
+            for idx in range(role_count):
+                role_string += f"{_role_string(self.roles[role_name], self.creator.id, idx)}\n"
         kicked_users = "\n".join([
             f"{user.display_name}: {user.removal_reason}" for user in self.kicked_users
         ])
@@ -588,7 +589,7 @@ class GroupBuilder:
             emoji=role.emoji,
             style=role.button_style,
             disabled=role.disabled,
-            row=1,
+            # row=1,
         )
         btn.callback = btn_click
         return btn
@@ -612,7 +613,7 @@ class GroupBuilder:
             emoji="🔑",
             style=discord.ButtonStyle.secondary,
             disabled=False,
-            row=1,
+            # row=1,
         )
         btn.callback = btn_click
         return btn
@@ -652,7 +653,7 @@ class GroupBuilder:
             emoji="⚙️",
             style=discord.ButtonStyle.secondary,
             disabled=False,
-            row=1,
+            # row=1,
         )
         btn.callback = btn_click
         return btn
