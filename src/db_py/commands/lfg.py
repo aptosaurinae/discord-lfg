@@ -4,7 +4,7 @@ import logging
 
 import discord
 
-from db_py.db_instance import DungeonInstance
+from db_py.group_builder import GroupBuilder
 from db_py.lfg_options import LFGOptions
 from db_py.resources import load_dungeons, load_time_types
 from db_py.roles import RoleType
@@ -30,7 +30,7 @@ def _validate_lfg_inputs(
     if time_type not in time_types and time_type not in time_types.values():
         errors.append(f"time_type not recognised, given: {time_type}, valid: {time_types}")
 
-    max_counts = DungeonInstance.role_counts.copy()
+    max_counts = GroupBuilder.role_counts.copy()
     max_counts[creator_role] -= 1
     for role, count in filled_spots.items():
         if count > max_counts[role]:
@@ -76,18 +76,18 @@ async def _lfg(
     dungeons = load_dungeons(config.get("expansion"), config.get("season"))  # type: ignore
 
     if dungeon in dungeons:
-        dungeon_short = dungeon
-        dungeon_long = dungeons[dungeon]
+        name_short = dungeon
+        name_long = dungeons[dungeon]
     else:
-        dungeon_long = dungeon
+        name_long = dungeon
         for key, value in dungeons.items():
             if value == dungeon:
-                dungeon_short = key
+                name_short = key
                 break
 
     dungeon_info = {
-        "dungeon_short": dungeon_short,
-        "dungeon_long": dungeon_long,
+        "name_short": name_short,
+        "name_long": name_long,
         "listed_as": listed_as,
         "creator_notes": creator_notes,
         "difficulty": difficulty,
@@ -95,8 +95,8 @@ async def _lfg(
     }
     logging.debug(dungeon_info)
 
-    instance = DungeonInstance(
-        interaction=interaction, dungeon_info=dungeon_info, config=config, creator_role=creator_role
+    instance = GroupBuilder(
+        interaction=interaction, group_info=dungeon_info, config=config, creator_role=creator_role
     )
     instance.fill_spots(filled_spots)
     await instance.send_message(interaction)
@@ -113,13 +113,13 @@ async def lfg(
         await interaction.response.send_message(response, ephemeral=True)
         return None
 
-    role_counts = DungeonInstance.role_counts.copy()
+    role_counts = GroupBuilder.role_counts.copy()
 
     view = LFGOptions(difficulties, config, role_counts)
     await interaction.response.send_message(view=view, ephemeral=True)
     await view.wait()
     if not view.confirmed:
-        logging.debug("Dungeon group creation cancelled.")
+        logging.debug("Group creation cancelled.")
         return None
 
     filled_spots = role_counts.copy()
@@ -152,7 +152,7 @@ async def lfgquick(
     config: dict,
 ):
     """Creates a LFG listing using a quick-string."""
-    role_counts = DungeonInstance.role_counts.copy()
+    role_counts = GroupBuilder.role_counts.copy()
     required_spots_roles = {
         role: required_spots.count(role[:1]) for role in [name.name for name in RoleType]
     }

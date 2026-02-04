@@ -1,6 +1,6 @@
 help = """Post any issues in https://discord.com/channels/1055487463734386739/1194741620441096332
 
-`/lfg` is used to create a group for the dungeon. \
+`/lfg` is used to create a group. \
 Choose desired dungeon > dungeon difficulty > timed/completed > your role > required roles.
 
 `/lfgquick` is used to quickly create a group using a set of text autocompletes which allows direct text input.

@@ -59,8 +59,8 @@ def generate_passphrase(num_words: int = 3) -> str:
     return "".join(random.choices(population=passphrase_words, k=num_words))
 
 
-def generate_listing_name(dungeon_short: str, num_chars: int, guild_name):
-    """Creates a listing name from a dungeon name."""
+def generate_listing_name(name_short: str, num_chars: int, guild_name):
+    """Creates a listing name from a given name."""
     random_string = ""
     random_words = [word.capitalize() for word in load_name_suffix_words()]
     for _ in range(num_chars):
@@ -69,4 +69,4 @@ def generate_listing_name(dungeon_short: str, num_chars: int, guild_name):
     if guild_name != "":
         guild_name += " "
 
-    return f"{guild_name}{dungeon_short} {random_string}"
+    return f"{guild_name}{name_short} {random_string}"

@@ -74,7 +74,7 @@ if LOG_FOLDER != "" and LOG_FOLDER.exists():
 
 
 # see the example app_commands/basic on the discord-py GitHub repo
-class DungeonBuddyClient(discord.Client):
+class BotClient(discord.Client):
     """Main client for Discord."""
 
     # Suppress error on the User attribute being None since it fills up later
@@ -91,7 +91,7 @@ class DungeonBuddyClient(discord.Client):
 
 
 intents = discord.Intents.default()
-client = DungeonBuddyClient(intents=intents)
+client = BotClient(intents=intents)
 
 
 @client.event
@@ -99,7 +99,7 @@ async def on_ready():
     """Startup tasks."""
     print(f"Logged in as {client.user} (ID: {client.user.id})")
     print("------")
-    print("Dungeon Buddy started")
+    print("Group Builder started")
     if LOG_FOLDER != "" and LOG_FOLDER.exists():
         print(f"logging to: {LOG_FOLDER}")
     global CONFIG_DATA
@@ -113,7 +113,7 @@ async def on_ready():
 
 @client.tree.command(guild=GUILD_ID)
 async def lfghelp(interaction: discord.Interaction):
-    """Help with using Dungeon Buddy."""
+    """Help with using Group Builder."""
     await help_response(interaction)
 
 
@@ -130,7 +130,7 @@ async def lfghelp(interaction: discord.Interaction):
 async def lfg_command(
     interaction: discord.Interaction, dungeon: str, listed_as: str = "", creator_notes: str = ""
 ):
-    """Generates a Dungeon Buddy listing using a guided wizard."""
+    """Generates a Group Builder listing using a guided wizard."""
     await lfg(
         interaction=interaction,
         dungeon=dungeon,
@@ -193,21 +193,21 @@ if CONFIG_DATA.get("debug") is not None:
 
 @client.tree.command(guild=GUILD_ID)
 async def lfghistory(interaction: discord.Interaction):
-    """Review your last 10 dungeon buddy signups."""
+    """Review your last 10 group signups."""
     response = "temp"
     await interaction.response.send_message(response, ephemeral=True)
 
 
 @client.tree.command(guild=GUILD_ID)
 async def lfgstats(interaction: discord.Interaction):
-    """Review recent and all-time numbers of dungeon listings."""
+    """Review recent and all-time numbers of group listings."""
     response = "temp"
     await interaction.response.send_message(response, ephemeral=True)
 
 
 @client.tree.command(guild=GUILD_ID)
 async def lfguserhistory(interaction: discord.Interaction):
-    """Review a specific users dungeon buddy signup history."""
+    """Review a specific users group signup history."""
     response = "temp"
     await interaction.response.send_message(response, ephemeral=True)
 
