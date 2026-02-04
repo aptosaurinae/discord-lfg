@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import discord
 
 from db_py.resources import generate_listing_name, generate_passphrase, load_emojis
-from db_py.roles import RoleType
+from db_py.roles import RoleDefinition
 from db_py.utils import datetime_now_utc, get_guild_role_mention_for_group_role
 
 
@@ -83,10 +83,13 @@ class GroupState:
 class GroupBuilder:
     """Builds a group dynamically."""
 
-    role_counts = {RoleType.tank.name: 1, RoleType.healer.name: 1, RoleType.dps.name: 3}
-
     def __init__(
-        self, interaction: discord.Interaction, group_info: dict, config: dict, creator_role: str
+        self,
+        interaction: discord.Interaction,
+        group_info: dict,
+        config: dict,
+        creator_role: str,
+        roles: dict[str, RoleDefinition],
     ):
         """Creates a Group Builder.
 
@@ -96,12 +99,21 @@ class GroupBuilder:
             group_info: A dictionary of the group specific information
             config: A dictionary of configuration information for Group Builder
             creator_role: The role the creator has chosen
+            role_counts: A dictionary of role_name to the count of the number of roles.
+                Role names must match those given in the configuration file.
+            roles: A dictionary of role information based on RoleDefinition.
         """
         logging.debug(
             f"GroupBuilder created by {interaction.user.id} {interaction.user.display_name}"
         )
-        self._state_init(config)
-        self._setup_group(**group_info, config=config)
+        self.role_counts = {role.name: role.count for role in roles.values()}
+        self.emojis = {role.name: role.emoji for role in roles.values()}
+        guild_name = config.get("guild_name", "")
+        timeout_length = config.get("timeout_length", 30)
+        editable_length = config.get("editable_length", 5)
+        debug = config.get("debug", False)
+        self._state_init(guild_name, timeout_length, editable_length, debug)
+        self._setup_group(**group_info, guild_name=guild_name)
         self._roles_init(
             config.get("emojis", load_emojis()),
             config.get("guild_roles", {}),
@@ -178,11 +190,17 @@ class GroupBuilder:
     @property
     def description(self) -> str:
         """Gets a standardised description for the group including role spots."""
+
+        def _role_string(role: GroupRole, creator_id: int, role_idx: int = 0):
+            user = role.users[role_idx]
+            bold = "**" if user.display_name != "" else ""
+            return f"{role.emoji} : {bold}{user.display_name}{bold}{' 🚩' if user.id == creator_id else ''}"
+
         logging.debug(f"get description {self.group_title}")
         group = self.group_details
-        tank = self.roles[RoleType.tank.name]
-        healer = self.roles[RoleType.healer.name]
-        dps = self.roles[RoleType.dps.name]
+        role_string = ""
+        for role_name in self.role_counts:
+            role_string += f"{_role_string(self.roles[role_name], self.creator.id)}\n"
         kicked_users = "\n".join([
             f"{user.display_name}: {user.removal_reason}" for user in self.kicked_users
         ])
@@ -194,19 +212,10 @@ class GroupBuilder:
                 kicked_users += "\n"
             footer = "`/lfghelp for Group Builder help`"
 
-        def _role_string(role: GroupRole, creator_id: int, role_idx: int = 0):
-            user = role.users[role_idx]
-            bold = "**" if user.display_name != "" else ""
-            return f"{role.emoji} : {bold}{user.display_name}{bold}{' 🚩' if user.id == creator_id else ''}"
-
         return (
             f"**{self.listing_message_body}**\n"
             f"{group.creator_notes}\n"
-            f"{_role_string(tank, self.creator.id)}\n"
-            f"{_role_string(healer, self.creator.id)}\n"
-            f"{_role_string(dps, self.creator.id)}\n"
-            f"{_role_string(dps, self.creator.id, 1)}\n"
-            f"{_role_string(dps, self.creator.id, 2)}\n"
+            f"{role_string}\n"
             # f"{kicked_users}"
             f"{footer}"
         )
@@ -248,36 +257,28 @@ class GroupBuilder:
     # --- Initialisation
 
     def _role_constructor(
-        self, role: RoleType, emojis: dict, guild_roles: list[discord.Role], channel_name: str
+        self, role: RoleDefinition, guild_roles: list[discord.Role], channel_name: str
     ):
         return GroupRole(
             name=role.name,
-            users=[
-                self._create_empty_spot_user(role.name) for _ in range(self.role_counts[role.name])
-            ],
-            assigned=[False for _ in range(self.role_counts[role.name])],
+            users=[self._create_empty_spot_user(role.name) for _ in range(role.count)],
+            assigned=[False for _ in range(role.count)],
             button_style=discord.ButtonStyle.secondary,
             disabled=False,
-            emoji=emojis[role.name],
+            emoji=role.emoji,
             role_mention=get_guild_role_mention_for_group_role(
-                group_role=role, guild_roles=guild_roles, channel_name=channel_name
+                group_role=role.name, guild_roles=guild_roles, channel_name=channel_name
             ),
         )
 
     def _roles_init(
-        self, emojis: dict[str, str], guild_roles: list[discord.Role], channel_name: str
+        self, roles: dict[str, RoleDefinition], guild_roles: list[discord.Role], channel_name: str
     ):
         """Initialise roles information."""
-        constructor_info = {
-            "emojis": emojis,
-            "guild_roles": guild_roles,
-            "channel_name": channel_name,
-        }
-        self.role_emojis = emojis
+        constructor_info = {"guild_roles": guild_roles, "channel_name": channel_name}
         self.roles = {
-            RoleType.tank.name: self._role_constructor(RoleType.tank, **constructor_info),
-            RoleType.healer.name: self._role_constructor(RoleType.healer, **constructor_info),
-            RoleType.dps.name: self._role_constructor(RoleType.dps, **constructor_info),
+            role_name: self._role_constructor(role_info, **constructor_info)
+            for role_name, role_info in roles.items()
         }
 
     def _setup_group(
@@ -288,10 +289,9 @@ class GroupBuilder:
         creator_notes: str,
         difficulty: str,
         time_type: str,
-        config: dict,
+        guild_name: str,
     ):
         """Captures information from the initial listing process."""
-        guild_name = config.get("guild_name", "")
         random_listing = generate_listing_name(name_short, 3, guild_name)
         self.group_details = GroupDetails(
             name_short=name_short,
@@ -302,13 +302,10 @@ class GroupBuilder:
             time_type=time_type,
         )
 
-    def _state_init(self, config: dict):
+    def _state_init(self, guild_name: str, timeout_length: int, editable_length: int, debug: bool):
         """Initialise state."""
-        guild_name = config.get("guild_name", "")
-        timeout_length = config.get("timeout_length", 30)
-        editable_length = config.get("editable_length", 5)
-        debug = config.get("debug", False)
         now = datetime_now_utc()
+        empty_spots = sum(self.role_counts.values())
         self.state = GroupState(
             created_at=now,
             close_group_at=now + timedelta(minutes=timeout_length),
@@ -316,7 +313,7 @@ class GroupBuilder:
             closed=False,
             cancelled=False,
             timed_out=False,
-            empty_spots=5,  # TODO this should be the sum of the role counts
+            empty_spots=empty_spots,
             filled_spots=0,
             filled_spot_name=f"~~Filled {guild_name}{' ' if guild_name != '' else ''}Spot~~",
             passphrase=generate_passphrase(),
@@ -507,7 +504,7 @@ class GroupBuilder:
         # a user can only be present in a group once,
         # so must be removed if present before being added.
         if not filled_spot:
-            for role_name in [name.name for name in RoleType]:
+            for role_name in self.role_counts:
                 remove_role = self.roles[role_name]
                 if group_user.id in [user.id for user in remove_role.users]:
                     self.remove_role(remove_role, group_user.id)
@@ -543,23 +540,21 @@ class GroupBuilder:
             logging.debug(f"no buttons needed {self.group_title}")
             return None
         logging.debug(f"retrieving buttons {self.group_title}")
-        tank_btn = self._role_button(RoleType.tank)
-        healer_btn = self._role_button(RoleType.healer)
-        dps_btn = self._role_button(RoleType.dps)
+        role_btns = [self._role_button(role_name) for role_name in self.role_counts]
         passphrase_btn = self._passphrase_button()
         settings_btn = self._settings_button()
 
         buttons = discord.ui.View()
-        for element in [tank_btn, healer_btn, dps_btn, passphrase_btn, settings_btn]:
+        for element in role_btns + [passphrase_btn, settings_btn]:
             buttons.add_item(element)
         return buttons
 
-    def _role_button(self, role_type: RoleType) -> discord.ui.Button:
+    def _role_button(self, role_name: str) -> discord.ui.Button:
         """Creates a button interactable formatted for a particular role."""
 
         async def btn_click(interaction: discord.Interaction):
             logging.debug(
-                f"{self.group_title} {role.name} button clicked by {interaction.user.display_name}"
+                f"{self.group_title} {role_name} button clicked by {interaction.user.display_name}"
             )
             if interaction.user.id in [user.id for user in self.kicked_users]:
                 logging.debug(f"Sending kicked user message: {interaction.user.id}")
@@ -573,12 +568,12 @@ class GroupBuilder:
                         return None
             if interaction.user.id == self.creator.id:
                 logging.debug("Filling spots because creator clicked button")
-                self.fill_spots({role_type.name: 1})
+                self.fill_spots({role_name: 1})
             else:
                 logging.debug("Adding user because non-creator clicked button")
                 self.add_role(
-                    assigned_role=role_type.name,
-                    group_user=self.create_user_from_interaction(interaction, role_type.name),
+                    assigned_role=role_name,
+                    group_user=self.create_user_from_interaction(interaction, role_name),
                 )
             self.is_closed()
             await self.edit_message()
@@ -587,7 +582,7 @@ class GroupBuilder:
             if not interaction.response.is_done():
                 await interaction.response.defer()
 
-        role = self.role_info(role_type.name)
+        role = self.role_info(role_name)
         btn = discord.ui.Button(
             custom_id=role.name,
             emoji=role.emoji,

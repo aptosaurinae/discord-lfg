@@ -4,7 +4,7 @@ import discord
 from discord import app_commands
 
 from db_py.resources import load_dungeons, load_time_types
-from db_py.roles import RoleType
+from db_py.roles import RoleDefinition
 from db_py.utils import get_difficulty_start_and_end_from_channel_name
 
 
@@ -39,10 +39,9 @@ def time_type_autocomplete():
     return _autocomplete_choice(list(time_types.keys()))
 
 
-def role_autocomplete():
+def role_autocomplete(roles: dict[str, RoleDefinition]):
     """Autocompletion system for user role."""
-    roles = [role.name for role in RoleType]
-    return _autocomplete_choice(roles)
+    return _autocomplete_choice(list(roles))
 
 
 async def difficulty_autocomplete(interaction: discord.Interaction, current: str):

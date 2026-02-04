@@ -4,8 +4,8 @@ import logging
 
 import discord
 
-from db_py.resources import load_emojis, load_time_types
-from db_py.roles import RoleType
+from db_py.resources import load_time_types
+from db_py.roles import RoleDefinition
 
 
 class LFGDifficulty(discord.ui.Select):
@@ -60,13 +60,13 @@ class LFGTimeType(discord.ui.Select):
 class LFGCreatorRole(discord.ui.Select):
     """Creator role selector."""
 
-    def __init__(self, emojis: dict):
+    def __init__(self, roles: dict[str, RoleDefinition]):
         """Initialisation."""
         options = [
             discord.SelectOption(
-                label=value.name.capitalize(), value=value.name, emoji=emojis[value.name]
+                label=role_info.name.capitalize(), value=role_info.name, emoji=role_info.emoji
             )
-            for value in RoleType
+            for role_info in roles.values()
         ]
 
         super().__init__(
@@ -85,7 +85,7 @@ class LFGCreatorRole(discord.ui.Select):
 class LFGRolesRequired(discord.ui.Select):
     """Roles required selector."""
 
-    def __init__(self, emojis: dict, role_counts: dict[str, int], creator_role: str | None = None):
+    def __init__(self, roles: dict[str, RoleDefinition], creator_role: str | None = None):
         """Initialisation."""
         if creator_role is None:
             logging.debug("roles required not given creator role")
@@ -93,15 +93,15 @@ class LFGRolesRequired(discord.ui.Select):
             options = [discord.SelectOption(label="Choose your role first.")]
         else:
             logging.debug("creator role chosen, updating role required dropdown")
-            max_values = 4
-            role_counts = role_counts.copy()
-            role_counts[creator_role] -= 1
+            max_values = sum([role.count for role in roles.values()]) - 1
             options = [
                 discord.SelectOption(
-                    label=key.capitalize(), value=f"{key}_{idx}", emoji=emojis[key]
+                    label=role_name.capitalize(), value=f"{role_name}_{idx}", emoji=role_info.emoji
                 )
-                for key, value in role_counts.items()
-                for idx in range(value)
+                for role_name, role_info in roles.items()
+                for idx in range(
+                    role_info.count if role_info.name != creator_role else role_info.count - 1
+                )
             ]
 
         super().__init__(
@@ -119,7 +119,7 @@ class LFGRolesRequired(discord.ui.Select):
         assert self.view is not None
         if self.values[0] == "Choose your role first.":
             return await interaction.response.defer()
-        required_roles = {role.name: 0 for role in RoleType}
+        required_roles = {role_name: 0 for role_name in self.view.roles}
         for item in self.values:
             item_name = item.split("_")[0]
             required_roles[item_name] += 1
@@ -130,21 +130,22 @@ class LFGRolesRequired(discord.ui.Select):
 class LFGOptions(discord.ui.View):
     """LFG options menu."""
 
-    def __init__(self, difficulties: list[int], config: dict, role_counts: dict[str, int]):
+    def __init__(self, difficulties: list[int], config: dict, roles: dict[str, RoleDefinition]):
         """Initialisation."""
         super().__init__(timeout=120)
-        self.role_counts = role_counts.copy()
+        self.roles = roles
+        self.role_counts = {role.name: role.count for role in roles.values()}
         self.difficulty = -1 if len(difficulties) > 1 else difficulties[0]
         self.time_type = ""
         self.creator_role = ""
         self.required_roles = {}
         self.confirmed = False
-        self.emojis = config.get("emojis", load_emojis())
+        self.emojis = {role.name: role.emoji for role in roles.values()}
 
         self.lfg_difficulties = LFGDifficulty(difficulties)
         self.lfg_time_types = LFGTimeType()
-        self.lfg_creator_role = LFGCreatorRole(self.emojis)
-        self.lfg_roles_required = LFGRolesRequired(self.emojis, self.role_counts)
+        self.lfg_creator_role = LFGCreatorRole(roles)
+        self.lfg_roles_required = LFGRolesRequired(roles)
 
         self.add_item(self.lfg_difficulties)
         self.add_item(self.lfg_time_types)

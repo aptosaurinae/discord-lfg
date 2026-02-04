@@ -22,6 +22,7 @@ from db_py.autocompletion import (
 )
 from db_py.commands.help import help_response
 from db_py.commands.lfg import lfg, lfgdebug, lfgquick
+from db_py.roles import create_roles_from_config
 
 # --- Config setup
 
@@ -44,6 +45,14 @@ def _validate_config(CONFIG_DATA: dict):
         )
     if CONFIG_DATA.get("season") is None:
         config_errors.append("You must define a season in the config using the 'season' argument")
+    if CONFIG_DATA.get("role") is None:
+        config_errors.append("You must define roles in the config, see readme for details")
+    for role in CONFIG_DATA.get("role", {}):
+        role: dict = role
+        if role.get("count") is None or role.get("emoji") is None or role.get("indicator") is None:
+            config_errors.append(
+                "Role input is missing data, needs ['count', 'emoji', 'indicator']"
+            )
     if len(config_errors) > 0:
         conf_errors = "".join([f"{err}\n" for err in config_errors])
         raise ValueError(f"Config is missing required arguments: \n{conf_errors}")
@@ -57,6 +66,7 @@ CURRENT_EXPANSION = str(CONFIG_DATA.get("expansion"))
 CURRENT_SEASON = str(CONFIG_DATA.get("season"))
 DEBUG = CONFIG_DATA.get("debug", 0)
 LOG_FOLDER = Path(CONFIG_DATA.get("log_folder", ""))
+ROLES = create_roles_from_config(CONFIG_DATA.get("role", {}))
 
 dt_now = datetime.now(timezone.utc)
 datetime_str = (
@@ -136,6 +146,7 @@ async def lfg_command(
         dungeon=dungeon,
         listed_as=listed_as,
         creator_notes=creator_notes,
+        roles=ROLES,
         config=CONFIG_DATA,
     )
 
@@ -153,7 +164,7 @@ async def lfg_command(
 @app_commands.autocomplete(
     dungeon=dungeon_short_autocomplete(CURRENT_EXPANSION, CURRENT_SEASON),
     time_type=time_type_autocomplete(),
-    your_role=role_autocomplete(),
+    your_role=role_autocomplete(ROLES),
     difficulty=difficulty_autocomplete,
 )
 async def lfgstring_command(
@@ -176,6 +187,7 @@ async def lfgstring_command(
         listed_as=listed_as,
         creator_notes=creator_notes,
         required_spots=required_spots,
+        roles=ROLES,
         config=CONFIG_DATA,
     )
 
