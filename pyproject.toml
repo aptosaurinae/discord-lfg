@@ -68,17 +68,17 @@ classifiers = [
         "Programming Language :: Python :: 3",
     ]
 
-name = "db_py"
+name = "discord_lfg"
 authors = [
-    { name = "aptosaurinae", email = "dukesnopbot@gmail.com" },
+    { name = "aptosaurinae", email = "dukeslet@gmail.com" },
 ]
 maintainers = []
-description = "Dungeon group forming system for Discord."
+description = "Group forming system for Discord."
 readme = "README.md"
 requires-python = ">=3.8"
-keywords = ["dungeon", "buddy", "wow"]
+keywords = ["discord", "lfg", "wow"]
 dynamic = ["dependencies", "optional-dependencies", "version"]
 
 [project.urls]
-repository = "https://github.com/aptosaurinae/dungeon-buddy-py"
-changelog = "https://github.com/aptosaurinae/dungeon-buddy-py/blob/main/CHANGELOG.md"
+repository = "https://github.com/aptosaurinae/discord-lfg"
+changelog = "https://github.com/aptosaurinae/discord-lfg/blob/main/CHANGELOG.md"
