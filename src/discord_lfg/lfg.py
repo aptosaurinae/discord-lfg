@@ -6,7 +6,6 @@ import discord
 
 from discord_lfg.group_builder import GroupBuilder
 from discord_lfg.lfg_options import LFGOptions
-from discord_lfg.resources import load_dungeons, load_time_types
 from discord_lfg.roles import RoleDefinition
 from discord_lfg.utils import get_difficulty_start_and_end_from_channel_name
 
@@ -25,12 +24,12 @@ def _validate_lfg_inputs(
     creator_role: str,
     filled_spots: dict[str, int],
     roles: dict[str, RoleDefinition],
+    time_types: dict[str, str],
 ):
     errors = []
     if difficulty == -1:
         errors.append("You cannot use this command in this channel.")
 
-    time_types = load_time_types()
     if time_type not in time_types and time_type not in time_types.values():
         errors.append(f"time_type not recognised, given: {time_type}, valid: {time_types}")
 
@@ -59,11 +58,13 @@ async def _lfg(
     creator_notes: str,
     filled_spots: dict[str, int],
     roles: dict[str, RoleDefinition],
+    dungeons: dict[str, str],
+    time_types: dict[str, str],
     config: dict,
 ):
     logging.debug("".join([str((key, value)) for key, value in locals().items()]))
     try:
-        _validate_lfg_inputs(difficulty, time_type, creator_role, filled_spots, roles)
+        _validate_lfg_inputs(difficulty, time_type, creator_role, filled_spots, roles, time_types)
     except LFGValidationError as e:
         response = "\n".join(e.messages)
         message_func = (
@@ -74,11 +75,8 @@ async def _lfg(
         await message_func(response, ephemeral=True)
         return None
 
-    time_types = load_time_types()
     if time_type not in time_types.values():
         time_type = time_types.get(time_type, "")
-
-    dungeons = load_dungeons(config.get("expansion"), config.get("season"))  # type: ignore
 
     if dungeon in dungeons:
         name_short = dungeon
@@ -118,6 +116,8 @@ async def lfg(
     listed_as: str,
     creator_notes: str,
     roles: dict[str, RoleDefinition],
+    dungeons: dict[str, str],
+    time_types: dict[str, str],
     config: dict,
 ):
     """Creates a LFG listing using an interactable interface."""
@@ -127,7 +127,7 @@ async def lfg(
         await interaction.response.send_message(response, ephemeral=True)
         return None
 
-    view = LFGOptions(difficulties, roles)
+    view = LFGOptions(difficulties, roles, time_types)
     await interaction.response.send_message(view=view, ephemeral=True)
     await view.wait()
     if not view.confirmed:
@@ -149,6 +149,8 @@ async def lfg(
         creator_notes=creator_notes,
         filled_spots=filled_spots,
         roles=roles,
+        dungeons=dungeons,
+        time_types=time_types,
         config=config,
     )
 
@@ -163,6 +165,8 @@ async def lfgquick(
     listed_as: str,
     creator_notes: str,
     roles: dict[str, RoleDefinition],
+    dungeons: dict[str, str],
+    time_types: dict[str, str],
     config: dict,
 ):
     """Creates a LFG listing using a quick-string."""
@@ -192,11 +196,19 @@ async def lfgquick(
         creator_notes=creator_notes,
         filled_spots=filled_spots,
         roles=roles,
+        dungeons=dungeons,
+        time_types=time_types,
         config=config,
     )
 
 
-async def lfgdebug(interaction: discord.Interaction, debug_type: int, config: dict):
+async def lfgdebug(
+    interaction: discord.Interaction,
+    debug_type: int,
+    dungeons: dict[str, str],
+    time_types: dict[str, str],
+    config: dict,
+):
     """Creates a listing for debugging purposes."""
     roles = {
         "tank": RoleDefinition("tank", 1, "🛡️", "t"),
@@ -235,7 +247,7 @@ async def lfgdebug(interaction: discord.Interaction, debug_type: int, config: di
 
     return await _lfg(
         interaction=interaction,
-        dungeon=list(load_dungeons(config.get("expansion"), config.get("season")))[0],  # type: ignore
+        dungeon=list(dungeons)[0],
         difficulty=difficulty,
         creator_role="dps",
         time_type="tbc",
@@ -243,5 +255,7 @@ async def lfgdebug(interaction: discord.Interaction, debug_type: int, config: di
         creator_notes="debug creator notes blah blah",
         filled_spots=filled_spots,
         roles=roles,
+        dungeons=dungeons,
+        time_types=time_types,
         config=config,
     )

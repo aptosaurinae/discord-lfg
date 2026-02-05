@@ -7,11 +7,10 @@ is still significantly inspired by that system.
 
 ## TODO
 
-- Rename db_py folder to discord-lfg or something similar
 - Move all of the DB specific elements that are hard-coded to config.
-  - dungeon lists
-  - Time types
-  - messages
+  - ~~dungeon lists~~
+  - ~~Time types~~
+  - ~~messages~~
 - Make commands build from the config
   - update readme for config
   - this will mean needing to move role counts to the commands? keep roles as-id and re-use for command definitions
@@ -128,8 +127,12 @@ The config file needs to look like the following:
 ``` toml
 guild_id = 123456789
 guild_name = "NoP"
-expansion = "tww"
-season = "3"
+
+[dungeons]
+DN = "long dungeon name"
+
+[time_types]
+tt = "dungeon timing type"
 
 [role.tank]
 emoji = "<:tankemojiname:123456789>"
@@ -145,10 +148,15 @@ indicator = "h"
 emoji = "<:dpsemojiname:123456789>"
 count = 3
 indicator = "d"
+
+[messages]
+help = "help message response"
 ```
 
 - `guild_id` is the Discord ID of the server that you are wanting the host the bot in.
-- The `expansion` and `season` match a valid dungeon lookup file in `/resources/dungeons`.
+- `dungeons` is a dictionary of the dungeons for users to choose.
+- `time_types` is a dictionary of the timing types for users to choose.
+- `messages` must contain a `help` response.
 - `role` dictionary for each of the required roles you want in the group.
   - `emoji`: The emoji names and numbers need to match the names and IDs of the emojis in the server you are hosting the bot. The names can be found as the ":name:" names in the server. The IDs can be found by right clicking on the emojis in the server you're in and opening the link, then looking at the number of their name in the URL.
   - `count`: the number of spots in the group for this role.
@@ -161,13 +169,6 @@ be edited for once the group is full.
 - *Optional*: `debug`, set to 1 to turn on debug mode, which will be more verbose in the console
 and enable `/lfgdebug` which is a pre-set listing for test purposes.
 - *Optional*: `log_folder`, set this to a folder that already exists and it will dump a log file here.
-
-If you need to add a new dungeon pool, create a new `toml` file in the `/resources/dungeons` file
-where each line is a short name reference to a long name string e.g.
-
-``` toml
-EDA = "Eco-dome Al'dani"
-```
 
 ## Bot Commands
 

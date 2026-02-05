@@ -20,8 +20,7 @@ from discord_lfg.autocompletion import (
     role_autocomplete,
     time_type_autocomplete,
 )
-from discord_lfg.commands.help import help_response
-from discord_lfg.commands.lfg import lfg, lfgdebug, lfgquick
+from discord_lfg.lfg import lfg, lfgdebug, lfgquick
 from discord_lfg.roles import create_roles_from_config
 
 # --- Config setup
@@ -39,12 +38,6 @@ with open(args["config"], "rb") as config_file:
 
 def _validate_config(CONFIG_DATA: dict):
     config_errors = []
-    if CONFIG_DATA.get("expansion") is None:
-        config_errors.append(
-            "You must define an expansion in the config using the 'expansion' argument"
-        )
-    if CONFIG_DATA.get("season") is None:
-        config_errors.append("You must define a season in the config using the 'season' argument")
     if CONFIG_DATA.get("role") is None:
         config_errors.append("You must define roles in the config, see readme for details")
     for role_data in CONFIG_DATA.get("role", {}).values():
@@ -65,11 +58,12 @@ _validate_config(CONFIG_DATA)
 
 TOKEN = token_data["discord"]["token"]
 GUILD_ID = discord.Object(CONFIG_DATA["guild_id"])
-CURRENT_EXPANSION = str(CONFIG_DATA.get("expansion"))
-CURRENT_SEASON = str(CONFIG_DATA.get("season"))
 DEBUG = CONFIG_DATA.get("debug", 0)
 LOG_FOLDER = Path(CONFIG_DATA.get("log_folder", ""))
 ROLES = create_roles_from_config(CONFIG_DATA.get("role", {}))
+DUNGEONS = CONFIG_DATA.get("dungeons", {})
+TIME_TYPES = CONFIG_DATA.get("time_types", {})
+HELP_MESSAGE = CONFIG_DATA.get("messages", {"help": "missing help definition"}).get("help")
 
 dt_now = datetime.now(timezone.utc)
 datetime_str = (
@@ -127,7 +121,8 @@ async def on_ready():
 @client.tree.command(guild=GUILD_ID)
 async def lfghelp(interaction: discord.Interaction):
     """Help with using Group Builder."""
-    await help_response(interaction)
+    response = HELP_MESSAGE
+    await interaction.response.send_message(response, ephemeral=True)
 
 
 # -- LFG
@@ -139,7 +134,7 @@ async def lfghelp(interaction: discord.Interaction):
     listed_as="The in-game name. Leave blank to automatically generate a name for you (recommended)",
     creator_notes="Extra notes you want to make players signing up aware of.",
 )
-@app_commands.autocomplete(dungeon=dungeon_autocomplete(CURRENT_EXPANSION, CURRENT_SEASON))
+@app_commands.autocomplete(dungeon=dungeon_autocomplete(DUNGEONS))
 async def lfg_command(
     interaction: discord.Interaction, dungeon: str, listed_as: str = "", creator_notes: str = ""
 ):
@@ -150,6 +145,8 @@ async def lfg_command(
         listed_as=listed_as,
         creator_notes=creator_notes,
         roles=ROLES,
+        dungeons=DUNGEONS,
+        time_types=TIME_TYPES,
         config=CONFIG_DATA,
     )
 
@@ -165,8 +162,8 @@ async def lfg_command(
     creator_notes="Extra notes you want to make players signing up aware of.",
 )
 @app_commands.autocomplete(
-    dungeon=dungeon_short_autocomplete(CURRENT_EXPANSION, CURRENT_SEASON),
-    time_type=time_type_autocomplete(),
+    dungeon=dungeon_short_autocomplete(DUNGEONS),
+    time_type=time_type_autocomplete(TIME_TYPES),
     your_role=role_autocomplete(ROLES),
     difficulty=difficulty_autocomplete,
 )
@@ -191,6 +188,8 @@ async def lfgstring_command(
         creator_notes=creator_notes,
         required_spots=required_spots,
         roles=ROLES,
+        dungeons=DUNGEONS,
+        time_types=TIME_TYPES,
         config=CONFIG_DATA,
     )
 
@@ -201,7 +200,13 @@ if CONFIG_DATA.get("debug") is not None:
     async def lfgdebug_command(interaction: discord.Interaction):
         """Some quick-fire group listings for debug purposes (including what should be invalid setups)."""
         for num in range(6):
-            await lfgdebug(interaction=interaction, debug_type=num, config=CONFIG_DATA)
+            await lfgdebug(
+                interaction=interaction,
+                debug_type=num,
+                dungeons=DUNGEONS,
+                time_types=TIME_TYPES,
+                config=CONFIG_DATA,
+            )
 
 # -- Stats
 

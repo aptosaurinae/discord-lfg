@@ -23,16 +23,6 @@ def _load_resource(filename: str, folders: str | None = None):
         return tomllib.load(resource_file)
 
 
-def load_help_message() -> dict[str, str]:
-    """Loads the help message."""
-    return _load_resource("messages")["help"]
-
-
-def load_time_types() -> dict[str, str]:
-    """Loads time types for dungeons."""
-    return _load_resource("time_types")
-
-
 def load_passphrase_words() -> list[str]:
     """Loads passphrase words."""
     return _load_resource("passphrases")["passphrase_words"]
@@ -41,11 +31,6 @@ def load_passphrase_words() -> list[str]:
 def load_name_suffix_words() -> list[str]:
     """Loads passphrase words."""
     return _load_resource("names")["alphabet_names"]
-
-
-def load_dungeons(expansion: str, season: str | int) -> dict:
-    """Loads a dungeon set."""
-    return _load_resource(f"{expansion}-{season}", "dungeons")
 
 
 def generate_passphrase(num_words: int = 3) -> str:

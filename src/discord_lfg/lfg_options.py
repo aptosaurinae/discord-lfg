@@ -4,7 +4,6 @@ import logging
 
 import discord
 
-from discord_lfg.resources import load_time_types
 from discord_lfg.roles import RoleDefinition
 
 
@@ -37,9 +36,9 @@ class LFGDifficulty(discord.ui.Select):
 class LFGTimeType(discord.ui.Select):
     """Time type selector."""
 
-    def __init__(self):
+    def __init__(self, time_types: dict[str, str]):
         """Initialisation."""
-        options = [discord.SelectOption(label=value) for value in load_time_types().values()]
+        options = [discord.SelectOption(label=value) for value in time_types.values()]
 
         super().__init__(
             placeholder="Trying to Time or Complete?",
@@ -143,7 +142,9 @@ class LFGRolesRequired(discord.ui.Select):
 class LFGOptions(discord.ui.View):
     """LFG options menu."""
 
-    def __init__(self, difficulties: list[int], roles: dict[str, RoleDefinition]):
+    def __init__(
+        self, difficulties: list[int], roles: dict[str, RoleDefinition], time_types: dict[str, str]
+    ):
         """Initialisation."""
         super().__init__(timeout=120)
         self.roles = roles
@@ -156,7 +157,7 @@ class LFGOptions(discord.ui.View):
         self.emojis = {role.name: role.emoji for role in roles.values()}
 
         self.lfg_difficulties = LFGDifficulty(difficulties)
-        self.lfg_time_types = LFGTimeType()
+        self.lfg_time_types = LFGTimeType(time_types)
         self.lfg_creator_role = LFGCreatorRole(roles)
         self.lfg_roles_required = LFGRolesRequired(roles)
 

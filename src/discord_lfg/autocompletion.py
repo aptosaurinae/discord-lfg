@@ -3,7 +3,6 @@
 import discord
 from discord import app_commands
 
-from discord_lfg.resources import load_dungeons, load_time_types
 from discord_lfg.roles import RoleDefinition
 from discord_lfg.utils import get_difficulty_start_and_end_from_channel_name
 
@@ -21,21 +20,18 @@ def _autocomplete_choice(choices: list):
     return autocompleter
 
 
-def dungeon_autocomplete(expansion: str, season: str):
+def dungeon_autocomplete(dungeons: dict[str, str]):
     """Autocompletion system for dungeon strings."""
-    dungeons = load_dungeons(expansion, season)
     return _autocomplete_choice(list(dungeons.values()))
 
 
-def dungeon_short_autocomplete(expansion: str, season: str):
+def dungeon_short_autocomplete(dungeons: dict[str, str]):
     """Autocompletion system for short dungeon strings."""
-    dungeons = load_dungeons(expansion, season)
     return _autocomplete_choice(list(dungeons.keys()))
 
 
-def time_type_autocomplete():
+def time_type_autocomplete(time_types: dict[str, str]):
     """Autocompletion system for time types."""
-    time_types = load_time_types()
     return _autocomplete_choice(list(time_types.keys()))
 
 
