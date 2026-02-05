@@ -1,10 +1,11 @@
 """Contains autocompletion lists for dungeon buddy."""
 
 import discord
-from db_py.resources import load_dungeons, load_time_types
-from db_py.roles import RoleDefinition
-from db_py.utils import get_difficulty_start_and_end_from_channel_name
 from discord import app_commands
+
+from discord_lfg.resources import load_dungeons, load_time_types
+from discord_lfg.roles import RoleDefinition
+from discord_lfg.utils import get_difficulty_start_and_end_from_channel_name
 
 
 def _autocomplete_choice(choices: list):

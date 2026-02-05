@@ -3,11 +3,12 @@
 import logging
 
 import discord
-from db_py.group_builder import GroupBuilder
-from db_py.lfg_options import LFGOptions
-from db_py.resources import load_dungeons, load_time_types
-from db_py.roles import RoleDefinition
-from db_py.utils import get_difficulty_start_and_end_from_channel_name
+
+from discord_lfg.group_builder import GroupBuilder
+from discord_lfg.lfg_options import LFGOptions
+from discord_lfg.resources import load_dungeons, load_time_types
+from discord_lfg.roles import RoleDefinition
+from discord_lfg.utils import get_difficulty_start_and_end_from_channel_name
 
 
 class LFGValidationError(Exception):

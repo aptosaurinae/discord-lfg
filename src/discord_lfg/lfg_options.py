@@ -3,8 +3,9 @@
 import logging
 
 import discord
-from db_py.resources import load_time_types
-from db_py.roles import RoleDefinition
+
+from discord_lfg.resources import load_time_types
+from discord_lfg.roles import RoleDefinition
 
 
 class LFGDifficulty(discord.ui.Select):
