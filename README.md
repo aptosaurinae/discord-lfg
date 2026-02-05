@@ -80,7 +80,7 @@ pip install --no-deps -e .
 ``` shell
 git clone git@github.com:aptosaurinae/discord-lfg.git
 cd discord-lfg
-conda env create -n discord-lfg -f requirements/base.txt -f dev.txt
+conda env create -n discord-lfg -f requirements/base.txt -f requirements/dev.txt
 conda activate discord-lfg
 pip install discord-py
 pip install --no-deps -e .
@@ -101,7 +101,7 @@ python src/discord_lfg/bot.py path/to/token.toml path/to/config.toml
 which should result in something like the following:
 
 ``` shell
-(discord-lfg) D:\Programming\github-repos\discord-lfg>python bot.py "D:\Programming\discord-lfg-config\test_token.toml" "D:\Programming\discord-lfg\test_config.toml"
+(discord-lfg) D:\Programming\github-repos\discord-lfg>python src/discord_lfg/bot.py "D:\Programming\discord-lfg-config\test_token.toml" "D:\Programming\discord-lfg\test_config.toml"
 [2026-01-04 15:24:28] [INFO    ] discord.client: logging in using static token
 [2026-01-04 15:24:31] [INFO    ] discord.gateway: Shard ID None has connected to Gateway (Session ID: <id number>).
 Logged in as app-commands-test#2842 (ID: <app id number>)
