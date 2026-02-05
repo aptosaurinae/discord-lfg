@@ -2,7 +2,7 @@
 
 ## How to contribute
 
-This project is actively maintained by `dukes` on Discord. You can find him at the
+This project is actively maintained by `Aptosaurinae` (`dukes` on Discord). You can find him at the
 `No Pressure EU` server.
 
 You can contribute by submitting issues in this repo or reaching out on Discord.

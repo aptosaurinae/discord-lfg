@@ -1,11 +1,9 @@
-"""Utilities for Dungeon Buddy."""
+"""Utilities for Group Builder."""
 
 import logging
 from datetime import datetime, timezone
 
 import discord
-
-from db_py.roles import RoleType
 
 
 def get_difficulty_start_and_end_from_channel_name(channel_name: str) -> None | list:
@@ -30,18 +28,18 @@ def get_difficulty_start_and_end_from_channel_name(channel_name: str) -> None | 
     return None
 
 
-def get_guild_role_mention_for_dungeon_role(
-    dungeon_role: RoleType, guild_roles: list[discord.Role], channel_name: str
+def get_guild_role_mention_for_group_role(
+    group_role: str, guild_roles: list[discord.Role], channel_name: str
 ) -> str:
     """Generates an expected role and retrieves this if it matches a real one."""
-    logging.debug(f"getting role mentions: {dungeon_role}, {channel_name}")
+    logging.debug(f"getting role mentions: {group_role}, {channel_name}")
     if channel_name[:5] != "lfg-m":
         return ""
     channel_parts = channel_name.split("-")
     difficulty_start = channel_parts[1]
     # we need to strip out the extra "m" as roles don't have this
     difficulty_end = f"-{channel_parts[2][1:]}" if len(channel_parts) > 2 else ""
-    mention_expected = f"{dungeon_role.name}-{difficulty_start}{difficulty_end}".lower()
+    mention_expected = f"{group_role}-{difficulty_start}{difficulty_end}".lower()
     logging.debug(f"expected: {mention_expected}")
     logging.debug(f"guild_roles mentions: {[role.name for role in guild_roles]}")
     guild_role_tags = {role.name.lower(): role.mention for role in guild_roles}

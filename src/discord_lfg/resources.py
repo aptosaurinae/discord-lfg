@@ -23,21 +23,6 @@ def _load_resource(filename: str, folders: str | None = None):
         return tomllib.load(resource_file)
 
 
-def load_help_message() -> dict[str, str]:
-    """Loads the help message."""
-    return _load_resource("messages")["help"]
-
-
-def load_emojis() -> dict[str, str]:
-    """Loads standard emojis."""
-    return _load_resource("emojis")
-
-
-def load_time_types() -> dict[str, str]:
-    """Loads time types for dungeons."""
-    return _load_resource("time_types")
-
-
 def load_passphrase_words() -> list[str]:
     """Loads passphrase words."""
     return _load_resource("passphrases")["passphrase_words"]
@@ -48,19 +33,14 @@ def load_name_suffix_words() -> list[str]:
     return _load_resource("names")["alphabet_names"]
 
 
-def load_dungeons(expansion: str, season: str | int) -> dict:
-    """Loads a dungeon set."""
-    return _load_resource(f"{expansion}-{season}", "dungeons")
-
-
 def generate_passphrase(num_words: int = 3) -> str:
     """Creates a 3-word passphrase from the list of passphrase words."""
     passphrase_words = load_passphrase_words()
     return "".join(random.choices(population=passphrase_words, k=num_words))
 
 
-def generate_listing_name(dungeon_short: str, num_chars: int, guild_name):
-    """Creates a listing name from a dungeon name."""
+def generate_listing_name(name_short: str, num_chars: int, guild_name):
+    """Creates a listing name from a given name."""
     random_string = ""
     random_words = [word.capitalize() for word in load_name_suffix_words()]
     for _ in range(num_chars):
@@ -69,4 +49,4 @@ def generate_listing_name(dungeon_short: str, num_chars: int, guild_name):
     if guild_name != "":
         guild_name += " "
 
-    return f"{guild_name}{dungeon_short} {random_string}"
+    return f"{guild_name}{name_short} {random_string}"

@@ -4,8 +4,7 @@ import logging
 
 import discord
 
-from db_py.resources import load_emojis, load_time_types
-from db_py.roles import RoleType
+from discord_lfg.roles import RoleDefinition
 
 
 class LFGDifficulty(discord.ui.Select):
@@ -37,9 +36,9 @@ class LFGDifficulty(discord.ui.Select):
 class LFGTimeType(discord.ui.Select):
     """Time type selector."""
 
-    def __init__(self):
+    def __init__(self, time_types: dict[str, str]):
         """Initialisation."""
-        options = [discord.SelectOption(label=value) for value in load_time_types().values()]
+        options = [discord.SelectOption(label=value) for value in time_types.values()]
 
         super().__init__(
             placeholder="Trying to Time or Complete?",
@@ -60,13 +59,13 @@ class LFGTimeType(discord.ui.Select):
 class LFGCreatorRole(discord.ui.Select):
     """Creator role selector."""
 
-    def __init__(self, emojis: dict):
+    def __init__(self, roles: dict[str, RoleDefinition]):
         """Initialisation."""
         options = [
             discord.SelectOption(
-                label=value.name.capitalize(), value=value.name, emoji=emojis[value.name]
+                label=role_info.name.capitalize(), value=role_info.name, emoji=role_info.emoji
             )
-            for value in RoleType
+            for role_info in roles.values()
         ]
 
         super().__init__(
@@ -85,33 +84,46 @@ class LFGCreatorRole(discord.ui.Select):
 class LFGRolesRequired(discord.ui.Select):
     """Roles required selector."""
 
-    def __init__(self, emojis: dict, role_counts: dict[str, int], creator_role: str | None = None):
+    def __init__(self, roles: dict[str, RoleDefinition], creator_role: str | None = None):
         """Initialisation."""
-        if creator_role is None:
-            logging.debug("roles required not given creator role")
-            max_values = 1
-            options = [discord.SelectOption(label="Choose your role first.")]
-        else:
-            logging.debug("creator role chosen, updating role required dropdown")
-            max_values = 4
-            role_counts = role_counts.copy()
-            role_counts[creator_role] -= 1
-            options = [
-                discord.SelectOption(
-                    label=key.capitalize(), value=f"{key}_{idx}", emoji=emojis[key]
-                )
-                for key, value in role_counts.items()
-                for idx in range(value)
-            ]
+        max_values, options, disabled, placeholder = self._get_roles_required_info(
+            roles, creator_role
+        )
 
         super().__init__(
-            placeholder="Choose your role first",
+            placeholder=placeholder,
             min_values=1,
             max_values=max_values,
             options=options,
             row=3,
-            disabled=True,
+            disabled=disabled,
         )
+
+    def _get_roles_required_info(
+        self, roles: dict[str, RoleDefinition], creator_role: str | None = None
+    ):
+        if creator_role is None:
+            logging.debug("roles required not given creator role")
+            max_values = 1
+            options = [discord.SelectOption(label="Choose your role first.")]
+            disabled = True
+            placeholder = "Choose your role first"
+        else:
+            logging.debug("creator role chosen, updating role required dropdown")
+            max_values = sum([role.count for role in roles.values()]) - 1
+            logging.debug(f"max_values: {max_values}")
+            options = [
+                discord.SelectOption(
+                    label=role_name.capitalize(), value=f"{role_name}_{idx}", emoji=role_info.emoji
+                )
+                for role_name, role_info in roles.items()
+                for idx in range(
+                    role_info.count if role_info.name != creator_role else role_info.count - 1
+                )
+            ]
+            disabled = False
+            placeholder = "Select the roles you require"
+        return max_values, options, disabled, placeholder
 
     async def callback(self, interaction: discord.Interaction):
         """Does the thing."""
@@ -119,7 +131,7 @@ class LFGRolesRequired(discord.ui.Select):
         assert self.view is not None
         if self.values[0] == "Choose your role first.":
             return await interaction.response.defer()
-        required_roles = {role.name: 0 for role in RoleType}
+        required_roles = {role_name: 0 for role_name in self.view.roles}
         for item in self.values:
             item_name = item.split("_")[0]
             required_roles[item_name] += 1
@@ -130,21 +142,24 @@ class LFGRolesRequired(discord.ui.Select):
 class LFGOptions(discord.ui.View):
     """LFG options menu."""
 
-    def __init__(self, difficulties: list[int], config: dict, role_counts: dict[str, int]):
+    def __init__(
+        self, difficulties: list[int], roles: dict[str, RoleDefinition], time_types: dict[str, str]
+    ):
         """Initialisation."""
         super().__init__(timeout=120)
-        self.role_counts = role_counts.copy()
+        self.roles = roles
+        self.role_counts = {role.name: role.count for role in roles.values()}
         self.difficulty = -1 if len(difficulties) > 1 else difficulties[0]
         self.time_type = ""
         self.creator_role = ""
         self.required_roles = {}
         self.confirmed = False
-        self.emojis = config.get("emojis", load_emojis())
+        self.emojis = {role.name: role.emoji for role in roles.values()}
 
         self.lfg_difficulties = LFGDifficulty(difficulties)
-        self.lfg_time_types = LFGTimeType()
-        self.lfg_creator_role = LFGCreatorRole(self.emojis)
-        self.lfg_roles_required = LFGRolesRequired(self.emojis, self.role_counts)
+        self.lfg_time_types = LFGTimeType(time_types)
+        self.lfg_creator_role = LFGCreatorRole(roles)
+        self.lfg_roles_required = LFGRolesRequired(roles)
 
         self.add_item(self.lfg_difficulties)
         self.add_item(self.lfg_time_types)
@@ -186,24 +201,9 @@ class LFGOptions(discord.ui.View):
         logging.debug([(item.value, item.default) for item in select.options])
 
     def _update_roles_required_selector(self):
-        if not self.creator_role:
-            max_values = 1
-            options = [discord.SelectOption(label="Choose your role first.")]
-            disabled = True
-            placeholder = "Choose your role first"
-        else:
-            max_values = 4
-            role_counts = self.role_counts.copy()
-            role_counts[self.creator_role] -= 1
-            options = [
-                discord.SelectOption(
-                    label=key.capitalize(), value=f"{key}_{idx}", emoji=self.emojis[key]
-                )
-                for key, value in role_counts.items()
-                for idx in range(value)
-            ]
-            disabled = False
-            placeholder = "Select the roles you require"
+        max_values, options, disabled, placeholder = (
+            self.lfg_roles_required._get_roles_required_info(self.roles, self.creator_role)
+        )
 
         self.lfg_roles_required.disabled = disabled
         self.lfg_roles_required.placeholder = placeholder
