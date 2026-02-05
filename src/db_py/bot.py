@@ -112,7 +112,7 @@ async def on_ready():
     """Startup tasks."""
     print(f"Logged in as {client.user} (ID: {client.user.id})")
     print("------")
-    print("Group Builder started")
+    print("Discord-LFG started")
     if LOG_FOLDER != "" and LOG_FOLDER.exists():
         print(f"logging to: {LOG_FOLDER}")
     global CONFIG_DATA
