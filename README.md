@@ -7,8 +7,6 @@ is still significantly inspired by that system.
 
 ## TODO
 
-- Update readme to account for dungeon buddy -> discord LFG?
-- Rename repo
 - Rename db_py folder to discord-lfg or something similar
 - Move all of the DB specific elements that are hard-coded to config.
   - dungeon lists

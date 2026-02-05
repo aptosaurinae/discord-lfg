@@ -11,8 +11,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import discord
-from discord import app_commands
-
 from db_py.autocompletion import (
     difficulty_autocomplete,
     dungeon_autocomplete,
@@ -23,6 +21,7 @@ from db_py.autocompletion import (
 from db_py.commands.help import help_response
 from db_py.commands.lfg import lfg, lfgdebug, lfgquick
 from db_py.roles import create_roles_from_config
+from discord import app_commands
 
 # --- Config setup
 

@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 import discord
-
 from db_py.resources import generate_listing_name, generate_passphrase
 from db_py.roles import RoleDefinition
 from db_py.utils import datetime_now_utc, get_guild_role_mention_for_group_role

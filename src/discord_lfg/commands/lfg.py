@@ -3,7 +3,6 @@
 import logging
 
 import discord
-
 from db_py.group_builder import GroupBuilder
 from db_py.lfg_options import LFGOptions
 from db_py.resources import load_dungeons, load_time_types

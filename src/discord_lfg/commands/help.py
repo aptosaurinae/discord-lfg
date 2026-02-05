@@ -1,7 +1,6 @@
 """Contains help functions."""
 
 import discord
-
 from db_py.resources import load_help_message
 
 

@@ -3,7 +3,6 @@
 import logging
 
 import discord
-
 from db_py.resources import load_time_types
 from db_py.roles import RoleDefinition
 
