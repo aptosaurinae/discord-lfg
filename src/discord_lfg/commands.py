@@ -72,7 +72,7 @@ def command_argument_from_config(argument_definition: dict, arg_name: str):
     python_type = TYPE_LOOKUPS[argument_definition.get("python_type", "").lower()]
     required = argument_definition.get("required", False)
     description = argument_definition.get("description", "")
-    autocomplete_options = argument_definition.get("options", {}).values()
+    autocomplete_options = argument_definition.get("options", {})
     return CommandArgument(
         name=name,
         python_type=python_type,

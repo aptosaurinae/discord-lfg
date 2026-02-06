@@ -16,8 +16,7 @@ from discord_lfg.utils import datetime_now_utc, get_guild_role_mention_for_group
 class GroupDetails:
     """Container for group details."""
 
-    name_short: str
-    name_long: str
+    name: str
     listed_as: str
     creator_notes: str
     extra_info: list
@@ -160,7 +159,7 @@ class GroupBuilder:
     def listing_message_body(self) -> str:
         """Body of the listing message."""
         group = self.group_details
-        main_string = f"{group.name_long}{' ' if len(group.extra_info) > 0 else ''}"
+        main_string = f"{group.name}{' ' if len(group.extra_info) > 0 else ''}"
         main_string += " ".join([f"({item})" for item in group.extra_info])
         return f"{self._strikethrough}{main_string}{self._strikethrough}"
 
@@ -281,19 +280,12 @@ class GroupBuilder:
         }
 
     def _setup_group(
-        self,
-        name_short: str,
-        name_long: str,
-        listed_as: str,
-        creator_notes: str,
-        guild_name: str,
-        **kwargs,
+        self, name: str, listed_as: str, creator_notes: str, guild_name: str, **kwargs
     ):
         """Captures information from the initial listing process."""
-        random_listing = generate_listing_name(name_short, 3, guild_name)
+        random_listing = generate_listing_name(name, 3, guild_name)
         self.group_details = GroupDetails(
-            name_short=name_short,
-            name_long=name_long,
+            name=name,
             listed_as=listed_as if (listed_as != "") else random_listing,
             creator_notes="" if (creator_notes == "") else f"**Notes:** *{creator_notes}*\n",
             extra_info=list(kwargs.values()),

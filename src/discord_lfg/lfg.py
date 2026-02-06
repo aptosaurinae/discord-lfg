@@ -43,7 +43,7 @@ def _validate_lfg_inputs(
 
 async def _lfg(
     interaction: discord.Interaction,
-    dungeon: str,
+    activity: str,
     difficulty: int,
     creator_role: str,
     time_type: str,
@@ -51,7 +51,6 @@ async def _lfg(
     creator_notes: str,
     filled_spots: dict[str, int],
     roles: dict[str, RoleDefinition],
-    dungeons: dict[str, str],
     config: dict,
 ):
     logging.debug("".join([str((key, value)) for key, value in locals().items()]))
@@ -67,29 +66,18 @@ async def _lfg(
         await message_func(response, ephemeral=True)
         return None
 
-    if dungeon in dungeons:
-        name_short = dungeon
-        name_long = dungeons[dungeon]
-    else:
-        name_long = dungeon
-        for key, value in dungeons.items():
-            if value == dungeon:
-                name_short = key
-                break
-
-    dungeon_info = {
-        "name_short": name_short,
-        "name_long": name_long,
+    group_info = {
+        "name": activity,
         "listed_as": listed_as,
         "creator_notes": creator_notes,
         "difficulty": difficulty,
         "time_type": time_type,
     }
-    logging.debug(dungeon_info)
+    logging.debug(group_info)
 
     instance = GroupBuilder(
         interaction=interaction,
-        group_info=dungeon_info,
+        group_info=group_info,
         config=config,
         creator_role=creator_role,
         roles=roles,
@@ -109,7 +97,6 @@ async def lfg(
     listed_as: str,
     creator_notes: str,
     roles: dict[str, RoleDefinition],
-    dungeons: dict[str, str],
     config: dict,
 ):
     """Creates a LFG listing."""
@@ -131,7 +118,7 @@ async def lfg(
     logging.debug(f"filled_spots: {filled_spots}")
     return await _lfg(
         interaction=interaction,
-        dungeon=dungeon,
+        activity=dungeon,
         difficulty=difficulty,
         creator_role=creator_role,
         time_type=timing_aim,
@@ -139,14 +126,11 @@ async def lfg(
         creator_notes=creator_notes,
         filled_spots=filled_spots,
         roles=roles,
-        dungeons=dungeons,
         config=config,
     )
 
 
-async def lfgdebug(
-    interaction: discord.Interaction, debug_type: int, dungeons: dict[str, str], config: dict
-):
+async def lfgdebug(interaction: discord.Interaction, debug_type: int, config: dict):
     """Creates a listing for debugging purposes."""
     roles = {
         "tank": RoleDefinition("tank", 1, "🛡️", "t"),
@@ -185,7 +169,7 @@ async def lfgdebug(
 
     return await _lfg(
         interaction=interaction,
-        dungeon=list(dungeons)[0],
+        activity="test",
         difficulty=difficulty,
         creator_role="dps",
         time_type="tbc",
@@ -193,6 +177,5 @@ async def lfgdebug(
         creator_notes="debug creator notes blah blah",
         filled_spots=filled_spots,
         roles=roles,
-        dungeons=dungeons,
         config=config,
     )

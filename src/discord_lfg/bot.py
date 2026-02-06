@@ -55,8 +55,6 @@ GUILD_ID = discord.Object(CONFIG_DATA["guild_id"])
 DEBUG = CONFIG_DATA.get("debug", 0)
 LOG_FOLDER = Path(CONFIG_DATA.get("log_folder", ""))
 ROLES = create_roles_from_config(CONFIG_DATA.get("role", {}))
-ACTIVITY_NAMES = CONFIG_DATA.get("activity", {}).get("options")
-TIME_TYPES = CONFIG_DATA.get("timing_aim", {}).get("options")
 HELP_MESSAGE = CONFIG_DATA.get("messages", {"help": "missing help definition"}).get("help")
 
 ACTIVITY_ARG = command_argument_from_config(CONFIG_DATA.get("activity", {}), "activity")
@@ -115,7 +113,7 @@ async def on_ready():
     CONFIG_DATA["guild_roles"] = {guild.id: guild.roles for guild in client.guilds}[
         CONFIG_DATA["guild_id"]
     ]
-    lfg_fixed_args = {"roles": ROLES, "dungeons": ACTIVITY_NAMES, "config": CONFIG_DATA}
+    lfg_fixed_args = {"roles": ROLES, "config": CONFIG_DATA}
     lfg_command = build_lfg_command(
         [ACTIVITY_ARG, DIFFICULTY_ARG, TIMING_AIM_ARG, CREATOR_ROLE_ARG, REQUIRED_SPOTS_ARG],
         lfg_fixed_args,
@@ -149,9 +147,7 @@ if CONFIG_DATA.get("debug") is not None:
     async def lfgdebug_command(interaction: discord.Interaction):
         """Some quick-fire group listings for debug purposes (including what should be invalid setups)."""
         for num in range(6):
-            await lfgdebug(
-                interaction=interaction, debug_type=num, dungeons=ACTIVITY_NAMES, config=CONFIG_DATA
-            )
+            await lfgdebug(interaction=interaction, debug_type=num, config=CONFIG_DATA)
 
 # -- Stats
 
