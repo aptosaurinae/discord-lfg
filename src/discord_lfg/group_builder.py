@@ -105,8 +105,6 @@ class GroupBuilder:
             f"GroupBuilder created by {interaction.user.id} {interaction.user.display_name}"
         )
         self.role_counts = {role.name: role.count for role in roles.values()}
-        self.emojis = {role.name: role.emoji for role in roles.values()}
-
         guild_name = config.get("guild_name", "")
         timeout_length = config.get("timeout_length", 30)
         editable_length = config.get("editable_length", 5)

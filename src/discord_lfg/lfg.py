@@ -67,7 +67,7 @@ async def _lfg(
         return None
 
     user_inputs = {
-        "name": activity,
+        "activity_name": activity,
         "listed_as": listed_as,
         "creator_notes": creator_notes,
         "difficulty": difficulty,
@@ -80,9 +80,9 @@ async def _lfg(
         group_info=user_inputs,
         config=config,
         creator_role=creator_role,
+        filled_spots=filled_spots,
         roles=roles,
     )
-    instance.fill_spots(filled_spots)
     await instance.send_message(interaction)
     await instance.send_passphrase(interaction)
 
