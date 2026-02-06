@@ -10,7 +10,7 @@ from discord_lfg.autocompletion import (
     autocomplete_choice_from_channel_numbers,
     autocomplete_choice_from_list,
 )
-from discord_lfg.lfg import lfg, lfgquick
+from discord_lfg.lfg import lfg
 
 TYPE_LOOKUPS = {"str": str, "int": int, "float": float, "discord.member": discord.Member}
 
@@ -129,37 +129,5 @@ def build_lfg_command(arguments: list[CommandArgument], fixed_lfg_inputs: dict):
     ]
     arguments = arguments + standard_args
     return build_command(
-        arguments,
-        fixed_lfg_inputs,
-        "lfg",
-        "Generates a Group Builder listing using a guided wizard.",
-        lfg,
-    )
-
-
-def build_lfgquick_command(arguments: list[CommandArgument], fixed_lfg_inputs: dict):
-    """Builds the LFG command programmatically."""
-    standard_args = [
-        CommandArgument(
-            "listed_as",
-            str,
-            False,
-            "The in-game name. Leave blank to automatically generate a name for you (recommended)",
-            None,
-        ),
-        CommandArgument(
-            "creator_notes",
-            str,
-            False,
-            "Extra notes you want to make players signing up aware of.",
-            None,
-        ),
-    ]
-    arguments = arguments + standard_args
-    return build_command(
-        arguments,
-        fixed_lfg_inputs,
-        "lfgquick",
-        "Generates a Group Builder listing using a string-based input.",
-        lfgquick,
+        arguments, fixed_lfg_inputs, "lfg", "Generates a Group Builder listing.", lfg
     )

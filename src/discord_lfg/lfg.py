@@ -5,9 +5,7 @@ import logging
 import discord
 
 from discord_lfg.group_builder import GroupBuilder
-from discord_lfg.lfg_options import LFGOptions
 from discord_lfg.roles import RoleDefinition
-from discord_lfg.utils import get_numbers_from_channel_name
 
 
 class LFGValidationError(Exception):
@@ -20,18 +18,13 @@ class LFGValidationError(Exception):
 
 def _validate_lfg_inputs(
     difficulty: int,
-    time_type: str,
     creator_role: str,
     filled_spots: dict[str, int],
     roles: dict[str, RoleDefinition],
-    time_types: dict[str, str],
 ):
     errors = []
     if difficulty == -1:
         errors.append("You cannot use this command in this channel.")
-
-    if time_type not in time_types and time_type not in time_types.values():
-        errors.append(f"time_type not recognised, given: {time_type}, valid: {time_types}")
 
     max_counts = {role.name: role.count for role in roles.values()}
     max_counts[creator_role] -= 1
@@ -59,12 +52,11 @@ async def _lfg(
     filled_spots: dict[str, int],
     roles: dict[str, RoleDefinition],
     dungeons: dict[str, str],
-    time_types: dict[str, str],
     config: dict,
 ):
     logging.debug("".join([str((key, value)) for key, value in locals().items()]))
     try:
-        _validate_lfg_inputs(difficulty, time_type, creator_role, filled_spots, roles, time_types)
+        _validate_lfg_inputs(difficulty, creator_role, filled_spots, roles)
     except LFGValidationError as e:
         response = "\n".join(e.messages)
         message_func = (
@@ -74,9 +66,6 @@ async def _lfg(
         )
         await message_func(response, ephemeral=True)
         return None
-
-    if time_type not in time_types.values():
-        time_type = time_types.get(time_type, "")
 
     if dungeon in dungeons:
         name_short = dungeon
@@ -113,51 +102,6 @@ async def _lfg(
 async def lfg(
     interaction: discord.Interaction,
     dungeon: str,
-    listed_as: str,
-    creator_notes: str,
-    roles: dict[str, RoleDefinition],
-    dungeons: dict[str, str],
-    time_types: dict[str, str],
-    config: dict,
-):
-    """Creates a LFG listing using an interactable interface."""
-    difficulties = get_numbers_from_channel_name(interaction.channel.name)  # type: ignore
-    if difficulties is None:
-        response = "You cannot use the LFG command in this channel"
-        await interaction.response.send_message(response, ephemeral=True)
-        return None
-
-    view = LFGOptions(difficulties, roles, time_types)
-    await interaction.response.send_message(view=view, ephemeral=True)
-    await view.wait()
-    if not view.confirmed:
-        logging.debug("Group creation cancelled.")
-        return None
-
-    filled_spots = {role.name: role.count for role in roles.values()}
-    filled_spots[view.creator_role] -= 1
-    for role, required_num in view.required_roles.items():
-        filled_spots[role] -= required_num
-
-    return await _lfg(
-        interaction=interaction,
-        dungeon=dungeon,
-        difficulty=view.difficulty,
-        creator_role=view.creator_role,
-        time_type=view.time_type,
-        listed_as=listed_as,
-        creator_notes=creator_notes,
-        filled_spots=filled_spots,
-        roles=roles,
-        dungeons=dungeons,
-        time_types=time_types,
-        config=config,
-    )
-
-
-async def lfgquick(
-    interaction: discord.Interaction,
-    dungeon: str,
     difficulty: int,
     timing_aim: str,
     creator_role: str,
@@ -166,10 +110,9 @@ async def lfgquick(
     creator_notes: str,
     roles: dict[str, RoleDefinition],
     dungeons: dict[str, str],
-    time_types: dict[str, str],
     config: dict,
 ):
-    """Creates a LFG listing using a quick-string."""
+    """Creates a LFG listing."""
     role_counts = {role.name: role.count for role in roles.values()}
     required_spots_roles = {
         role_name: required_spots.count(role_def.identifier)
@@ -197,17 +140,12 @@ async def lfgquick(
         filled_spots=filled_spots,
         roles=roles,
         dungeons=dungeons,
-        time_types=time_types,
         config=config,
     )
 
 
 async def lfgdebug(
-    interaction: discord.Interaction,
-    debug_type: int,
-    dungeons: dict[str, str],
-    time_types: dict[str, str],
-    config: dict,
+    interaction: discord.Interaction, debug_type: int, dungeons: dict[str, str], config: dict
 ):
     """Creates a listing for debugging purposes."""
     roles = {
@@ -256,6 +194,5 @@ async def lfgdebug(
         filled_spots=filled_spots,
         roles=roles,
         dungeons=dungeons,
-        time_types=time_types,
         config=config,
     )

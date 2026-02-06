@@ -13,12 +13,7 @@ from pathlib import Path
 import discord
 from discord import app_commands
 
-from discord_lfg.commands import (
-    CommandArgument,
-    build_lfg_command,
-    build_lfgquick_command,
-    command_argument_from_config,
-)
+from discord_lfg.commands import CommandArgument, build_lfg_command, command_argument_from_config
 from discord_lfg.lfg import lfgdebug
 from discord_lfg.roles import create_roles_from_config
 
@@ -73,7 +68,7 @@ REQUIRED_SPOTS_ARG = CommandArgument(
     "required_spots",
     str,
     True,
-    "'t' for tank, 'h' for healer, 'd' for dps. e.g. 'thdd' for all spots if you're dps",
+    f"valid identifiers: {[role.identifier for role in ROLES.values()]}",
     None,
 )
 DIFFICULTY_ARG = CommandArgument(
@@ -120,20 +115,12 @@ async def on_ready():
     CONFIG_DATA["guild_roles"] = {guild.id: guild.roles for guild in client.guilds}[
         CONFIG_DATA["guild_id"]
     ]
-    lfg_fixed_args = {
-        "roles": ROLES,
-        "dungeons": ACTIVITY_NAMES,
-        "time_types": TIME_TYPES,
-        "config": CONFIG_DATA,
-    }
-    lfg_command = build_lfg_command([ACTIVITY_ARG], lfg_fixed_args)
-    client.tree.add_command(lfg_command, guild=GUILD_ID)
-
-    lfgquick_command = build_lfgquick_command(
+    lfg_fixed_args = {"roles": ROLES, "dungeons": ACTIVITY_NAMES, "config": CONFIG_DATA}
+    lfg_command = build_lfg_command(
         [ACTIVITY_ARG, DIFFICULTY_ARG, TIMING_AIM_ARG, CREATOR_ROLE_ARG, REQUIRED_SPOTS_ARG],
         lfg_fixed_args,
     )
-    client.tree.add_command(lfgquick_command, guild=GUILD_ID)
+    client.tree.add_command(lfg_command, guild=GUILD_ID)
 
     await client.tree.sync(guild=GUILD_ID)
 
@@ -163,11 +150,7 @@ if CONFIG_DATA.get("debug") is not None:
         """Some quick-fire group listings for debug purposes (including what should be invalid setups)."""
         for num in range(6):
             await lfgdebug(
-                interaction=interaction,
-                debug_type=num,
-                dungeons=ACTIVITY_NAMES,
-                time_types=TIME_TYPES,
-                config=CONFIG_DATA,
+                interaction=interaction, debug_type=num, dungeons=ACTIVITY_NAMES, config=CONFIG_DATA
             )
 
 # -- Stats
