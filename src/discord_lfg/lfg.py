@@ -66,13 +66,13 @@ async def lfg(
     interaction: discord.Interaction,
     activity: str,
     difficulty: int,
-    timing_aim: str,
     creator_role: str,
     required_spots: str,
     listed_as: str,
     creator_notes: str,
     roles: dict[str, RoleDefinition],
     config: dict,
+    **options,
 ):
     """Creates a GroupBuilder instance from a slash command."""
     logging.debug("".join([str((key, value)) for key, value in locals().items()]))
@@ -94,7 +94,7 @@ async def lfg(
         "listed_as": listed_as,
         "creator_notes": creator_notes,
         "difficulty": difficulty,
-        "time_type": timing_aim,
+        **options,
     }
     logging.debug(user_inputs)
 

@@ -119,7 +119,6 @@ async def on_ready():
         lfg_fixed_args,
     )
     client.tree.add_command(lfg_command, guild=GUILD_ID)
-    print(lfg_command.parameters)
 
     await client.tree.sync(guild=GUILD_ID)
 
