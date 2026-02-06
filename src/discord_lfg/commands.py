@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import discord
 from discord import app_commands
 
-from discord_lfg.autocompletion import autocomplete_choice_2
+from discord_lfg.autocompletion import autocomplete_choice
 from discord_lfg.lfg import lfg
 
 TYPE_LOOKUPS = {"str": str, "int": int, "float": float, "discord.member": discord.Member}
@@ -52,7 +52,7 @@ class CommandArgument:
     def discord_autocomplete(self, command: discord.app_commands.Command):
         """Applies an autocompleter for a discord command that has had this parameter added."""
         if self.autocomplete_options is not None:
-            autocomplete_choice_2(self.autocomplete_options, command, self.name)
+            autocomplete_choice(self.autocomplete_options, command, self.name)
 
 
 def command_argument_from_config(argument_definition: dict, arg_name: str):
