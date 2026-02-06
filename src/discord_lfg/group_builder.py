@@ -95,10 +95,10 @@ class GroupBuilder:
         Args:
             interaction: The discord interaction which created this GroupBuilder. This allows
                 us to capture the user information depending on who created this instance.
-            group_info: A dictionary of the group specific information
-            config: A dictionary of configuration information for Group Builder
-            creator_role: The role the creator has chosen
-            filled_spots: A dictionary of which roles are already filled
+            group_info: A dictionary of the group specific information: see `GroupDetails`
+            config: A dictionary of configuration information for Group Builder, all optional extras
+            creator_role: The role the creator has chosen (must match a role name)
+            filled_spots: A dictionary of which roles are already filled in the format {name: count}
             roles: A dictionary of role information based on RoleDefinition.
         """
         logging.debug(
@@ -106,17 +106,21 @@ class GroupBuilder:
         )
         self.role_counts = {role.name: role.count for role in roles.values()}
         self.emojis = {role.name: role.emoji for role in roles.values()}
+
         guild_name = config.get("guild_name", "")
         timeout_length = config.get("timeout_length", 30)
         editable_length = config.get("editable_length", 5)
         debug = config.get("debug", False)
+        guild_roles = config.get("guild_roles", {})
+
         self._state_init(guild_name, timeout_length, editable_length, debug)
         self._setup_group(**group_info, guild_name=guild_name)
         self._roles_init(
             roles,
-            config.get("guild_roles", {}),
+            guild_roles,
             interaction.channel.name if isinstance(interaction.channel.name, str) else "",  # type: ignore
         )
+
         self.creator = self.create_user_from_interaction(interaction, creator_role, True)
         self.add_role(creator_role, self.creator)
         self.kicked_users: list[GroupUser] = []
