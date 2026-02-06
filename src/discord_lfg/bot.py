@@ -61,11 +61,11 @@ DEBUG = CONFIG_DATA.get("debug", 0)
 LOG_FOLDER = Path(CONFIG_DATA.get("log_folder", ""))
 ROLES = create_roles_from_config(CONFIG_DATA.get("role", {}))
 ACTIVITY_NAMES = CONFIG_DATA.get("activity", {}).get("options")
-TIME_TYPES = CONFIG_DATA.get("time_types", {})
+TIME_TYPES = CONFIG_DATA.get("timing_aim", {}).get("options")
 HELP_MESSAGE = CONFIG_DATA.get("messages", {"help": "missing help definition"}).get("help")
 
 ACTIVITY_ARG = command_argument_from_config(CONFIG_DATA.get("activity", {}), "activity")
-TIME_TYPES_ARG = command_argument_from_config(CONFIG_DATA.get("option", {}).get("1"), "option.1")
+TIMING_AIM_ARG = command_argument_from_config(CONFIG_DATA.get("timing_aim", {}), "timing_aim")
 CREATOR_ROLE_ARG = CommandArgument(
     "creator_role", str, True, "The role you are filling for this group.", list(ROLES.keys())
 )
@@ -130,7 +130,7 @@ async def on_ready():
     client.tree.add_command(lfg_command, guild=GUILD_ID)
 
     lfgquick_command = build_lfgquick_command(
-        [ACTIVITY_ARG, DIFFICULTY_ARG, TIME_TYPES_ARG, CREATOR_ROLE_ARG, REQUIRED_SPOTS_ARG],
+        [ACTIVITY_ARG, DIFFICULTY_ARG, TIMING_AIM_ARG, CREATOR_ROLE_ARG, REQUIRED_SPOTS_ARG],
         lfg_fixed_args,
     )
     client.tree.add_command(lfgquick_command, guild=GUILD_ID)
