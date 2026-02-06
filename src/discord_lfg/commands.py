@@ -59,10 +59,6 @@ class CommandArgument:
             autocomplete_choice_from_channel_numbers(command, self.name)
         elif self.autocomplete_options is not None:
             autocomplete_choice_from_list(self.autocomplete_options, command, self.name)
-        else:
-            raise AttributeError(
-                f"{self.name}: discord_autocomplete called without autocomplete list being provided"
-            )
 
 
 def command_argument_from_config(argument_definition: dict, arg_name: str):
@@ -106,9 +102,9 @@ def build_command(
 
     cmd = app_commands.Command(name=func_name, description=func_desc, callback=wrapper)
 
-    for argument in user_inputs:
-        argument.discord_description(cmd)
-        argument.discord_autocomplete(cmd)
+    for user_input in user_inputs:
+        user_input.discord_description(cmd)
+        user_input.discord_autocomplete(cmd)
 
     return cmd
 
