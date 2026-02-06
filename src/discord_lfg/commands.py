@@ -6,7 +6,10 @@ from dataclasses import dataclass
 import discord
 from discord import app_commands
 
-from discord_lfg.autocompletion import autocomplete_choice, autocomplete_choice_from_channel_numbers
+from discord_lfg.autocompletion import (
+    autocomplete_choice_from_channel_numbers,
+    autocomplete_choice_from_list,
+)
 from discord_lfg.lfg import lfg, lfgquick
 
 TYPE_LOOKUPS = {"str": str, "int": int, "float": float, "discord.member": discord.Member}
@@ -21,7 +24,7 @@ class CommandArgument:
     required: bool
     description: str
     autocomplete_options: list | None
-    autocomplete_numbers: bool = False
+    autocomplete_channel_numbers: bool = False
 
     @property
     def as_parameter(self):
@@ -52,10 +55,10 @@ class CommandArgument:
 
     def discord_autocomplete(self, command: discord.app_commands.Command):
         """Applies an autocompleter for a discord command that has had this parameter added."""
-        if self.autocomplete_numbers:
+        if self.autocomplete_channel_numbers:
             autocomplete_choice_from_channel_numbers(command, self.name)
         elif self.autocomplete_options is not None:
-            autocomplete_choice(self.autocomplete_options, command, self.name)
+            autocomplete_choice_from_list(self.autocomplete_options, command, self.name)
         else:
             raise AttributeError(
                 f"{self.name}: discord_autocomplete called without autocomplete list being provided"

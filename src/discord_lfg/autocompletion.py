@@ -6,7 +6,7 @@ from discord import app_commands
 from discord_lfg.utils import get_numbers_from_channel_name
 
 
-def autocomplete_choice(choices: list, command: app_commands.Command, name: str):
+def autocomplete_choice_from_list(choices: list, command: app_commands.Command, name: str):
     """Creates an autocompletion choice interactable."""
 
     @command.autocomplete(name)
