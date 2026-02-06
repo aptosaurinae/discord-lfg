@@ -66,18 +66,18 @@ async def _lfg(
         await message_func(response, ephemeral=True)
         return None
 
-    group_info = {
+    user_inputs = {
         "name": activity,
         "listed_as": listed_as,
         "creator_notes": creator_notes,
         "difficulty": difficulty,
         "time_type": time_type,
     }
-    logging.debug(group_info)
+    logging.debug(user_inputs)
 
     instance = GroupBuilder(
         interaction=interaction,
-        group_info=group_info,
+        group_info=user_inputs,
         config=config,
         creator_role=creator_role,
         roles=roles,

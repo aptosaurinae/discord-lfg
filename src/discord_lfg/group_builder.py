@@ -16,7 +16,7 @@ from discord_lfg.utils import datetime_now_utc, get_guild_role_mention_for_group
 class GroupDetails:
     """Container for group details."""
 
-    name: str
+    activity_name: str
     listed_as: str
     creator_notes: str
     extra_info: list
@@ -87,6 +87,7 @@ class GroupBuilder:
         group_info: dict,
         config: dict,
         creator_role: str,
+        filled_spots: dict[str, int],
         roles: dict[str, RoleDefinition],
     ):
         """Creates a Group Builder.
@@ -97,8 +98,7 @@ class GroupBuilder:
             group_info: A dictionary of the group specific information
             config: A dictionary of configuration information for Group Builder
             creator_role: The role the creator has chosen
-            role_counts: A dictionary of role_name to the count of the number of roles.
-                Role names must match those given in the configuration file.
+            filled_spots: A dictionary of which roles are already filled
             roles: A dictionary of role information based on RoleDefinition.
         """
         logging.debug(
@@ -120,6 +120,7 @@ class GroupBuilder:
         self.creator = self.create_user_from_interaction(interaction, creator_role, True)
         self.add_role(creator_role, self.creator)
         self.kicked_users: list[GroupUser] = []
+        self.fill_spots(filled_spots)
         logging.debug(
             f"GroupBuilder initialisation finished for {self.listing_message} {self.group_title}"
         )
@@ -159,7 +160,7 @@ class GroupBuilder:
     def listing_message_body(self) -> str:
         """Body of the listing message."""
         group = self.group_details
-        main_string = f"{group.name}{' ' if len(group.extra_info) > 0 else ''}"
+        main_string = f"{group.activity_name}{' ' if len(group.extra_info) > 0 else ''}"
         main_string += " ".join([f"({item})" for item in group.extra_info])
         return f"{self._strikethrough}{main_string}{self._strikethrough}"
 
@@ -280,12 +281,12 @@ class GroupBuilder:
         }
 
     def _setup_group(
-        self, name: str, listed_as: str, creator_notes: str, guild_name: str, **kwargs
+        self, activity_name: str, listed_as: str, creator_notes: str, guild_name: str, **kwargs
     ):
         """Captures information from the initial listing process."""
-        random_listing = generate_listing_name(name, 3, guild_name)
+        random_listing = generate_listing_name(activity_name, 3, guild_name)
         self.group_details = GroupDetails(
-            name=name,
+            activity_name=activity_name,
             listed_as=listed_as if (listed_as != "") else random_listing,
             creator_notes="" if (creator_notes == "") else f"**Notes:** *{creator_notes}*\n",
             extra_info=list(kwargs.values()),
