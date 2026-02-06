@@ -576,11 +576,7 @@ class GroupBuilder:
 
         role = self.role_info(role_name)
         btn = discord.ui.Button(
-            custom_id=role.name,
-            emoji=role.emoji,
-            style=role.button_style,
-            disabled=role.disabled,
-            # row=1,
+            custom_id=role.name, emoji=role.emoji, style=role.button_style, disabled=role.disabled
         )
         btn.callback = btn_click
         return btn
@@ -604,7 +600,7 @@ class GroupBuilder:
             emoji="🔑",
             style=discord.ButtonStyle.secondary,
             disabled=False,
-            # row=1,
+            row=4,
         )
         btn.callback = btn_click
         return btn
@@ -641,10 +637,10 @@ class GroupBuilder:
 
         btn = discord.ui.Button(
             custom_id="settings",
-            emoji="⚙️",
+            label="⚙️/❌",
             style=discord.ButtonStyle.secondary,
             disabled=False,
-            # row=1,
+            row=4,
         )
         btn.callback = btn_click
         return btn
