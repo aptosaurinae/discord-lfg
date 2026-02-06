@@ -15,12 +15,13 @@ from discord import app_commands
 
 from discord_lfg.autocompletion import (
     difficulty_autocomplete,
-    dungeon_autocomplete,
+    # dungeon_autocomplete,
     dungeon_short_autocomplete,
     role_autocomplete,
     time_type_autocomplete,
 )
-from discord_lfg.lfg import lfg, lfgdebug, lfgquick
+from discord_lfg.commands import build_lfg_command, command_argument_from_config
+from discord_lfg.lfg import lfgdebug, lfgquick
 from discord_lfg.roles import create_roles_from_config
 
 # --- Config setup
@@ -61,7 +62,8 @@ GUILD_ID = discord.Object(CONFIG_DATA["guild_id"])
 DEBUG = CONFIG_DATA.get("debug", 0)
 LOG_FOLDER = Path(CONFIG_DATA.get("log_folder", ""))
 ROLES = create_roles_from_config(CONFIG_DATA.get("role", {}))
-DUNGEONS = CONFIG_DATA.get("dungeons", {})
+ACTIVITY_ARG = command_argument_from_config(CONFIG_DATA.get("activity", {}), "activity")
+ACTIVITY_NAMES = CONFIG_DATA.get("activity", {}).get("options")
 TIME_TYPES = CONFIG_DATA.get("time_types", {})
 HELP_MESSAGE = CONFIG_DATA.get("messages", {"help": "missing help definition"}).get("help")
 
@@ -92,10 +94,6 @@ class BotClient(discord.Client):
         super().__init__(intents=intents)
         self.tree = app_commands.CommandTree(self)
 
-    async def setup_hook(self):
-        """Update commands on guild."""
-        await self.tree.sync(guild=GUILD_ID)
-
 
 intents = discord.Intents.default()
 client = BotClient(intents=intents)
@@ -104,15 +102,25 @@ client = BotClient(intents=intents)
 @client.event
 async def on_ready():
     """Startup tasks."""
+    global CONFIG_DATA
+    CONFIG_DATA["guild_roles"] = {guild.id: guild.roles for guild in client.guilds}[
+        CONFIG_DATA["guild_id"]
+    ]
+    lfg_fixed_args = {
+        "roles": ROLES,
+        "dungeons": ACTIVITY_NAMES,
+        "time_types": TIME_TYPES,
+        "config": CONFIG_DATA,
+    }
+    lfg_command = build_lfg_command([ACTIVITY_ARG], lfg_fixed_args)
+    client.tree.add_command(lfg_command, guild=GUILD_ID)
+    await client.tree.sync(guild=GUILD_ID)
+
     print(f"Logged in as {client.user} (ID: {client.user.id})")
     print("------")
     print("Discord-LFG started")
     if LOG_FOLDER != "" and LOG_FOLDER.exists():
         print(f"logging to: {LOG_FOLDER}")
-    global CONFIG_DATA
-    CONFIG_DATA["guild_roles"] = {guild.id: guild.roles for guild in client.guilds}[
-        CONFIG_DATA["guild_id"]
-    ]
 
 
 # -- Help
@@ -128,29 +136,6 @@ async def lfghelp(interaction: discord.Interaction):
 # -- LFG
 
 
-@client.tree.command(guild=GUILD_ID, name="lfg")
-@app_commands.describe(
-    dungeon="The dungeon you are listing a key for.",
-    listed_as="The in-game name. Leave blank to automatically generate a name for you (recommended)",
-    creator_notes="Extra notes you want to make players signing up aware of.",
-)
-@app_commands.autocomplete(dungeon=dungeon_autocomplete(DUNGEONS))
-async def lfg_command(
-    interaction: discord.Interaction, dungeon: str, listed_as: str = "", creator_notes: str = ""
-):
-    """Generates a Group Builder listing using a guided wizard."""
-    await lfg(
-        interaction=interaction,
-        dungeon=dungeon,
-        listed_as=listed_as,
-        creator_notes=creator_notes,
-        roles=ROLES,
-        dungeons=DUNGEONS,
-        time_types=TIME_TYPES,
-        config=CONFIG_DATA,
-    )
-
-
 @client.tree.command(guild=GUILD_ID, name="lfgquick")
 @app_commands.describe(
     dungeon="The short name of the dungeon you are listing a key for.",
@@ -162,7 +147,7 @@ async def lfg_command(
     creator_notes="Extra notes you want to make players signing up aware of.",
 )
 @app_commands.autocomplete(
-    dungeon=dungeon_short_autocomplete(DUNGEONS),
+    dungeon=dungeon_short_autocomplete(ACTIVITY_NAMES),
     time_type=time_type_autocomplete(TIME_TYPES),
     your_role=role_autocomplete(ROLES),
     difficulty=difficulty_autocomplete,
@@ -188,7 +173,7 @@ async def lfgstring_command(
         creator_notes=creator_notes,
         required_spots=required_spots,
         roles=ROLES,
-        dungeons=DUNGEONS,
+        dungeons=ACTIVITY_NAMES,
         time_types=TIME_TYPES,
         config=CONFIG_DATA,
     )
@@ -203,7 +188,7 @@ if CONFIG_DATA.get("debug") is not None:
             await lfgdebug(
                 interaction=interaction,
                 debug_type=num,
-                dungeons=DUNGEONS,
+                dungeons=ACTIVITY_NAMES,
                 time_types=TIME_TYPES,
                 config=CONFIG_DATA,
             )

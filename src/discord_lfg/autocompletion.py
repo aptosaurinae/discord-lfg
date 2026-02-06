@@ -7,7 +7,21 @@ from discord_lfg.roles import RoleDefinition
 from discord_lfg.utils import get_difficulty_start_and_end_from_channel_name
 
 
-def _autocomplete_choice(choices: list):
+def autocomplete_choice(choices: list, command: app_commands.Command, name: str):
+    """Creates an autocompletion choice interactable."""
+
+    @command.autocomplete(name)
+    async def autocompleter(interaction: discord.Interaction, current: str):
+        return [
+            app_commands.Choice(name=item, value=item)
+            for item in choices
+            if current.lower() in item.lower()
+        ]
+
+    return autocompleter
+
+
+def autocomplete_choice_old(choices: list):
     """Creates an autocompletion choice interactable."""
 
     async def autocompleter(interaction: discord.Interaction, current: str):
@@ -22,22 +36,22 @@ def _autocomplete_choice(choices: list):
 
 def dungeon_autocomplete(dungeons: dict[str, str]):
     """Autocompletion system for dungeon strings."""
-    return _autocomplete_choice(list(dungeons.values()))
+    return autocomplete_choice_old(list(dungeons.values()))
 
 
 def dungeon_short_autocomplete(dungeons: dict[str, str]):
     """Autocompletion system for short dungeon strings."""
-    return _autocomplete_choice(list(dungeons.keys()))
+    return autocomplete_choice_old(list(dungeons.keys()))
 
 
 def time_type_autocomplete(time_types: dict[str, str]):
     """Autocompletion system for time types."""
-    return _autocomplete_choice(list(time_types.keys()))
+    return autocomplete_choice_old(list(time_types.keys()))
 
 
 def role_autocomplete(roles: dict[str, RoleDefinition]):
     """Autocompletion system for user role."""
-    return _autocomplete_choice(list(roles))
+    return autocomplete_choice_old(list(roles))
 
 
 async def difficulty_autocomplete(interaction: discord.Interaction, current: str):
