@@ -20,8 +20,7 @@ class GroupDetails:
     name_long: str
     listed_as: str
     creator_notes: str
-    difficulty: int
-    time_type: str
+    extra_info: list
 
 
 @dataclass
@@ -161,10 +160,9 @@ class GroupBuilder:
     def listing_message_body(self) -> str:
         """Body of the listing message."""
         group = self.group_details
-        return (
-            f"{self._strikethrough}{group.name_long} +{group.difficulty} "
-            f"({group.time_type}){self._strikethrough}"
-        )
+        main_string = f"{group.name_long}{' ' if len(group.extra_info) > 0 else ''}"
+        main_string += " ".join([f"({item})" for item in group.extra_info])
+        return f"{self._strikethrough}{main_string}{self._strikethrough}"
 
     @property
     def listing_message(self) -> str:
@@ -288,9 +286,8 @@ class GroupBuilder:
         name_long: str,
         listed_as: str,
         creator_notes: str,
-        difficulty: str,
-        time_type: str,
         guild_name: str,
+        **kwargs,
     ):
         """Captures information from the initial listing process."""
         random_listing = generate_listing_name(name_short, 3, guild_name)
@@ -299,8 +296,7 @@ class GroupBuilder:
             name_long=name_long,
             listed_as=listed_as if (listed_as != "") else random_listing,
             creator_notes="" if (creator_notes == "") else f"**Notes:** *{creator_notes}*\n",
-            difficulty=int(difficulty),
-            time_type=time_type,
+            extra_info=list(kwargs.values()),
         )
 
     def _state_init(self, guild_name: str, timeout_length: int, editable_length: int, debug: bool):
@@ -424,14 +420,14 @@ class GroupBuilder:
 
     def _create_filled_spot_user(self, role: str):
         return GroupUser(
-            self.state.filled_spots * -1,
-            "",
-            "filled_spot",
-            self.state.filled_spot_name,
-            None,
-            None,
-            False,
-            role,
+            id=self.state.filled_spots * -1,
+            tag="",
+            name="filled_spot",
+            display_name=self.state.filled_spot_name,
+            global_name=None,
+            interaction=None,
+            creator=False,
+            role=role,
         )
 
     def _create_empty_spot_user(self, role: str):
