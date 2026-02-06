@@ -1,31 +1,30 @@
 """Utilities for Group Builder."""
 
 import logging
+import re
 from datetime import datetime, timezone
 
 import discord
 
 
-def get_difficulty_start_and_end_from_channel_name(channel_name: str) -> None | list:
-    """Generates a set of difficulty values from a channel name."""
-    if channel_name == "bot-control":
-        start_num = 2
-        end_num = 20
-        return [str(num) for num in range(start_num, end_num + 1)]
-    if channel_name[:5] != "lfg-m":
-        return None
-    start_start_idx = channel_name.find("m") + 1
-    if channel_name.count("m") == 1:
-        start_num = int(channel_name[start_start_idx:])
-        end_num = start_num
-        return [str(num) for num in range(start_num, end_num + 1)]
-    elif channel_name.count("m") == 2:
-        start_end_idx = channel_name.find("-", start_start_idx)
-        end_start_idx = channel_name.find("m", start_end_idx) + 1
-        start_num = int(channel_name[start_start_idx:start_end_idx])
-        end_num = int(channel_name[end_start_idx:])
-        return [str(num) for num in range(start_num, end_num + 1)]
-    return None
+def extract_numbers(text: str) -> list[int]:
+    """Gets any numbers from a string and returns them as a list of integers."""
+    return [int(num) for num in re.findall(r"\d+", text)]
+
+
+def get_numbers_from_channel_name(channel_name: str) -> None | list:
+    """Generates a set of numbers from a channel name.
+
+    Assumes that at most there are 2 numbers in the channel name.
+    If there are 0 or more than 2, will generate a list from 1-10.
+    """
+    numbers = extract_numbers(channel_name)
+    if len(numbers) == 1:
+        return [str(numbers[0])]
+    elif len(numbers) == 2:
+        return [str(num) for num in range(numbers[0], numbers[1])]
+    else:
+        return [str(num) for num in range(1, 11)]
 
 
 def get_guild_role_mention_for_group_role(
