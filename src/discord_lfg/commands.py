@@ -6,8 +6,8 @@ from dataclasses import dataclass
 import discord
 from discord import app_commands
 
-from discord_lfg.autocompletion import autocomplete_choice
-from discord_lfg.lfg import lfg
+from discord_lfg.autocompletion import autocomplete_choice, autocomplete_choice_from_channel_numbers
+from discord_lfg.lfg import lfg, lfgquick
 
 TYPE_LOOKUPS = {"str": str, "int": int, "float": float, "discord.member": discord.Member}
 
@@ -21,6 +21,7 @@ class CommandArgument:
     required: bool
     description: str
     autocomplete_options: list | None
+    autocomplete_numbers: bool = False
 
     @property
     def as_parameter(self):
@@ -51,8 +52,14 @@ class CommandArgument:
 
     def discord_autocomplete(self, command: discord.app_commands.Command):
         """Applies an autocompleter for a discord command that has had this parameter added."""
-        if self.autocomplete_options is not None:
+        if self.autocomplete_numbers:
+            autocomplete_choice_from_channel_numbers(command, self.name)
+        elif self.autocomplete_options is not None:
             autocomplete_choice(self.autocomplete_options, command, self.name)
+        else:
+            raise AttributeError(
+                f"{self.name}: discord_autocomplete called without autocomplete list being provided"
+            )
 
 
 def command_argument_from_config(argument_definition: dict, arg_name: str):
@@ -128,4 +135,32 @@ def build_lfg_command(arguments: list[CommandArgument], fixed_lfg_inputs: dict):
         "lfg",
         "Generates a Group Builder listing using a guided wizard.",
         lfg,
+    )
+
+
+def build_lfgquick_command(arguments: list[CommandArgument], fixed_lfg_inputs: dict):
+    """Builds the LFG command programmatically."""
+    standard_args = [
+        CommandArgument(
+            "listed_as",
+            str,
+            False,
+            "The in-game name. Leave blank to automatically generate a name for you (recommended)",
+            None,
+        ),
+        CommandArgument(
+            "creator_notes",
+            str,
+            False,
+            "Extra notes you want to make players signing up aware of.",
+            None,
+        ),
+    ]
+    arguments = arguments + standard_args
+    return build_command(
+        arguments,
+        fixed_lfg_inputs,
+        "lfgquick",
+        "Generates a Group Builder listing using a string-based input.",
+        lfgquick,
     )

@@ -13,15 +13,13 @@ from pathlib import Path
 import discord
 from discord import app_commands
 
-from discord_lfg.autocompletion import (
-    difficulty_autocomplete,
-    # dungeon_autocomplete,
-    dungeon_short_autocomplete,
-    role_autocomplete,
-    time_type_autocomplete,
+from discord_lfg.commands import (
+    CommandArgument,
+    build_lfg_command,
+    build_lfgquick_command,
+    command_argument_from_config,
 )
-from discord_lfg.commands import build_lfg_command, command_argument_from_config
-from discord_lfg.lfg import lfgdebug, lfgquick
+from discord_lfg.lfg import lfgdebug
 from discord_lfg.roles import create_roles_from_config
 
 # --- Config setup
@@ -62,10 +60,26 @@ GUILD_ID = discord.Object(CONFIG_DATA["guild_id"])
 DEBUG = CONFIG_DATA.get("debug", 0)
 LOG_FOLDER = Path(CONFIG_DATA.get("log_folder", ""))
 ROLES = create_roles_from_config(CONFIG_DATA.get("role", {}))
-ACTIVITY_ARG = command_argument_from_config(CONFIG_DATA.get("activity", {}), "activity")
 ACTIVITY_NAMES = CONFIG_DATA.get("activity", {}).get("options")
 TIME_TYPES = CONFIG_DATA.get("time_types", {})
 HELP_MESSAGE = CONFIG_DATA.get("messages", {"help": "missing help definition"}).get("help")
+
+ACTIVITY_ARG = command_argument_from_config(CONFIG_DATA.get("activity", {}), "activity")
+TIME_TYPES_ARG = command_argument_from_config(CONFIG_DATA.get("option", {}).get("1"), "option.1")
+ROLES_ARG = CommandArgument(
+    "roles", str, True, "The role you are filling for this group.", list(ROLES.keys())
+)
+REQUIRED_SPOTS_ARG = CommandArgument(
+    "required_spots",
+    str,
+    True,
+    "'t' for tank, 'h' for healer, 'd' for dps. e.g. 'thdd' for all spots if you're dps",
+    None,
+)
+DIFFICULTY_ARG = CommandArgument(
+    "difficulty", int, True, "The difficulty level of the key.", None, True
+)
+
 
 dt_now = datetime.now(timezone.utc)
 datetime_str = (
@@ -114,6 +128,13 @@ async def on_ready():
     }
     lfg_command = build_lfg_command([ACTIVITY_ARG], lfg_fixed_args)
     client.tree.add_command(lfg_command, guild=GUILD_ID)
+
+    lfgquick_command = build_lfgquick_command(
+        [ACTIVITY_ARG, DIFFICULTY_ARG, TIME_TYPES_ARG, ROLES_ARG, REQUIRED_SPOTS_ARG],
+        lfg_fixed_args,
+    )
+    client.tree.add_command(lfgquick_command, guild=GUILD_ID)
+
     await client.tree.sync(guild=GUILD_ID)
 
     print(f"Logged in as {client.user} (ID: {client.user.id})")
@@ -136,47 +157,47 @@ async def lfghelp(interaction: discord.Interaction):
 # -- LFG
 
 
-@client.tree.command(guild=GUILD_ID, name="lfgquick")
-@app_commands.describe(
-    dungeon="The short name of the dungeon you are listing a key for.",
-    difficulty="The difficulty of the dungeon.",
-    time_type="The timing type you are aiming for e.g. 'toa' for 'Time or Abandon'.",
-    your_role="The role you are filling for this group.",
-    required_spots="'t' for tank, 'h' for healer, 'd' for dps. e.g. 'thdd' for all spots if you're dps",
-    listed_as="The in-game name. Leave blank to automatically generate a name for you (recommended)",
-    creator_notes="Extra notes you want to make players signing up aware of.",
-)
-@app_commands.autocomplete(
-    dungeon=dungeon_short_autocomplete(ACTIVITY_NAMES),
-    time_type=time_type_autocomplete(TIME_TYPES),
-    your_role=role_autocomplete(ROLES),
-    difficulty=difficulty_autocomplete,
-)
-async def lfgstring_command(
-    interaction: discord.Interaction,
-    dungeon: str,
-    difficulty: int,
-    time_type: str,
-    your_role: str,
-    required_spots: str,
-    listed_as: str = "",
-    creator_notes: str = "",
-):
-    """Generates a Dungeon Buddy listing using a quick text-based input."""
-    await lfgquick(
-        interaction=interaction,
-        dungeon=dungeon,
-        difficulty=difficulty,
-        time_type=time_type,
-        creator_role=your_role,
-        listed_as=listed_as,
-        creator_notes=creator_notes,
-        required_spots=required_spots,
-        roles=ROLES,
-        dungeons=ACTIVITY_NAMES,
-        time_types=TIME_TYPES,
-        config=CONFIG_DATA,
-    )
+# @client.tree.command(guild=GUILD_ID, name="lfgquick")
+# @app_commands.describe(
+#     dungeon="The short name of the dungeon you are listing a key for.",
+#     difficulty="The difficulty of the dungeon.",
+#     time_type="The timing type you are aiming for e.g. 'toa' for 'Time or Abandon'.",
+#     your_role="The role you are filling for this group.",
+#     required_spots="'t' for tank, 'h' for healer, 'd' for dps. e.g. 'thdd' for all spots if you're dps",
+#     listed_as="The in-game name. Leave blank to automatically generate a name for you (recommended)",
+#     creator_notes="Extra notes you want to make players signing up aware of.",
+# )
+# @app_commands.autocomplete(
+#     dungeon=dungeon_short_autocomplete(ACTIVITY_NAMES),
+#     time_type=time_type_autocomplete(TIME_TYPES),
+#     your_role=role_autocomplete(ROLES),
+#     difficulty=difficulty_autocomplete,
+# )
+# async def lfgstring_command(
+#     interaction: discord.Interaction,
+#     dungeon: str,
+#     difficulty: int,
+#     time_type: str,
+#     your_role: str,
+#     required_spots: str,
+#     listed_as: str = "",
+#     creator_notes: str = "",
+# ):
+#     """Generates a Dungeon Buddy listing using a quick text-based input."""
+#     await lfgquick(
+#         interaction=interaction,
+#         dungeon=dungeon,
+#         difficulty=difficulty,
+#         time_type=time_type,
+#         creator_role=your_role,
+#         listed_as=listed_as,
+#         creator_notes=creator_notes,
+#         required_spots=required_spots,
+#         roles=ROLES,
+#         dungeons=ACTIVITY_NAMES,
+#         time_types=TIME_TYPES,
+#         config=CONFIG_DATA,
+#     )
 
 
 if CONFIG_DATA.get("debug") is not None:

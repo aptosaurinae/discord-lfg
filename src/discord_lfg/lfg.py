@@ -7,7 +7,7 @@ import discord
 from discord_lfg.group_builder import GroupBuilder
 from discord_lfg.lfg_options import LFGOptions
 from discord_lfg.roles import RoleDefinition
-from discord_lfg.utils import get_difficulty_start_and_end_from_channel_name
+from discord_lfg.utils import get_numbers_from_channel_name
 
 
 class LFGValidationError(Exception):
@@ -121,7 +121,7 @@ async def lfg(
     config: dict,
 ):
     """Creates a LFG listing using an interactable interface."""
-    difficulties = get_difficulty_start_and_end_from_channel_name(interaction.channel.name)  # type: ignore
+    difficulties = get_numbers_from_channel_name(interaction.channel.name)  # type: ignore
     if difficulties is None:
         response = "You cannot use the LFG command in this channel"
         await interaction.response.send_message(response, ephemeral=True)
