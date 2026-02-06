@@ -163,7 +163,7 @@ class GroupBuilder:
         """Body of the listing message."""
         group = self.group_details
         main_string = f"{group.activity_name}{' ' if len(group.extra_info) > 0 else ''}"
-        main_string += " ".join([f"({item})" for item in group.extra_info])
+        main_string += " ".join([f"[{item}]" for item in group.extra_info])
         return f"{self._strikethrough}{main_string}{self._strikethrough}"
 
     @property

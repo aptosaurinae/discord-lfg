@@ -58,7 +58,7 @@ ROLES = create_roles_from_config(CONFIG_DATA.get("role", {}))
 HELP_MESSAGE = CONFIG_DATA.get("messages", {"help": "missing help definition"}).get("help")
 
 ACTIVITY_ARG = command_argument_from_config(CONFIG_DATA.get("activity", {}), "activity")
-TIMING_AIM_ARG = command_argument_from_config(CONFIG_DATA.get("timing_aim", {}), "timing_aim")
+TIMING_AIM_ARG = command_argument_from_config(CONFIG_DATA.get("option", {}).get("1", {}), "option1")
 CREATOR_ROLE_ARG = CommandArgument(
     "creator_role", str, True, "The role you are filling for this group.", list(ROLES.keys())
 )
@@ -119,6 +119,7 @@ async def on_ready():
         lfg_fixed_args,
     )
     client.tree.add_command(lfg_command, guild=GUILD_ID)
+    print(lfg_command.parameters)
 
     await client.tree.sync(guild=GUILD_ID)
 

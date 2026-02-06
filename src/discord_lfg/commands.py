@@ -25,6 +25,7 @@ class CommandArgument:
     description: str
     autocomplete_options: list | None
     autocomplete_channel_numbers: bool = False
+    display_name: str = ""
 
     @property
     def as_parameter(self):
@@ -49,6 +50,11 @@ class CommandArgument:
             name=self.name, kind=kind, annotation=self.python_type, default=default
         )
 
+    def discord_rename(self, command: discord.app_commands.Command):
+        """Renames how discord displays the name of this command."""
+        if self.display_name != "":
+            command._params[self.name]._rename = self.display_name
+
     def discord_description(self, command: discord.app_commands.Command):
         """Applies a description for a discord command that has had this parameter added."""
         command._params[self.name].description = self.description
@@ -63,22 +69,23 @@ class CommandArgument:
 
 def command_argument_from_config(argument_definition: dict, arg_name: str):
     """Builds a command argument based on information given in a toml config."""
-    required_elements = ["name", "python_type", "required", "description"]
+    required_elements = ["display_name", "python_type", "required", "description"]
     errors = []
     for element in required_elements:
         if argument_definition.get(element) is None:
             errors.append(f"missing {element} from argument definition: {arg_name}")
-    name = argument_definition.get("name", "")
+    display_name = argument_definition.get("display_name", "")
     python_type = TYPE_LOOKUPS[argument_definition.get("python_type", "").lower()]
     required = argument_definition.get("required", False)
     description = argument_definition.get("description", "")
     autocomplete_options = argument_definition.get("options", {})
     return CommandArgument(
-        name=name,
+        name=arg_name,
         python_type=python_type,
         required=required,
         description=description,
         autocomplete_options=autocomplete_options,
+        display_name=display_name,
     )
 
 
@@ -103,6 +110,7 @@ def build_command(
     cmd = app_commands.Command(name=func_name, description=func_desc, callback=wrapper)
 
     for user_input in user_inputs:
+        user_input.discord_rename(cmd)
         user_input.discord_description(cmd)
         user_input.discord_autocomplete(cmd)
 
