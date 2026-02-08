@@ -7,21 +7,23 @@ from datetime import datetime, timedelta
 
 import discord
 
-from discord_lfg.resources import generate_listing_name, generate_passphrase
-from discord_lfg.roles import RoleDefinition
-from discord_lfg.utils import datetime_now_utc, get_guild_role_mention_for_group_role
+from discord_lfg.utils import (
+    RoleDefinition,
+    datetime_now_utc,
+    generate_listing_name,
+    generate_passphrase,
+    get_guild_role_mention_for_group_role,
+)
 
 
 @dataclass
 class GroupDetails:
     """Container for group details."""
 
-    name_short: str
-    name_long: str
+    activity_name: str
     listed_as: str
     creator_notes: str
-    difficulty: int
-    time_type: str
+    extra_info: list
 
 
 @dataclass
@@ -89,6 +91,7 @@ class GroupBuilder:
         group_info: dict,
         config: dict,
         creator_role: str,
+        filled_spots: dict[str, int],
         roles: dict[str, RoleDefinition],
     ):
         """Creates a Group Builder.
@@ -96,32 +99,34 @@ class GroupBuilder:
         Args:
             interaction: The discord interaction which created this GroupBuilder. This allows
                 us to capture the user information depending on who created this instance.
-            group_info: A dictionary of the group specific information
-            config: A dictionary of configuration information for Group Builder
-            creator_role: The role the creator has chosen
-            role_counts: A dictionary of role_name to the count of the number of roles.
-                Role names must match those given in the configuration file.
+            group_info: A dictionary of the group specific information: see `GroupDetails`
+            config: A dictionary of configuration information for Group Builder, all optional extras
+            creator_role: The role the creator has chosen (must match a role name)
+            filled_spots: A dictionary of which roles are already filled in the format {name: count}
             roles: A dictionary of role information based on RoleDefinition.
         """
         logging.debug(
             f"GroupBuilder created by {interaction.user.id} {interaction.user.display_name}"
         )
         self.role_counts = {role.name: role.count for role in roles.values()}
-        self.emojis = {role.name: role.emoji for role in roles.values()}
         guild_name = config.get("guild_name", "")
         timeout_length = config.get("timeout_length", 30)
         editable_length = config.get("editable_length", 5)
         debug = config.get("debug", False)
+        guild_roles = config.get("guild_roles", {})
+
         self._state_init(guild_name, timeout_length, editable_length, debug)
         self._setup_group(**group_info, guild_name=guild_name)
         self._roles_init(
             roles,
-            config.get("guild_roles", {}),
+            guild_roles,
             interaction.channel.name if isinstance(interaction.channel.name, str) else "",  # type: ignore
         )
+
         self.creator = self.create_user_from_interaction(interaction, creator_role, True)
         self.add_role(creator_role, self.creator)
         self.kicked_users: list[GroupUser] = []
+        self.fill_spots(filled_spots)
         logging.debug(
             f"GroupBuilder initialisation finished for {self.listing_message} {self.group_title}"
         )
@@ -161,10 +166,9 @@ class GroupBuilder:
     def listing_message_body(self) -> str:
         """Body of the listing message."""
         group = self.group_details
-        return (
-            f"{self._strikethrough}{group.name_long} +{group.difficulty} "
-            f"({group.time_type}){self._strikethrough}"
-        )
+        main_string = f"{group.activity_name}{' ' if len(group.extra_info) > 0 else ''}"
+        main_string += " ".join([f"[{item}]" for item in group.extra_info])
+        return f"{self._strikethrough}{main_string}{self._strikethrough}"
 
     @property
     def listing_message(self) -> str:
@@ -283,24 +287,15 @@ class GroupBuilder:
         }
 
     def _setup_group(
-        self,
-        name_short: str,
-        name_long: str,
-        listed_as: str,
-        creator_notes: str,
-        difficulty: str,
-        time_type: str,
-        guild_name: str,
+        self, activity_name: str, listed_as: str, creator_notes: str, guild_name: str, **kwargs
     ):
         """Captures information from the initial listing process."""
-        random_listing = generate_listing_name(name_short, 3, guild_name)
+        random_listing = generate_listing_name(activity_name, 3, guild_name)
         self.group_details = GroupDetails(
-            name_short=name_short,
-            name_long=name_long,
+            activity_name=activity_name,
             listed_as=listed_as if (listed_as != "") else random_listing,
             creator_notes="" if (creator_notes == "") else f"**Notes:** *{creator_notes}*\n",
-            difficulty=int(difficulty),
-            time_type=time_type,
+            extra_info=list(kwargs.values()),
         )
 
     def _state_init(self, guild_name: str, timeout_length: int, editable_length: int, debug: bool):
@@ -424,14 +419,14 @@ class GroupBuilder:
 
     def _create_filled_spot_user(self, role: str):
         return GroupUser(
-            self.state.filled_spots * -1,
-            "",
-            "filled_spot",
-            self.state.filled_spot_name,
-            None,
-            None,
-            False,
-            role,
+            id=self.state.filled_spots * -1,
+            tag="",
+            name="filled_spot",
+            display_name=self.state.filled_spot_name,
+            global_name=None,
+            interaction=None,
+            creator=False,
+            role=role,
         )
 
     def _create_empty_spot_user(self, role: str):
@@ -585,11 +580,7 @@ class GroupBuilder:
 
         role = self.role_info(role_name)
         btn = discord.ui.Button(
-            custom_id=role.name,
-            emoji=role.emoji,
-            style=role.button_style,
-            disabled=role.disabled,
-            # row=1,
+            custom_id=role.name, emoji=role.emoji, style=role.button_style, disabled=role.disabled
         )
         btn.callback = btn_click
         return btn
@@ -613,7 +604,7 @@ class GroupBuilder:
             emoji="🔑",
             style=discord.ButtonStyle.secondary,
             disabled=False,
-            # row=1,
+            row=4,
         )
         btn.callback = btn_click
         return btn
@@ -650,10 +641,10 @@ class GroupBuilder:
 
         btn = discord.ui.Button(
             custom_id="settings",
-            emoji="⚙️",
+            label="⚙️/❌",
             style=discord.ButtonStyle.secondary,
             disabled=False,
-            # row=1,
+            row=4,
         )
         btn.callback = btn_click
         return btn

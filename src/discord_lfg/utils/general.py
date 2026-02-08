@@ -16,15 +16,18 @@ def get_numbers_from_channel_name(channel_name: str) -> None | list:
     """Generates a set of numbers from a channel name.
 
     Assumes that at most there are 2 numbers in the channel name.
-    If there are 0 or more than 2, will generate a list from 1-10.
+    If this is the bot-control channel, generates a list of 1-10.
+    Otherwise, generates a list with just -1 as a difficulty.
     """
     numbers = extract_numbers(channel_name)
     if len(numbers) == 1:
         return [str(numbers[0])]
     elif len(numbers) == 2:
         return [str(num) for num in range(numbers[0], numbers[1])]
-    else:
+    elif channel_name == "bot-control":
         return [str(num) for num in range(1, 11)]
+    else:
+        return [str(-1)]
 
 
 def get_guild_role_mention_for_group_role(

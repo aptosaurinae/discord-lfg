@@ -128,18 +128,18 @@ name = "dungeon"
 python_type = "str"
 required = true
 description = "The dungeon you are listing a key for."
+options = [
+    DN = "dungeon name",
+]
 
-[activity.options]
-DN = "dungeon name"
-
-[timing_aim.1]
+[timing_aim]
 name = "timing_aim"
 python_type = "str"
 required = true
 description = "The timing type you are aiming for."
-
-[timing_aim.options]
-tt = "dungeon timing type"
+options = [
+    "dungeon timing type",
+]
 
 [role.tank]
 emoji = "<:tankemojiname:123456789>"
@@ -161,7 +161,7 @@ help = "help message response"
 ```
 
 - `guild_id` is the Discord ID of the server that you are wanting the host the bot in.
-- `activity` is a dictionary of the dungeons for users to choose with metadata about how options
+- `activity` is a list of the dungeons for users to choose with metadata about how options
 are presented to users.
 - `timing_aim` is a dictionary of the timing types for users to choose with metadata.
 - `messages` must contain a `help` response.
