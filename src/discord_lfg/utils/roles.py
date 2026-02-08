@@ -36,4 +36,5 @@ def create_roles_from_config(
             role_name, int(role_counts[role_name]), str(role["emoji"]), str(role["identifier"])
         )
         for role_name, role in roles.items()
+        if role_name in role_counts
     }

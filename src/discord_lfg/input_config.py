@@ -202,7 +202,7 @@ def _argparser():
     return token_data, config_data
 
 
-def parse_token(token_data: dict):
+def _parse_token(token_data: dict):
     """Gets a token string from a token file."""
     if (token := token_data.get("discord", {}).get("token")) is not None:
         return token
@@ -210,12 +210,8 @@ def parse_token(token_data: dict):
         raise ValueError("Token file must define a 'token' value within '[discord]'")
 
 
-def parse_config() -> tuple[str, LFGConfig, list[dict]]:
+def _parse_config(config_data: dict) -> tuple[LFGConfig, list[dict]]:
     """Setup config for inputs."""
-    token_data, config_data = _argparser()
-
-    token = parse_token(token_data)
-
     config = LFGConfig(
         debug=config_data.get("debug", 0),
         guild_id_int=config_data.get("guild_id", ""),
@@ -225,6 +221,12 @@ def parse_config() -> tuple[str, LFGConfig, list[dict]]:
         all_roles=config_data.get("role", {}),
         commands=[Path(command) for command in config_data.get("commands", [])],
     )
+    try:
+        config.validate()
+    except ConfigValueError as e:
+        response = "\n".join(e.messages)
+        logging.critical(response)
+        raise
     setup_logging(config.log_folder, config.debug)
 
     commands = []
@@ -235,33 +237,24 @@ def parse_config() -> tuple[str, LFGConfig, list[dict]]:
         if command_path.exists() and command_path.suffix == ".toml":
             with open(command_path, "rb") as config_file:
                 command_config_input = tomllib.load(config_file)
-            command_data = parse_command_config(config, command_config_input)
+            command_data = _parse_command(config, command_config_input)
             commands.append(command_data)
         else:
             errors.append(f"Command path doesn't exit or is not a .toml file: {command_path}")
 
-    try:
-        config.validate()
-    except ConfigValueError as e:
-        response = "\n".join(e.messages)
-        logging.critical(response)
-        raise
-
-    return token, config, commands
+    return config, commands
 
 
-def parse_command_config(config: LFGConfig, command_config_input) -> dict:
+def _parse_command(config: LFGConfig, command_config_input) -> dict:
     """Parses data from a specific command configuration."""
     # command-specific config inputs
     activity_arg = command_argument_from_config(
         command_config_input.get("activity", {}), "activity"
     )
-    difficulty_arg = command_argument_from_config(
-        command_config_input.get("option", {}).get("difficulty", {}), "option_difficulty"
-    )
-    timing_aim_arg = command_argument_from_config(
-        command_config_input.get("option", {}).get("time", {}), "option_time"
-    )
+    option_args = []
+    options = command_config_input.get("option", {})
+    for option_name, option_data in options.items():
+        option_args.append(command_argument_from_config(option_data, f"option_{option_name}"))
 
     # generated from a mix of command-specific role values and general role inputs
     # this will need adjusting for per-command config input
@@ -286,13 +279,7 @@ def parse_command_config(config: LFGConfig, command_config_input) -> dict:
     command_name = command_config_input.get("name", "")
     command_description = command_config_input.get("description", "")
     command_data = {
-        "args": [
-            activity_arg,
-            difficulty_arg,
-            timing_aim_arg,
-            creator_role_arg,
-            required_spots_arg,
-        ],
+        "args": [activity_arg] + option_args + [creator_role_arg, required_spots_arg],
         "roles": command_roles,
         "config": CommandConfig(
             command_name,
@@ -300,12 +287,20 @@ def parse_command_config(config: LFGConfig, command_config_input) -> dict:
             config.debug,
             config.guild_name,
             command_config_input.get("timeout_length", 30),
-            command_config_input.get("editable_length", 30),
+            command_config_input.get("editable_length", 5),
             [],
         ),
     }
     logging.debug(command_data)
     return command_data
+
+
+def parse_inputs() -> tuple[str, LFGConfig, list[dict]]:
+    """Parse the inputs to the bot.py script."""
+    token_data, config_data = _argparser()
+    token = _parse_token(token_data)
+    config, commands = _parse_config(config_data)
+    return token, config, commands
 
 
 def setup_logging(log_folder: Path, debug: bool = False):

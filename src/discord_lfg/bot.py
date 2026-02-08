@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 
 from discord_lfg.commands import build_lfg_command
-from discord_lfg.input_config import parse_config
+from discord_lfg.input_config import parse_inputs
 from discord_lfg.lfg import lfgdebug
 
 # --- Bot setup
@@ -95,7 +95,7 @@ def _register_lfgstats(client, guild_id_obj: discord.Object):
 
 
 if __name__ == "__main__":
-    token, config, commands = parse_config()
+    token, config, commands = parse_inputs()
 
     intents = discord.Intents.default()
     client = BotClient(intents=intents)
