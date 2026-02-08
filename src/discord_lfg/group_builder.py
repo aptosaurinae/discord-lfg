@@ -7,10 +7,11 @@ from datetime import datetime, timedelta
 
 import discord
 
-from discord_lfg.resources import generate_listing_name, generate_passphrase
 from discord_lfg.utils import (
     RoleDefinition,
     datetime_now_utc,
+    generate_listing_name,
+    generate_passphrase,
     get_guild_role_mention_for_group_role,
 )
 

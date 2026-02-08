@@ -10,13 +10,18 @@ from discord_lfg.utils.general import (
     get_guild_role_mention_for_group_role,
     get_numbers_from_channel_name,
 )
+from discord_lfg.utils.resources import generate_listing_name, generate_passphrase
 from discord_lfg.utils.roles import RoleDefinition, create_roles_from_config
 
 __all__ = [
     "autocomplete_choice_from_channel_numbers",
     "autocomplete_choice_from_list",
+    "create_roles_from_config",
     "datetime_now_utc",
     "extract_numbers",
+    "generate_listing_name",
+    "generate_passphrase",
     "get_guild_role_mention_for_group_role",
     "get_numbers_from_channel_name",
+    "RoleDefinition",
 ]
