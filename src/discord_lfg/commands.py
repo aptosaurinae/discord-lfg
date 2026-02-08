@@ -126,6 +126,7 @@ def command_argument_from_config(argument_definition: dict, arg_name: str):
     python_type = TYPE_LOOKUPS[argument_definition.get("python_type", "").lower()]
     required = argument_definition.get("required", False)
     description = argument_definition.get("description", "")
+    autocomplete_channel_numbers = argument_definition.get("options_from_channel_numbers", False)
     autocomplete_options = argument_definition.get("options", {})
     return CommandArgument(
         name=arg_name,
@@ -133,6 +134,7 @@ def command_argument_from_config(argument_definition: dict, arg_name: str):
         required=required,
         description=description,
         autocomplete_options=autocomplete_options,
+        autocomplete_channel_numbers=autocomplete_channel_numbers,
         display_name=display_name,
     )
 

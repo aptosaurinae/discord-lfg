@@ -1,4 +1,4 @@
-"""Dungeon Buddy discord bot."""
+"""Discord looking-for-group bot."""
 
 try:
     import tomllib
@@ -50,15 +50,24 @@ def _validate_config(CONFIG_DATA: dict):
 
 _validate_config(CONFIG_DATA)
 
+# general config elements
 TOKEN = token_data["discord"]["token"]
 GUILD_ID = discord.Object(CONFIG_DATA["guild_id"])
 DEBUG = CONFIG_DATA.get("debug", 0)
 LOG_FOLDER = Path(CONFIG_DATA.get("log_folder", ""))
 ROLES = create_roles_from_config(CONFIG_DATA.get("role", {}))
-HELP_MESSAGE = CONFIG_DATA.get("messages", {"help": "missing help definition"}).get("help")
 
+# command-specific config inputs
 ACTIVITY_ARG = command_argument_from_config(CONFIG_DATA.get("activity", {}), "activity")
-TIMING_AIM_ARG = command_argument_from_config(CONFIG_DATA.get("option", {}).get("1", {}), "option1")
+DIFFICULTY_ARG = command_argument_from_config(
+    CONFIG_DATA.get("option", {}).get("difficulty", {}), "option_difficulty"
+)
+TIMING_AIM_ARG = command_argument_from_config(
+    CONFIG_DATA.get("option", {}).get("time", {}), "option_time"
+)
+
+# generated from a mix of command-specific role values and general role inputs
+# this will need adjusting for per-command config input
 CREATOR_ROLE_ARG = CommandArgument(
     "creator_role", str, True, "The role you are filling for this group.", list(ROLES.keys())
 )
@@ -68,9 +77,6 @@ REQUIRED_SPOTS_ARG = CommandArgument(
     True,
     f"valid identifiers: {[role.identifier for role in ROLES.values()]}",
     None,
-)
-DIFFICULTY_ARG = CommandArgument(
-    "difficulty", int, True, "The difficulty level of the key.", None, True
 )
 
 
@@ -127,16 +133,6 @@ async def on_ready():
     print("Discord-LFG started")
     if LOG_FOLDER != "" and LOG_FOLDER.exists():
         print(f"logging to: {LOG_FOLDER}")
-
-
-# -- Help
-
-
-@client.tree.command(guild=GUILD_ID)
-async def lfghelp(interaction: discord.Interaction):
-    """Help with using Group Builder."""
-    response = HELP_MESSAGE
-    await interaction.response.send_message(response, ephemeral=True)
 
 
 # -- LFG

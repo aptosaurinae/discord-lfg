@@ -17,15 +17,9 @@ class LFGValidationError(Exception):
 
 
 def _validate_lfg_inputs(
-    difficulty: int,
-    creator_role: str,
-    filled_spots: dict[str, int],
-    roles: dict[str, RoleDefinition],
+    creator_role: str, filled_spots: dict[str, int], roles: dict[str, RoleDefinition]
 ):
     errors = []
-    if difficulty == -1:
-        errors.append("You cannot use this command in this channel.")
-
     max_counts = {role.name: role.count for role in roles.values()}
     max_counts[creator_role] -= 1
     for role, count in filled_spots.items():
@@ -65,7 +59,6 @@ def _convert_required_spots_to_filled(
 async def lfg(
     interaction: discord.Interaction,
     activity: str,
-    difficulty: int,
     creator_role: str,
     required_spots: str,
     listed_as: str,
@@ -78,7 +71,7 @@ async def lfg(
     logging.debug("".join([str((key, value)) for key, value in locals().items()]))
     try:
         filled_spots = _convert_required_spots_to_filled(roles, required_spots, creator_role)
-        _validate_lfg_inputs(difficulty, creator_role, filled_spots, roles)
+        _validate_lfg_inputs(creator_role, filled_spots, roles)
     except LFGValidationError as e:
         response = "\n".join(e.messages)
         message_func = (
@@ -93,7 +86,6 @@ async def lfg(
         "activity_name": activity,
         "listed_as": listed_as,
         "creator_notes": creator_notes,
-        "difficulty": difficulty,
         **options,
     }
     logging.debug(user_inputs)
