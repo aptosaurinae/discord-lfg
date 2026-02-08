@@ -6,12 +6,12 @@ from dataclasses import dataclass
 import discord
 from discord import app_commands
 
-from discord_lfg.autocompletion import (
+from discord_lfg.lfg import lfg
+from discord_lfg.utils import (
     autocomplete_choice_from_channel_numbers,
     autocomplete_choice_from_list,
+    get_numbers_from_channel_name,
 )
-from discord_lfg.lfg import lfg
-from discord_lfg.utils import get_numbers_from_channel_name
 
 TYPE_LOOKUPS = {"str": str, "int": int, "float": float, "discord.member": discord.Member}
 

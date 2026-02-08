@@ -5,7 +5,7 @@ import logging
 import discord
 
 from discord_lfg.group_builder import GroupBuilder
-from discord_lfg.roles import RoleDefinition
+from discord_lfg.utils import RoleDefinition
 
 
 class LFGValidationError(Exception):

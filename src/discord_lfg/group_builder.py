@@ -8,8 +8,11 @@ from datetime import datetime, timedelta
 import discord
 
 from discord_lfg.resources import generate_listing_name, generate_passphrase
-from discord_lfg.roles import RoleDefinition
-from discord_lfg.utils import datetime_now_utc, get_guild_role_mention_for_group_role
+from discord_lfg.utils import (
+    RoleDefinition,
+    datetime_now_utc,
+    get_guild_role_mention_for_group_role,
+)
 
 
 @dataclass

@@ -15,7 +15,7 @@ from discord import app_commands
 
 from discord_lfg.commands import CommandArgument, build_lfg_command, command_argument_from_config
 from discord_lfg.lfg import lfgdebug
-from discord_lfg.roles import create_roles_from_config
+from discord_lfg.utils import create_roles_from_config
 
 # --- Config setup
 
