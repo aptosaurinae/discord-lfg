@@ -64,6 +64,8 @@ class LFGConfig:
 class CommandConfig:
     """Configuration for individual command."""
 
+    name: str
+    description: str
     debug: bool
     guild_name: str
     timeout_length: int
@@ -200,9 +202,19 @@ def _argparser():
     return token_data, config_data
 
 
-def parse_config():
+def parse_token(token_data: dict):
+    """Gets a token string from a token file."""
+    if (token := token_data.get("discord", {}).get("token")) is not None:
+        return token
+    else:
+        raise ValueError("Token file must define a 'token' value within '[discord]'")
+
+
+def parse_config() -> tuple[str, LFGConfig, list[dict]]:
     """Setup config for inputs."""
     token_data, config_data = _argparser()
+
+    token = parse_token(token_data)
 
     config = LFGConfig(
         debug=config_data.get("debug", 0),
@@ -213,24 +225,48 @@ def parse_config():
         all_roles=config_data.get("role", {}),
         commands=[Path(command) for command in config_data.get("commands", [])],
     )
-    setup_logging(config.log_folder)
+    setup_logging(config.log_folder, config.debug)
 
-    # general config elements
-    token = token_data["discord"]["token"]
+    commands = []
+    errors = []
+    for command_path in config_data.get("command_files", ""):
+        command_path = Path(command_path)
+        logging.debug(command_path)
+        if command_path.exists() and command_path.suffix == ".toml":
+            with open(command_path, "rb") as config_file:
+                command_config_input = tomllib.load(config_file)
+            command_data = parse_command_config(config, command_config_input)
+            commands.append(command_data)
+        else:
+            errors.append(f"Command path doesn't exit or is not a .toml file: {command_path}")
 
+    try:
+        config.validate()
+    except ConfigValueError as e:
+        response = "\n".join(e.messages)
+        logging.critical(response)
+        raise
+
+    return token, config, commands
+
+
+def parse_command_config(config: LFGConfig, command_config_input) -> dict:
+    """Parses data from a specific command configuration."""
     # command-specific config inputs
-    activity_arg = command_argument_from_config(config_data.get("activity", {}), "activity")
+    activity_arg = command_argument_from_config(
+        command_config_input.get("activity", {}), "activity"
+    )
     difficulty_arg = command_argument_from_config(
-        config_data.get("option", {}).get("difficulty", {}), "option_difficulty"
+        command_config_input.get("option", {}).get("difficulty", {}), "option_difficulty"
     )
     timing_aim_arg = command_argument_from_config(
-        config_data.get("option", {}).get("time", {}), "option_time"
+        command_config_input.get("option", {}).get("time", {}), "option_time"
     )
 
     # generated from a mix of command-specific role values and general role inputs
     # this will need adjusting for per-command config input
     command_roles = create_roles_from_config(
-        config_data.get("role", {}), config_data.get("role_counts", {})
+        config.all_roles, command_config_input.get("role_counts", {})
     )
     creator_role_arg = CommandArgument(
         "creator_role",
@@ -247,36 +283,29 @@ def parse_config():
         None,
     )
 
-    commands = {
-        "lfg_m": {
-            "args": [
-                activity_arg,
-                difficulty_arg,
-                timing_aim_arg,
-                creator_role_arg,
-                required_spots_arg,
-            ],
-            "roles": command_roles,
-            "config": CommandConfig(
-                config.debug,
-                config.guild_name,
-                config_data.get("timeout_length", 30),
-                config_data.get("editable_length", 30),
-                [],
-            ),
-        }
+    command_name = command_config_input.get("name", "")
+    command_description = command_config_input.get("description", "")
+    command_data = {
+        "args": [
+            activity_arg,
+            difficulty_arg,
+            timing_aim_arg,
+            creator_role_arg,
+            required_spots_arg,
+        ],
+        "roles": command_roles,
+        "config": CommandConfig(
+            command_name,
+            command_description,
+            config.debug,
+            config.guild_name,
+            command_config_input.get("timeout_length", 30),
+            command_config_input.get("editable_length", 30),
+            [],
+        ),
     }
-
-    try:
-        config.validate()
-        # for command_name, command_args in commands.items():
-        #     command_args.validate()
-    except ConfigValueError as e:
-        response = "\n".join(e.messages)
-        logging.critical(response)
-        raise
-
-    return token, config, commands
+    logging.debug(command_data)
+    return command_data
 
 
 def setup_logging(log_folder: Path, debug: bool = False):
@@ -288,7 +317,7 @@ def setup_logging(log_folder: Path, debug: bool = False):
     if log_folder != "" and log_folder.exists():
         log_file_path = log_folder / f"{datetime_str}_dungeon_buddy.log"
         logging.basicConfig(
-            level=logging.DEBUG if debug == 1 else logging.INFO,
+            level=logging.DEBUG if debug else logging.INFO,
             format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
             handlers=[logging.FileHandler(log_file_path, encoding="utf-8")],
         )

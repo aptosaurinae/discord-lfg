@@ -94,7 +94,12 @@ def build_command(
     return cmd
 
 
-def build_lfg_command(user_inputs: list[CommandArgument], direct_inputs: dict):
+def build_lfg_command(
+    command_name: str,
+    command_description: str,
+    user_inputs: list[CommandArgument],
+    direct_inputs: dict,
+):
     """Builds the LFG command programmatically."""
     standard_args = [
         CommandArgument(
@@ -113,6 +118,4 @@ def build_lfg_command(user_inputs: list[CommandArgument], direct_inputs: dict):
         ),
     ]
     user_inputs = user_inputs + standard_args
-    return build_command(
-        user_inputs, direct_inputs, "lfg", "Generates a Group Builder listing.", lfg
-    )
+    return build_command(user_inputs, direct_inputs, command_name, command_description, lfg)

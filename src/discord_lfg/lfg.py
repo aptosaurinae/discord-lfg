@@ -105,7 +105,7 @@ async def lfg(
 
 async def lfgdebug(interaction: discord.Interaction, debug_type: int):
     """Creates a listing for debugging purposes."""
-    config = CommandConfig(True, "Debug", 1, 1, [])
+    config = CommandConfig("lfgdebug", "Multiple LFG for debug purposes", True, "Debug", 1, 1, [])
     roles = {
         "tank": RoleDefinition("tank", 1, "🛡️", "t"),
         "healer": RoleDefinition("healer", 1, "🪄", "h"),

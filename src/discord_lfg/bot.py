@@ -30,25 +30,24 @@ def _register_on_ready(
     guild_id_obj: discord.Object,
     guild_id_int: int,
     log_folder: Path,
-    commands_and_args: dict[str, dict],
+    commands_configs: list[dict],
 ):
     @client.event
     async def on_ready():
         """Startup tasks."""
         guild_roles = {guild.id: guild.roles for guild in client.guilds}[guild_id_int]
 
-        for command_name, command_elements in commands_and_args.items():
-            if (roles := command_elements.get("roles")) is not None and (
-                config_data := command_elements.get("config")
+        for command_config in commands_configs:
+            if (roles := command_config.get("roles")) is not None and (
+                config_data := command_config.get("config")
             ) is not None:
                 config_data.guild_roles = guild_roles
                 lfg_keyword_args = {"roles": roles, "config": config_data}
-                command_args = command_elements.get("args")
-                if isinstance(command_name, str) and isinstance(command_args, list):
-                    command = build_lfg_command(command_args, lfg_keyword_args)
-                    client.tree.add_command(command, guild=guild_id_obj)
-            else:
-                raise ValueError(f"{command_name} should not have an empty 'roles' or 'config'")
+                command_args = command_config.get("args", [])
+                command = build_lfg_command(
+                    config_data.name, config_data.description, command_args, lfg_keyword_args
+                )
+                client.tree.add_command(command, guild=guild_id_obj)
 
         _register_lfgdebug(client, guild_id_obj)
 
