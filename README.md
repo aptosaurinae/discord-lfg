@@ -122,6 +122,37 @@ The config file needs to look like the following:
 ``` toml
 guild_id = 123456789
 guild_name = "NoP"
+commands = [
+    "path/to/command_file.toml"
+]
+
+[role.tank]
+emoji = "<:tankemojiname:123456789>"
+indicator = "t"
+
+[role.healer]
+emoji = "<:healeremojiname:123456789>"
+indicator = "h"
+
+[role.dps]
+emoji = "<:dpsemojiname:123456789>"
+indicator = "d"
+```
+
+- `guild_id` is the Discord ID of the server that you are wanting the host the bot in.
+- `role` dictionary for each of the required roles you want in the group.
+  - `emoji`: The emoji names and numbers need to match the names and IDs of the emojis in the server you are hosting the bot. The names can be found as the ":name:" names in the server. The IDs can be found by right clicking on the emojis in the server you're in and opening the link, then looking at the number of their name in the URL.
+  - `indicator`: the single character indicator for quick group building.
+- *Optional*: `guild_name` modifies the automatic listing group names and filled spots.
+- *Optional*: `debug`, set to 1 to turn on debug mode, which will be more verbose in the console
+and enable `/lfgdebug` which is a pre-set listing for test purposes.
+- *Optional*: `log_folder`, set this to a folder that already exists and it will dump a log file here.
+
+The commands config files need to look like the following:
+
+``` toml
+name = "lfg_command"
+description = "This description is shown to the user."
 
 [activity]
 name = "dungeon"
@@ -140,43 +171,30 @@ description = "The timing type you are aiming for."
 options = [
     "dungeon timing type",
 ]
-
-[role.tank]
-emoji = "<:tankemojiname:123456789>"
-count = 1
-indicator = "t"
-
-[role.healer]
-emoji = "<:healeremojiname:123456789>"
-count = 1
-indicator = "h"
-
-[role.dps]
-emoji = "<:dpsemojiname:123456789>"
-count = 3
-indicator = "d"
-
-[messages]
-help = "help message response"
 ```
 
-- `guild_id` is the Discord ID of the server that you are wanting the host the bot in.
-- `activity` is a list of the dungeons for users to choose with metadata about how options
-are presented to users.
-- `timing_aim` is a dictionary of the timing types for users to choose with metadata.
-- `messages` must contain a `help` response.
-- `role` dictionary for each of the required roles you want in the group.
-  - `emoji`: The emoji names and numbers need to match the names and IDs of the emojis in the server you are hosting the bot. The names can be found as the ":name:" names in the server. The IDs can be found by right clicking on the emojis in the server you're in and opening the link, then looking at the number of their name in the URL.
-  - `count`: the number of spots in the group for this role.
-  - `indicator`: the single character indicator for quick group building.
-- *Optional*: `guild_name` modifies the automatic listing group names and filled spots.
+- `name`: The name of the slash command used by users.
+- `description`: The text description shown to users.
 - *Optional*: `timeout_length`, a float in minutes. This controls how long the listing exists for before
-timing out. This is a float, so can be set to 0.1 or similar for testing purposes.
+timing out.
 - *Optional*: `editable_length`, a float in minutes. This controls how long the listing is able to
 be edited for once the group is full.
-- *Optional*: `debug`, set to 1 to turn on debug mode, which will be more verbose in the console
-and enable `/lfgdebug` which is a pre-set listing for test purposes.
-- *Optional*: `log_folder`, set this to a folder that already exists and it will dump a log file here.
+- `activity` is a definition of the list of activities a user can pick from. This requires:
+  - `name`: the displayed name of this option for discord users
+  - `python_type` (one of "str", "int", "float")
+  - `required`: whether this is a required field or not
+  - `description`: the description displayed to users
+  - `options`: a list of options for the user to choose from.
+  - *Special Optional* `options_from_channel_numbers`: If this is set to `true` then a list of
+  options will be generated from the channel name. The name will be parsed for numbers, and if
+  there is one number it will be the only option, or if there are two numbers then they will be
+  used to generate a range of numbers. e.g. `#lfg-m2-m4` will generate a list of `[2, 3, 4]` to
+  as choices, while `#lfg-m0` would generate a single element list `[0]`.
+  Channels without numbers stop that specific command working, apart from the special `bot-control`
+  channel which will generate a list of 1-10 for testing purposes.
+- *Optional* `option.name` are additional definitions of the same format as `activity`
+which give additional options for the user when setting up the group.
+
 
 ## Bot Commands
 
