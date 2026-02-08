@@ -133,8 +133,10 @@ async def lfgdebug(interaction: discord.Interaction, debug_type: int):
 
     if debug_type == 4:
         difficulty = -1
-        required_spots = "dddd"
-        await interaction.channel.send("Invalid group (4 dps spots and -1 difficulty)")  # type: ignore
+        required_spots = "ddd"
+        await interaction.channel.send(  # type: ignore
+            "Invalid group (3 dps spots when only 2 avail if creator is dps)"
+        )
 
     if debug_type == 5:
         difficulty = 4
