@@ -104,6 +104,7 @@ def command_argument_from_config(argument_definition: dict, arg_name: str):
 
 
 def _autocomplete_validator(interaction: discord.Interaction, **kwargs):
+    """Validates that the user inputs match the autocomplete lists they choose from."""
     errors = []
     for arg_value, command_arg in kwargs.items():
         command_arg: CommandArgument
@@ -114,10 +115,10 @@ def _autocomplete_validator(interaction: discord.Interaction, **kwargs):
             choices = command_arg.autocomplete_options
         if choices is not None and arg_value not in choices:
             errors.append(
-                f"You must provide an input matching the autocomplete list: "
-                f"{command_arg.displayed_name}\n"
-                f"You input: {arg_value}. "
-                f"It must match one of: {choices}"
+                f"You must provide an input matching the autocomplete list for "
+                f"`{command_arg.displayed_name}`\n"
+                f"You input: `{arg_value}`. "
+                f"It must match one of: `{choices}`"
             )
 
     if errors:
