@@ -1,96 +1,13 @@
 """Discord looking-for-group bot."""
 
-try:
-    import tomllib
-except ModuleNotFoundError:
-    import pip._vendor.tomli as tomllib
-
-import argparse
-import logging
-from datetime import datetime, timezone
 from pathlib import Path
 
 import discord
 from discord import app_commands
 
-from discord_lfg.commands import CommandArgument, build_lfg_command, command_argument_from_config
+from discord_lfg.commands import build_lfg_command
+from discord_lfg.input_config import parse_config
 from discord_lfg.lfg import lfgdebug
-from discord_lfg.utils import create_roles_from_config
-
-# --- Config setup
-
-parser = argparse.ArgumentParser(description="Configuration for discord bot")
-parser.add_argument("token_file", type=str, help="Discord Token")
-parser.add_argument("config", type=str, help="configuration file")
-
-args = vars(parser.parse_args())
-with open(args["token_file"], "rb") as token_file:
-    token_data = tomllib.load(token_file)
-with open(args["config"], "rb") as config_file:
-    CONFIG_DATA = tomllib.load(config_file)
-
-
-def _validate_config(CONFIG_DATA: dict):
-    config_errors = []
-    if CONFIG_DATA.get("role") is None:
-        config_errors.append("You must define roles in the config, see readme for details")
-    for role_data in CONFIG_DATA.get("role", {}).values():
-        if (
-            role_data.get("count") is None
-            or role_data.get("emoji") is None
-            or role_data.get("identifier") is None
-        ):
-            config_errors.append(
-                "Role input is missing data, needs ['count', 'emoji', 'identifier']"
-            )
-    if len(config_errors) > 0:
-        conf_errors = "".join([f"{err}\n" for err in config_errors])
-        raise ValueError(f"Config is missing required arguments: \n{conf_errors}")
-
-
-_validate_config(CONFIG_DATA)
-
-# general config elements
-TOKEN = token_data["discord"]["token"]
-GUILD_ID = discord.Object(CONFIG_DATA["guild_id"])
-DEBUG = CONFIG_DATA.get("debug", 0)
-LOG_FOLDER = Path(CONFIG_DATA.get("log_folder", ""))
-ROLES = create_roles_from_config(CONFIG_DATA.get("role", {}))
-
-# command-specific config inputs
-ACTIVITY_ARG = command_argument_from_config(CONFIG_DATA.get("activity", {}), "activity")
-DIFFICULTY_ARG = command_argument_from_config(
-    CONFIG_DATA.get("option", {}).get("difficulty", {}), "option_difficulty"
-)
-TIMING_AIM_ARG = command_argument_from_config(
-    CONFIG_DATA.get("option", {}).get("time", {}), "option_time"
-)
-
-# generated from a mix of command-specific role values and general role inputs
-# this will need adjusting for per-command config input
-CREATOR_ROLE_ARG = CommandArgument(
-    "creator_role", str, True, "The role you are filling for this group.", list(ROLES.keys())
-)
-REQUIRED_SPOTS_ARG = CommandArgument(
-    "required_spots",
-    str,
-    True,
-    f"valid identifiers: {[role.identifier for role in ROLES.values()]}",
-    None,
-)
-
-
-dt_now = datetime.now(timezone.utc)
-datetime_str = (
-    f"{dt_now.year}-{dt_now.month}-{dt_now.day}_{dt_now.hour}-{dt_now.minute}-{dt_now.second}"
-)
-if LOG_FOLDER != "" and LOG_FOLDER.exists():
-    log_file_path = LOG_FOLDER / f"{datetime_str}_dungeon_buddy.log"
-    logging.basicConfig(
-        level=logging.DEBUG if DEBUG == 1 else logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        handlers=[logging.FileHandler(log_file_path, encoding="utf-8")],
-    )
 
 # --- Bot setup
 
@@ -108,68 +25,83 @@ class BotClient(discord.Client):
         self.tree = app_commands.CommandTree(self)
 
 
-intents = discord.Intents.default()
-client = BotClient(intents=intents)
+def _register_on_ready(
+    client: BotClient,
+    guild_id_obj: discord.Object,
+    guild_id_int: int,
+    log_folder: Path,
+    commands_and_args: dict[str, dict],
+):
+    @client.event
+    async def on_ready():
+        """Startup tasks."""
+        guild_roles = {guild.id: guild.roles for guild in client.guilds}[guild_id_int]
 
+        for command_name, command_elements in commands_and_args.items():
+            if (roles := command_elements.get("roles")) is not None and (
+                config_data := command_elements.get("config")
+            ) is not None:
+                config_data.guild_roles = guild_roles
+                lfg_keyword_args = {"roles": roles, "config": config_data}
+                command_args = command_elements.get("args")
+                if isinstance(command_name, str) and isinstance(command_args, list):
+                    command = build_lfg_command(command_args, lfg_keyword_args)
+                    client.tree.add_command(command, guild=guild_id_obj)
+            else:
+                raise ValueError(f"{command_name} should not have an empty 'roles' or 'config'")
 
-@client.event
-async def on_ready():
-    """Startup tasks."""
-    global CONFIG_DATA
-    CONFIG_DATA["guild_roles"] = {guild.id: guild.roles for guild in client.guilds}[
-        CONFIG_DATA["guild_id"]
-    ]
-    lfg_fixed_args = {"roles": ROLES, "config": CONFIG_DATA}
-    lfg_command = build_lfg_command(
-        [ACTIVITY_ARG, DIFFICULTY_ARG, TIMING_AIM_ARG, CREATOR_ROLE_ARG, REQUIRED_SPOTS_ARG],
-        lfg_fixed_args,
-    )
-    client.tree.add_command(lfg_command, guild=GUILD_ID)
+        _register_lfgdebug(client, guild_id_obj)
 
-    await client.tree.sync(guild=GUILD_ID)
+        await client.tree.sync(guild=guild_id_obj)
 
-    print(f"Logged in as {client.user} (ID: {client.user.id})")
-    print("------")
-    print("Discord-LFG started")
-    if LOG_FOLDER != "" and LOG_FOLDER.exists():
-        print(f"logging to: {LOG_FOLDER}")
+        print(f"Logged in as {client.user} (ID: {client.user.id})")
+        print("------")
+        print("Discord-LFG started")
+        if log_folder != "" and log_folder.exists():
+            print(f"logging to: {log_folder}")
 
 
 # -- LFG
 
-if CONFIG_DATA.get("debug") is not None:
 
-    @client.tree.command(guild=GUILD_ID, name="lfgdebug")
+def _register_lfgdebug(client, guild_id_obj: discord.Object):
+    @client.tree.command(guild=guild_id_obj, name="lfgdebug")
     async def lfgdebug_command(interaction: discord.Interaction):
         """Some quick-fire group listings for debug purposes (including what should be invalid setups)."""
         for num in range(6):
-            await lfgdebug(interaction=interaction, debug_type=num, config=CONFIG_DATA)
+            await lfgdebug(interaction=interaction, debug_type=num)
+
 
 # -- Stats
 
 
-@client.tree.command(guild=GUILD_ID)
-async def lfghistory(interaction: discord.Interaction):
-    """Review your last 10 group signups."""
-    response = "temp"
-    await interaction.response.send_message(response, ephemeral=True)
+def _register_lfgstats(client, guild_id_obj: discord.Object):
+    @client.tree.command(guild=guild_id_obj)
+    async def lfghistory(interaction: discord.Interaction):
+        """Review your last 10 group signups."""
+        response = "temp"
+        await interaction.response.send_message(response, ephemeral=True)
+
+    @client.tree.command(guild=guild_id_obj)
+    async def lfgstats(interaction: discord.Interaction):
+        """Review recent and all-time numbers of group listings."""
+        response = "temp"
+        await interaction.response.send_message(response, ephemeral=True)
+
+    @client.tree.command(guild=guild_id_obj)
+    async def lfguserhistory(interaction: discord.Interaction):
+        """Review a specific users group signup history."""
+        response = "temp"
+        await interaction.response.send_message(response, ephemeral=True)
 
 
-@client.tree.command(guild=GUILD_ID)
-async def lfgstats(interaction: discord.Interaction):
-    """Review recent and all-time numbers of group listings."""
-    response = "temp"
-    await interaction.response.send_message(response, ephemeral=True)
+if __name__ == "__main__":
+    token, config, commands = parse_config()
 
-
-@client.tree.command(guild=GUILD_ID)
-async def lfguserhistory(interaction: discord.Interaction):
-    """Review a specific users group signup history."""
-    response = "temp"
-    await interaction.response.send_message(response, ephemeral=True)
-
-
-# --- Run bot
-
-
-client.run(token=TOKEN)
+    intents = discord.Intents.default()
+    client = BotClient(intents=intents)
+    _register_on_ready(
+        client, config.guild_id_discord, config.guild_id_int, config.log_folder, commands
+    )
+    # _register_lfgstats(client, guild_id_obj)
+    client.run(token=token)

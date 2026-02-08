@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 import discord
 
+from discord_lfg.input_config import CommandConfig
 from discord_lfg.utils import (
     RoleDefinition,
     datetime_now_utc,
@@ -89,7 +90,7 @@ class GroupBuilder:
         self,
         interaction: discord.Interaction,
         group_info: dict,
-        config: dict,
+        config: CommandConfig,
         creator_role: str,
         filled_spots: dict[str, int],
         roles: dict[str, RoleDefinition],
@@ -109,11 +110,11 @@ class GroupBuilder:
             f"GroupBuilder created by {interaction.user.id} {interaction.user.display_name}"
         )
         self.role_counts = {role.name: role.count for role in roles.values()}
-        guild_name = config.get("guild_name", "")
-        timeout_length = config.get("timeout_length", 30)
-        editable_length = config.get("editable_length", 5)
-        debug = config.get("debug", False)
-        guild_roles = config.get("guild_roles", {})
+        guild_name = config.guild_name
+        timeout_length = config.timeout_length
+        editable_length = config.editable_length
+        debug = config.debug
+        guild_roles = config.guild_roles
 
         self._state_init(guild_name, timeout_length, editable_length, debug)
         self._setup_group(**group_info, guild_name=guild_name)

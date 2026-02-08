@@ -5,6 +5,7 @@ import logging
 import discord
 
 from discord_lfg.group_builder import GroupBuilder
+from discord_lfg.input_config import CommandConfig
 from discord_lfg.utils import RoleDefinition
 
 
@@ -64,7 +65,7 @@ async def lfg(
     listed_as: str,
     creator_notes: str,
     roles: dict[str, RoleDefinition],
-    config: dict,
+    config: CommandConfig,
     **options,
 ):
     """Creates a GroupBuilder instance from a slash command."""
@@ -102,8 +103,9 @@ async def lfg(
     await instance.send_passphrase(interaction)
 
 
-async def lfgdebug(interaction: discord.Interaction, debug_type: int, config: dict):
+async def lfgdebug(interaction: discord.Interaction, debug_type: int):
     """Creates a listing for debugging purposes."""
+    config = CommandConfig(True, "Debug", 1, 1, [])
     roles = {
         "tank": RoleDefinition("tank", 1, "🛡️", "t"),
         "healer": RoleDefinition("healer", 1, "🪄", "h"),

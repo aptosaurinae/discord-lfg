@@ -13,7 +13,9 @@ class RoleDefinition:
     identifier: str
 
 
-def create_roles_from_config(roles: dict[str, dict[str, str | int]]) -> dict[str, RoleDefinition]:
+def create_roles_from_config(
+    roles: dict[str, dict[str, str]], role_counts: dict[str, int]
+) -> dict[str, RoleDefinition]:
     """Creates roles from a config input.
 
     Args:
@@ -21,17 +23,17 @@ def create_roles_from_config(roles: dict[str, dict[str, str | int]]) -> dict[str
             {
                 name: {
                     emoji: emoji string,
-                    count: count integer,
                     identifier: single-character indicator,
                 }
             }
+        role_counts: a lookup of role name to the count of the number of role spots for a command.
 
     Returns:
         Dictionary of role name to definition
     """
     return {
         role_name: RoleDefinition(
-            role_name, int(role["count"]), str(role["emoji"]), str(role["identifier"])
+            role_name, int(role_counts[role_name]), str(role["emoji"]), str(role["identifier"])
         )
         for role_name, role in roles.items()
     }
