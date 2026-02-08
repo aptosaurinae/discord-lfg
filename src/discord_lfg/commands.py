@@ -11,8 +11,17 @@ from discord_lfg.autocompletion import (
     autocomplete_choice_from_list,
 )
 from discord_lfg.lfg import lfg
+from discord_lfg.utils import get_numbers_from_channel_name
 
 TYPE_LOOKUPS = {"str": str, "int": int, "float": float, "discord.member": discord.Member}
+
+
+class AutocompleteError(Exception):
+    """Autocompletion error message handler."""
+
+    def __init__(self, messages):
+        """Initialisation."""
+        self.messages = messages
 
 
 @dataclass
@@ -26,6 +35,11 @@ class CommandArgument:
     autocomplete_options: list | None
     autocomplete_channel_numbers: bool = False
     display_name: str = ""
+
+    @property
+    def displayed_name(self):
+        """Gets the name that is displayed to discord users."""
+        return self.display_name if self.display_name != "" else self.name
 
     @property
     def as_parameter(self):
@@ -89,6 +103,27 @@ def command_argument_from_config(argument_definition: dict, arg_name: str):
     )
 
 
+def _autocomplete_validator(interaction: discord.Interaction, **kwargs):
+    errors = []
+    for arg_value, command_arg in kwargs.items():
+        command_arg: CommandArgument
+        if command_arg.autocomplete_channel_numbers:
+            if isinstance(interaction.channel.name, str):  # type: ignore
+                choices = get_numbers_from_channel_name(interaction.channel.name)  # type: ignore
+        else:
+            choices = command_arg.autocomplete_options
+        if choices is not None and arg_value not in choices:
+            errors.append(
+                f"You must provide an input matching the autocomplete list: "
+                f"{command_arg.displayed_name}\n"
+                f"You input: {arg_value}. "
+                f"It must match one of: {choices}"
+            )
+
+    if errors:
+        raise AutocompleteError(errors)
+
+
 def build_command(
     user_inputs: list[CommandArgument], fixed_inputs: dict, func_name, func_desc, func_call
 ) -> discord.app_commands.Command:
@@ -101,7 +136,23 @@ def build_command(
 
     sig = inspect.Signature(parameters=params)
 
-    async def wrapper(interaction, **kwargs):
+    user_inputs_dict = {user_input.name: user_input for user_input in user_inputs}
+
+    async def wrapper(interaction: discord.Interaction, **kwargs):
+        try:
+            _autocomplete_validator(
+                interaction, **{str(value): user_inputs_dict[key] for key, value in kwargs.items()}
+            )
+        except AutocompleteError as e:
+            response = "\n".join(e.messages)
+            message_func = (
+                interaction.followup.send
+                if interaction.response.is_done()
+                else interaction.response.send_message
+            )
+            await message_func(response, ephemeral=True)
+            return None
+
         return await func_call(interaction, **kwargs, **fixed_inputs)
 
     wrapper.__signature__ = sig
