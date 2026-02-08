@@ -43,7 +43,31 @@ class CommandArgument:
 
     @property
     def as_parameter(self):
-        """Gets the definition of an argument for a function."""
+        """Gets the definition of an argument for a function.
+
+        More specifically, this uses the `inspect.Parameter` functionality to programmatically
+        define what the argument should look like.
+
+        e.g. if you had a function defined like this:
+        `def func(name_arg: str, detail_info: dict):`
+        the two arguments would look like this:
+        ``` python
+        name_arg = inspect.Parameter(
+            name="name_arg",
+            kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            annotation=str,
+            default=inspect.Parameter.empty
+        )
+        detail_info = inspect.Parameter(
+            name="detail_info",
+            kind=inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            annotation=dict,
+            default=inspect.Parameter.empty
+        )
+        ```
+        and you could then create a function by defining a function and then overriding the
+        signature of the function using `func.__signature__` and `inspect.Signature`.
+        """
         if self.required:
             default = inspect.Parameter.empty
         else:
@@ -65,7 +89,13 @@ class CommandArgument:
         )
 
     def discord_rename(self, command: discord.app_commands.Command):
-        """Renames how discord displays the name of this command."""
+        """Renames how discord displays the name of this command.
+
+        This will make it so that although Python thinks the argument is named one thing,
+        the name displayed to the user when they use the slash command is something different.
+        This makes it possible to have a generalised function, but make it so that
+        discord displays a customised name to the user.
+        """
         if self.display_name != "":
             command._params[self.name]._rename = self.display_name
 
@@ -74,7 +104,11 @@ class CommandArgument:
         command._params[self.name].description = self.description
 
     def discord_autocomplete(self, command: discord.app_commands.Command):
-        """Applies an autocompleter for a discord command that has had this parameter added."""
+        """Applies an autocompleter for a discord command that has had this parameter added.
+
+        Note that just because an argument has an autocomplete set, discord does not enforce the
+        autocomplete values. See `_autocomplete_validator`.
+        """
         if self.autocomplete_channel_numbers:
             autocomplete_choice_from_channel_numbers(command, self.name)
         elif self.autocomplete_options is not None:
@@ -103,8 +137,14 @@ def command_argument_from_config(argument_definition: dict, arg_name: str):
     )
 
 
-def _autocomplete_validator(interaction: discord.Interaction, **kwargs):
-    """Validates that the user inputs match the autocomplete lists they choose from."""
+def autocomplete_validator(interaction: discord.Interaction, **kwargs):
+    """Validates that the user inputs match the autocomplete lists they choose from.
+
+    When discord shows an autocompletion list to a user, there is no validation of what the user
+    puts in, so you can get a result that doesn't match the autocomplete list.
+    This function is designed to validate the result and respond to the user if they
+    did not enter values that match the autocompletion list.
+    """
     errors = []
     for arg_value, command_arg in kwargs.items():
         command_arg: CommandArgument
@@ -126,7 +166,11 @@ def _autocomplete_validator(interaction: discord.Interaction, **kwargs):
 
 
 def build_command(
-    user_inputs: list[CommandArgument], fixed_inputs: dict, func_name, func_desc, func_call
+    user_inputs: list[CommandArgument],
+    fixed_inputs: dict,
+    func_name: str,
+    func_desc: str,
+    func_call,
 ) -> discord.app_commands.Command:
     """Builds a discord slash command programmatically."""
     input_params = [user_input.as_parameter for user_input in user_inputs]
@@ -141,7 +185,7 @@ def build_command(
 
     async def wrapper(interaction: discord.Interaction, **kwargs):
         try:
-            _autocomplete_validator(
+            autocomplete_validator(
                 interaction, **{str(value): user_inputs_dict[key] for key, value in kwargs.items()}
             )
         except AutocompleteError as e:
