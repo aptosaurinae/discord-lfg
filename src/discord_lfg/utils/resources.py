@@ -6,21 +6,21 @@ except ModuleNotFoundError:
     import pip._vendor.tomli as tomllib
 
 import random
-from pathlib import Path
-
-RESOURCES = Path(__file__).parent.parent.parent / "resources"
+from importlib.resources import files
 
 
 def _load_resource(filename: str, folders: str | None = None):
-    if folders is None:
-        file_path = RESOURCES / f"{filename}.toml"
-    else:
-        file_path = RESOURCES / folders / f"{filename}.toml"
-    if not file_path.exists():
-        raise FileNotFoundError(f"Could not file {file_path} while loading resources.")
+    base = files("discord_lfg.resources")
 
-    with open(file_path, "rb") as resource_file:
-        return tomllib.load(resource_file)
+    if folders is None:
+        resource_path = base / f"{filename}.toml"
+    else:
+        resource_path = base / folders / f"{filename}.toml"
+
+    if not resource_path.is_file():
+        raise FileNotFoundError(f"Could not file {resource_path} while loading resources.")
+
+    return tomllib.loads(resource_path.read_text())
 
 
 def load_passphrase_words() -> list[str]:
