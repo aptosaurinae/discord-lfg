@@ -7,9 +7,8 @@ is still significantly inspired by that system.
 
 ## TODO
 
-- Make commands build from the config?
-  - update readme for config
-  - this will mean needing to move role counts to the commands? keep roles as-is and re-use for command definitions
+- more validation of inputs
+- convert command dictionary into a class for better passing around / storage
 
 For feature parity with the original Dungeon Buddy, the following is missing:
 
