@@ -171,6 +171,11 @@ description = "The timing type you are aiming for."
 options = [
     "dungeon timing type",
 ]
+
+[role_counts]
+tank = 1
+healer = 1
+dps = 3
 ```
 
 - `name`: The name of the slash command used by users.
@@ -194,21 +199,13 @@ be edited for once the group is full.
   channel which will generate a list of 1-10 for testing purposes.
 - *Optional* `option.name` are additional definitions of the same format as `activity`
 which give additional options for the user when setting up the group.
+- `role_counts` is a lookup of role name to count. You don't have to include all roles here.
 
 
 ## Bot Commands
 
-Once the bot is up and running, the following commands should be available from within the relevant server.
-
-`/lfg` - create a group for the dungeon. Choose desired dungeon > dungeon difficulty > timed/completed > your role >
-required roles from a drop-down style menu.
-
-`/lfgquick` - create a group using autocomplete fields instead of an interactive drop down menu system.
-
-[NYI] `/lfghistory` - check up-to 10 of your latest groups. Previous teammates & passphrases can be found here.
-
-[NYI] `/lfgstats` - check total groups created, groups created in the last 24h, 7d, 30d &
-also the most popular dungeons for each key range.
+Once the bot is up and running, the commands that are active should match those defined in
+the command files referenced by the main config.
 
 ## License
 
@@ -235,8 +232,8 @@ which alters the structure of how many aspects are set up in and of itself.
 It would be difficult to provide a full listing of all changes as a result.
 The following list of changes has been made to functionality:
 
-- The `/lfgquick` command has been changed to use auto-complete fields instead of a pure-string.
-- Signficantly more configuration is available directly from the config:
+- Signficantly more configuration is available directly from the config, including the definition
+of different commands that use the group builder with a variety of roles or user input options.
   - commands
   - roles
   - guild name
