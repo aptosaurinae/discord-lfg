@@ -7,7 +7,6 @@ is still significantly inspired by that system.
 
 ## TODO
 
-- channel whitelisting per command
 - more validation of inputs
 - role-tag specification for channels
 
