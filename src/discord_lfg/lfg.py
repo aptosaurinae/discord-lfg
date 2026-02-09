@@ -109,7 +109,16 @@ async def lfgdebug(interaction: discord.Interaction, debug_type: int):
         "dps": RoleDefinition("dps", 3, "⚔️", "t"),
     }
     config = CommandConfig(
-        [], roles, "lfgdebug", "Multiple LFG for debug purposes", True, "Debug", 1, 1, []
+        [],
+        roles,
+        "lfgdebug",
+        "Multiple LFG for debug purposes",
+        True,
+        "Debug",
+        1,
+        1,
+        ["kick user"],
+        [],
     )
     if debug_type == 0:
         difficulty = 3

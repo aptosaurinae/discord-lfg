@@ -26,6 +26,7 @@ class GroupDetails:
     listed_as: str
     creator_notes: str
     extra_info: list
+    kick_reasons: list[str]
 
 
 @dataclass
@@ -115,9 +116,10 @@ class GroupBuilder:
         editable_length = config.editable_length
         debug = config.debug
         guild_roles = config.guild_roles
+        kick_reasons = config.kick_reasons
 
         self._state_init(guild_name, timeout_length, editable_length, debug)
-        self._setup_group(**group_info, guild_name=guild_name)
+        self._setup_group(**group_info, guild_name=guild_name, kick_reasons=kick_reasons)
         self._roles_init(
             config.roles,
             guild_roles,
@@ -291,7 +293,13 @@ class GroupBuilder:
         }
 
     def _setup_group(
-        self, activity_name: str, listed_as: str, creator_notes: str, guild_name: str, **kwargs
+        self,
+        activity_name: str,
+        listed_as: str,
+        creator_notes: str,
+        guild_name: str,
+        kick_reasons: list[str],
+        **kwargs,
     ):
         """Captures information from the initial listing process."""
         random_listing = generate_listing_name(activity_name, 3, guild_name)
@@ -300,6 +308,7 @@ class GroupBuilder:
             listed_as=listed_as if (listed_as != "") else random_listing,
             creator_notes="" if (creator_notes == "") else f"**Notes:** *{creator_notes}*\n",
             extra_info=list(kwargs.values()),
+            kick_reasons=kick_reasons,
         )
 
     def _state_init(self, guild_name: str, timeout_length: int, editable_length: int, debug: bool):
@@ -697,18 +706,12 @@ class EditRemoveUser(discord.ui.Select):
 class EditRemoveUserReason(discord.ui.Select):
     """Provide a reason for removing users."""
 
-    def __init__(self, users: dict[int, GroupUser]):
+    def __init__(self, users: dict[int, GroupUser], kick_reasons: list[str]):
         """Initialisation."""
         disabled = True
         options = [discord.SelectOption(label="placeholder")]
         if len(users) > 0 and any([user > 0 for user in users]):
-            reasons = [
-                "Low itemlevel",
-                "Not experienced enough",
-                "Want bloodlust",
-                "Want combat resurrection",
-                "Other - please message separately",
-            ]
+            reasons = kick_reasons
             options = [discord.SelectOption(label=reason) for reason in reasons]
             disabled = False
 
@@ -773,6 +776,11 @@ class GroupEditOptions(discord.ui.View):
         self.interaction: discord.Interaction = None  # type: ignore
         self.group_builder = group_builder
         self.filled_spot_name = self.group_builder.state.filled_spot_name
+        self.remove_users_reason = ""
+        self.confirmed = False
+        self.cancel_group_state = 0
+        self.remove_users: list[GroupUser] = []
+
         removeable_users = {}
         for role_name, role_item in self.group_builder.roles.items():
             for user in role_item.users:
@@ -781,21 +789,22 @@ class GroupEditOptions(discord.ui.View):
                 elif user.id > -100:
                     removeable_users[user.id] = user
         self.new_creator_role = self.creator_role
-        self.open_roles = [
-            role.name for role in self.group_builder.roles.values() if not all(role.assigned)
+        open_roles = [
+            role.name
+            for role in self.group_builder.roles.values()
+            if not (all(role.assigned) or role.name == self.creator_role)
         ]
-        self.remove_users: list[GroupUser] = []
-        self.remove_users_reason = ""
-        self.confirmed = False
-        self.cancel_group_state = 0
+        kick_reasons = self.group_builder.group_details.kick_reasons
 
         self.edit_remove_users = EditRemoveUser(removeable_users)
-        self.edit_remove_users_reason = EditRemoveUserReason(removeable_users)
-        self.edit_creator_role = EditCreatorRole(self.open_roles)
-
         self.add_item(self.edit_remove_users)
+
+        self.edit_remove_users_reason = EditRemoveUserReason(removeable_users, kick_reasons)
         self.add_item(self.edit_remove_users_reason)
-        self.add_item(self.edit_creator_role)
+
+        if len(open_roles) > 0:
+            self.edit_creator_role = EditCreatorRole(open_roles)
+            self.add_item(self.edit_creator_role)
 
     def _remove_users(self) -> bool | None:
         logging.debug(f"Attempting to remove users from {self.group_builder.group_title}")
