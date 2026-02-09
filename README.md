@@ -104,9 +104,11 @@ Discord-LFG started
 ```
 
 You should find that the bot slash commands are then active in the relevant server when it's given
-a valid configuration file.
+a valid set of configuration files.
 
 ### File setup
+
+#### Token file
 
 The token toml file needs to look like the following:
 
@@ -116,6 +118,8 @@ token = "abcd123"
 ```
 
 where the token string is a valid Discord bot token.
+
+#### Primary config
 
 The config file needs to look like the following:
 
@@ -140,6 +144,7 @@ indicator = "d"
 ```
 
 - `guild_id` is the Discord ID of the server that you are wanting the host the bot in.
+- `command_files` is a list of file paths for the commands you want to have active.
 - `role` dictionary for each of the required roles you want in the group.
   - `emoji`: The emoji names and numbers need to match the names and IDs of the emojis in the server you are hosting the bot. The names can be found as the ":name:" names in the server. The IDs can be found by right clicking on the emojis in the server you're in and opening the link, then looking at the number of their name in the URL.
   - `indicator`: the single character indicator for quick group building.
@@ -147,6 +152,8 @@ indicator = "d"
 - *Optional*: `debug`, set to 1 to turn on debug mode, which will be more verbose in the console
 and enable `/lfgdebug` which is a pre-set listing for test purposes.
 - *Optional*: `log_folder`, set this to a folder that already exists and it will dump a log file here.
+
+#### Command configs
 
 The commands config files need to look like the following:
 
@@ -180,10 +187,14 @@ dps = 3
 
 - `name`: The name of the slash command used by users.
 - `description`: The text description shown to users.
+- `channel_whitelist`: A list of strings of the channels that you want this command to be active
+in. If `bot-control` is not included then it will be added to the list.
 - *Optional*: `timeout_length`, a float in minutes. This controls how long the listing exists for before
 timing out. Default is 30 minutes.
 - *Optional*: `editable_length`, a float in minutes. This controls how long the listing is able to
 be edited for once the group is full. Default is 5 minutes.
+- *Optional*: `kick_reasons`, a list of strings defining reasons a creator can kick users from
+this type of group.
 - `activity` is a definition of the list of activities a user can pick from. This requires:
   - `name`: the displayed name of this option for discord users
   - `python_type` (one of "str", "int", "float")
@@ -200,7 +211,6 @@ be edited for once the group is full. Default is 5 minutes.
 - *Optional* `option.name` are additional definitions of the same format as `activity`
 which give additional options for the user when setting up the group.
 - `role_counts` is a lookup of role name to count. You don't have to include all roles here.
-
 
 ## Bot Commands
 
