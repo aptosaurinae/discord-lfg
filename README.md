@@ -9,6 +9,8 @@ is still significantly inspired by that system.
 
 - more validation of inputs
 - convert command dictionary into a class for better passing around / storage
+- channel whitelisting
+- role-tag specification for channels
 
 For feature parity with the original Dungeon Buddy, the following is missing:
 
