@@ -11,6 +11,7 @@ is still significantly inspired by that system.
 - convert command dictionary into a class for better passing around / storage
 - channel whitelisting
 - role-tag specification for channels
+- command-specific kick reasons
 
 For feature parity with the original Dungeon Buddy, the following is missing:
 
@@ -182,9 +183,9 @@ dps = 3
 - `name`: The name of the slash command used by users.
 - `description`: The text description shown to users.
 - *Optional*: `timeout_length`, a float in minutes. This controls how long the listing exists for before
-timing out.
+timing out. Default is 30 minutes.
 - *Optional*: `editable_length`, a float in minutes. This controls how long the listing is able to
-be edited for once the group is full.
+be edited for once the group is full. Default is 5 minutes.
 - `activity` is a definition of the list of activities a user can pick from. This requires:
   - `name`: the displayed name of this option for discord users
   - `python_type` (one of "str", "int", "float")
@@ -233,7 +234,9 @@ which alters the structure of how many aspects are set up in and of itself.
 It would be difficult to provide a full listing of all changes as a result.
 The following list of changes has been made to functionality:
 
-- Signficantly more configuration is available directly from the config, including the definition
+- The backend has been generalised significantly to make it possible to create custom commands,
+although still within a "looking-for-group"/"group-building" framework.
+- Significantly more configuration is available directly from the config, including the definition
 of different commands that use the group builder with a variety of roles or user input options.
   - commands
   - roles
@@ -245,3 +248,4 @@ of different commands that use the group builder with a variety of roles or user
   - Yellow for full but editable
   - Blue for full and not editable
   - Red for cancelled or timed out
+- When users are removed from the group, they are notified why and blocked from rejoining.
