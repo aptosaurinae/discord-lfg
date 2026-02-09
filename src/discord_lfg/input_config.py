@@ -78,6 +78,7 @@ class CommandConfig:
     timeout_length: int
     editable_length: int
     kick_reasons: list[str]
+    channel_whitelist: list[str]
     guild_roles: Sequence[Role]
 
 
@@ -294,10 +295,16 @@ def _parse_command(config: LFGConfig, command_config_input: dict) -> CommandConf
     description = command_config_input.get("description", "")
     timeout_length = command_config_input.get("timeout_length", 30)
     editable_length = command_config_input.get("editable_length", 5)
+
+    channel_whitelist: list = command_config_input.get("channel_whitelist", [])
+    if "bot-control" not in channel_whitelist:
+        channel_whitelist.append("bot-control")
+
     kick_reasons: list = command_config_input.get("kick_reasons", [])
     other_str = "Other - please message separately"
     if other_str not in kick_reasons:
         kick_reasons.append(other_str)
+
     roles = create_roles_from_config(config.all_roles, command_config_input.get("role_counts", {}))
     args = _build_arguments(command_config_input, roles)
 
@@ -311,6 +318,7 @@ def _parse_command(config: LFGConfig, command_config_input: dict) -> CommandConf
         timeout_length,
         editable_length,
         kick_reasons,
+        channel_whitelist,
         [],
     )
     logging.debug(command_data)

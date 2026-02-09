@@ -17,6 +17,14 @@ class AutocompleteError(Exception):
         self.messages = messages
 
 
+class ChannelWhitelistError(Exception):
+    """Autocompletion error message handler."""
+
+    def __init__(self, message):
+        """Initialisation."""
+        self.messages = message
+
+
 def autocomplete_validator(interaction: discord.Interaction, **kwargs):
     """Validates that the user inputs match the autocomplete lists they choose from.
 
@@ -45,6 +53,14 @@ def autocomplete_validator(interaction: discord.Interaction, **kwargs):
         raise AutocompleteError(errors)
 
 
+def _message_func(interaction: discord.Interaction):
+    return (
+        interaction.followup.send
+        if interaction.response.is_done()
+        else interaction.response.send_message
+    )
+
+
 def build_command(
     user_inputs: list[CommandArgument],
     command_config: CommandConfig,
@@ -64,18 +80,19 @@ def build_command(
     user_inputs_dict = {user_input.name: user_input for user_input in user_inputs}
 
     async def wrapper(interaction: discord.Interaction, **kwargs):
+        if interaction.channel.name not in command_config.channel_whitelist:  # type: ignore
+            await _message_func(interaction)(
+                "This command cannot be used in this channel.", ephemeral=True
+            )
+            return None
+
         try:
             autocomplete_validator(
                 interaction, **{str(value): user_inputs_dict[key] for key, value in kwargs.items()}
             )
         except AutocompleteError as e:
             response = "\n".join(e.messages)
-            message_func = (
-                interaction.followup.send
-                if interaction.response.is_done()
-                else interaction.response.send_message
-            )
-            await message_func(response, ephemeral=True)
+            await _message_func(interaction)(response, ephemeral=True)
             return None
 
         return await func_call(interaction, **kwargs, config=command_config)
