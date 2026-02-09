@@ -5,9 +5,9 @@ from pathlib import Path
 import discord
 from discord import app_commands
 
-from discord_lfg.commands import build_lfg_command
-from discord_lfg.input_config import parse_inputs
-from discord_lfg.lfg import lfgdebug
+from discord_lfg.commands import build_command
+from discord_lfg.input_config import CommandConfig, parse_inputs
+from discord_lfg.lfg import lfg, lfgdebug
 
 # --- Bot setup
 
@@ -30,7 +30,7 @@ def _register_on_ready(
     guild_id_obj: discord.Object,
     guild_id_int: int,
     log_folder: Path,
-    commands_configs: list[dict],
+    commands_configs: list[CommandConfig],
 ):
     @client.event
     async def on_ready():
@@ -38,16 +38,15 @@ def _register_on_ready(
         guild_roles = {guild.id: guild.roles for guild in client.guilds}[guild_id_int]
 
         for command_config in commands_configs:
-            if (roles := command_config.get("roles")) is not None and (
-                config_data := command_config.get("config")
-            ) is not None:
-                config_data.guild_roles = guild_roles
-                lfg_keyword_args = {"roles": roles, "config": config_data}
-                command_args = command_config.get("args", [])
-                command = build_lfg_command(
-                    config_data.name, config_data.description, command_args, lfg_keyword_args
-                )
-                client.tree.add_command(command, guild=guild_id_obj)
+            command_config.guild_roles = guild_roles
+            command = build_command(
+                command_config.args,
+                command_config,
+                command_config.name,
+                command_config.description,
+                lfg,
+            )
+            client.tree.add_command(command, guild=guild_id_obj)
 
         _register_lfgdebug(client, guild_id_obj)
 

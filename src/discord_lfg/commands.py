@@ -5,8 +5,7 @@ import inspect
 import discord
 from discord import app_commands
 
-from discord_lfg.input_config import CommandArgument
-from discord_lfg.lfg import lfg
+from discord_lfg.input_config import CommandArgument, CommandConfig
 from discord_lfg.utils import get_numbers_from_channel_name
 
 
@@ -48,7 +47,7 @@ def autocomplete_validator(interaction: discord.Interaction, **kwargs):
 
 def build_command(
     user_inputs: list[CommandArgument],
-    direct_inputs: dict,
+    command_config: CommandConfig,
     func_name: str,
     func_desc: str,
     func_call,
@@ -79,7 +78,7 @@ def build_command(
             await message_func(response, ephemeral=True)
             return None
 
-        return await func_call(interaction, **kwargs, **direct_inputs)
+        return await func_call(interaction, **kwargs, config=command_config)
 
     wrapper.__signature__ = sig
     wrapper.__name__ = func_name
@@ -92,30 +91,3 @@ def build_command(
         user_input.discord_autocomplete(cmd)
 
     return cmd
-
-
-def build_lfg_command(
-    command_name: str,
-    command_description: str,
-    user_inputs: list[CommandArgument],
-    direct_inputs: dict,
-):
-    """Builds the LFG command programmatically."""
-    standard_args = [
-        CommandArgument(
-            "listed_as",
-            str,
-            False,
-            "The in-game name. Leave blank to automatically generate a name for you (recommended)",
-            None,
-        ),
-        CommandArgument(
-            "creator_notes",
-            str,
-            False,
-            "Extra notes you want to make players signing up aware of.",
-            None,
-        ),
-    ]
-    user_inputs = user_inputs + standard_args
-    return build_command(user_inputs, direct_inputs, command_name, command_description, lfg)

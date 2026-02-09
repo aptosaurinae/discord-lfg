@@ -1,5 +1,7 @@
 """Process configs for the bot."""
 
+from __future__ import annotations
+
 try:
     import tomllib
 except ModuleNotFoundError:
@@ -11,10 +13,13 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Sequence
 
 import discord
+from discord import Role
 
 from discord_lfg.utils import (
+    RoleDefinition,
     autocomplete_choice_from_channel_numbers,
     autocomplete_choice_from_list,
     create_roles_from_config,
@@ -64,13 +69,15 @@ class LFGConfig:
 class CommandConfig:
     """Configuration for individual command."""
 
+    args: list[CommandArgument]
+    roles: dict[str, RoleDefinition]
     name: str
     description: str
     debug: bool
     guild_name: str
     timeout_length: int
     editable_length: int
-    guild_roles: list
+    guild_roles: Sequence[Role]
 
 
 @dataclass
@@ -210,7 +217,7 @@ def _parse_token(token_data: dict):
         raise ValueError("Token file must define a 'token' value within '[discord]'")
 
 
-def _parse_config(config_data: dict) -> tuple[LFGConfig, list[dict]]:
+def _parse_config(config_data: dict) -> tuple[LFGConfig, list[CommandConfig]]:
     """Setup config for inputs."""
     config = LFGConfig(
         debug=config_data.get("debug", 0),
@@ -245,57 +252,66 @@ def _parse_config(config_data: dict) -> tuple[LFGConfig, list[dict]]:
     return config, commands
 
 
-def _parse_command(config: LFGConfig, command_config_input) -> dict:
-    """Parses data from a specific command configuration."""
-    # command-specific config inputs
-    activity_arg = command_argument_from_config(
-        command_config_input.get("activity", {}), "activity"
-    )
+def _build_arguments(config_input, roles: dict[str, RoleDefinition]):
+    activity_arg = command_argument_from_config(config_input.get("activity", {}), "activity")
     option_args = []
-    options = command_config_input.get("option", {})
+    options = config_input.get("option", {})
     for option_name, option_data in options.items():
         option_args.append(command_argument_from_config(option_data, f"option_{option_name}"))
-
-    # generated from a mix of command-specific role values and general role inputs
-    # this will need adjusting for per-command config input
-    command_roles = create_roles_from_config(
-        config.all_roles, command_config_input.get("role_counts", {})
-    )
     creator_role_arg = CommandArgument(
-        "creator_role",
-        str,
-        True,
-        "The role you are filling for this group.",
-        list(command_roles.keys()),
+        "creator_role", str, True, "The role you are filling for this group.", list(roles.keys())
     )
     required_spots_arg = CommandArgument(
         "required_spots",
         str,
         True,
-        f"valid identifiers: {[role.identifier for role in command_roles.values()]}",
+        f"valid identifiers: {[role.identifier for role in roles.values()]}",
         None,
     )
-
-    command_name = command_config_input.get("name", "")
-    command_description = command_config_input.get("description", "")
-    command_data = {
-        "args": [activity_arg] + option_args + [creator_role_arg, required_spots_arg],
-        "roles": command_roles,
-        "config": CommandConfig(
-            command_name,
-            command_description,
-            config.debug,
-            config.guild_name,
-            command_config_input.get("timeout_length", 30),
-            command_config_input.get("editable_length", 5),
-            [],
+    standard_args = [
+        CommandArgument(
+            "listed_as",
+            str,
+            False,
+            "The in-game name. Leave blank to automatically generate a name for you (recommended)",
+            None,
         ),
-    }
+        CommandArgument(
+            "creator_notes",
+            str,
+            False,
+            "Extra notes you want to make players signing up aware of.",
+            None,
+        ),
+    ]
+    return [activity_arg] + option_args + [creator_role_arg, required_spots_arg] + standard_args
+
+
+def _parse_command(config: LFGConfig, command_config_input: dict) -> CommandConfig:
+    """Parses data from a specific command configuration."""
+    name = command_config_input.get("name", "")
+    description = command_config_input.get("description", "")
+    timeout_length = command_config_input.get("timeout_length", 30)
+    editable_length = command_config_input.get("editable_length", 5)
+    roles = create_roles_from_config(config.all_roles, command_config_input.get("role_counts", {}))
+    args = _build_arguments(command_config_input, roles)
+
+    command_data = CommandConfig(
+        args,
+        roles,
+        name,
+        description,
+        config.debug,
+        config.guild_name,
+        timeout_length,
+        editable_length,
+        [],
+    )
     logging.debug(command_data)
     return command_data
 
 
-def parse_inputs() -> tuple[str, LFGConfig, list[dict]]:
+def parse_inputs() -> tuple[str, LFGConfig, list[CommandConfig]]:
     """Parse the inputs to the bot.py script."""
     token_data, config_data = _argparser()
     token = _parse_token(token_data)

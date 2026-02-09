@@ -7,11 +7,10 @@ is still significantly inspired by that system.
 
 ## TODO
 
-- more validation of inputs
-- convert command dictionary into a class for better passing around / storage
-- channel whitelisting
-- role-tag specification for channels
 - command-specific kick reasons
+- channel whitelisting per command
+- more validation of inputs
+- role-tag specification for channels
 
 For feature parity with the original Dungeon Buddy, the following is missing:
 
@@ -23,6 +22,7 @@ For feature parity with the original Dungeon Buddy, the following is missing:
 And finally:
 
 - Tests, Tests, Tests
+- Documentation
 
 ## Background
 

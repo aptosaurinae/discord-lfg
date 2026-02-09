@@ -4,6 +4,7 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from typing import Sequence
 
 import discord
 
@@ -93,7 +94,6 @@ class GroupBuilder:
         config: CommandConfig,
         creator_role: str,
         filled_spots: dict[str, int],
-        roles: dict[str, RoleDefinition],
     ):
         """Creates a Group Builder.
 
@@ -109,7 +109,7 @@ class GroupBuilder:
         logging.debug(
             f"GroupBuilder created by {interaction.user.id} {interaction.user.display_name}"
         )
-        self.role_counts = {role.name: role.count for role in roles.values()}
+        self.role_counts = {role.name: role.count for role in config.roles.values()}
         guild_name = config.guild_name
         timeout_length = config.timeout_length
         editable_length = config.editable_length
@@ -119,7 +119,7 @@ class GroupBuilder:
         self._state_init(guild_name, timeout_length, editable_length, debug)
         self._setup_group(**group_info, guild_name=guild_name)
         self._roles_init(
-            roles,
+            config.roles,
             guild_roles,
             interaction.channel.name if isinstance(interaction.channel.name, str) else "",  # type: ignore
         )
@@ -278,7 +278,10 @@ class GroupBuilder:
         )
 
     def _roles_init(
-        self, roles: dict[str, RoleDefinition], guild_roles: list[discord.Role], channel_name: str
+        self,
+        roles: dict[str, RoleDefinition],
+        guild_roles: Sequence[discord.Role],
+        channel_name: str,
     ):
         """Initialise roles information."""
         constructor_info = {"guild_roles": guild_roles, "channel_name": channel_name}

@@ -64,15 +64,14 @@ async def lfg(
     required_spots: str,
     listed_as: str,
     creator_notes: str,
-    roles: dict[str, RoleDefinition],
     config: CommandConfig,
     **options,
 ):
     """Creates a GroupBuilder instance from a slash command."""
     logging.debug("".join([str((key, value)) for key, value in locals().items()]))
     try:
-        filled_spots = _convert_required_spots_to_filled(roles, required_spots, creator_role)
-        _validate_lfg_inputs(creator_role, filled_spots, roles)
+        filled_spots = _convert_required_spots_to_filled(config.roles, required_spots, creator_role)
+        _validate_lfg_inputs(creator_role, filled_spots, config.roles)
     except LFGValidationError as e:
         response = "\n".join(e.messages)
         message_func = (
@@ -97,7 +96,6 @@ async def lfg(
         config=config,
         creator_role=creator_role,
         filled_spots=filled_spots,
-        roles=roles,
     )
     await instance.send_message(interaction)
     await instance.send_passphrase(interaction)
@@ -105,12 +103,14 @@ async def lfg(
 
 async def lfgdebug(interaction: discord.Interaction, debug_type: int):
     """Creates a listing for debugging purposes."""
-    config = CommandConfig("lfgdebug", "Multiple LFG for debug purposes", True, "Debug", 1, 1, [])
     roles = {
         "tank": RoleDefinition("tank", 1, "🛡️", "t"),
         "healer": RoleDefinition("healer", 1, "🪄", "h"),
         "dps": RoleDefinition("dps", 3, "⚔️", "t"),
     }
+    config = CommandConfig(
+        [], roles, "lfgdebug", "Multiple LFG for debug purposes", True, "Debug", 1, 1, []
+    )
     if debug_type == 0:
         difficulty = 3
         required_spots = "h"
@@ -152,6 +152,5 @@ async def lfgdebug(interaction: discord.Interaction, debug_type: int):
         listed_as=f"Dungeon Debug Test {debug_type}",
         creator_notes="debug creator notes blah blah",
         required_spots=required_spots,
-        roles=roles,
         config=config,
     )
