@@ -119,6 +119,7 @@ async def lfgdebug(interaction: discord.Interaction, debug_type: int):
         1,
         ["kick user"],
         [],
+        {},
         [],
     )
     if debug_type == 0:

@@ -124,6 +124,7 @@ class GroupBuilder:
             config.roles,
             guild_roles,
             interaction.channel.name if isinstance(interaction.channel.name, str) else "",  # type: ignore
+            config.channel_role_mentions,
         )
 
         self.creator = self.create_user_from_interaction(interaction, creator_role, True)
@@ -265,7 +266,11 @@ class GroupBuilder:
     # --- Initialisation
 
     def _role_constructor(
-        self, role: RoleDefinition, guild_roles: list[discord.Role], channel_name: str
+        self,
+        role: RoleDefinition,
+        guild_roles: list[discord.Role],
+        channel_name: str,
+        channel_role_mentions: dict[str, str],
     ):
         return GroupRole(
             name=role.name,
@@ -275,7 +280,10 @@ class GroupBuilder:
             disabled=False,
             emoji=role.emoji,
             role_mention=get_guild_role_mention_for_group_role(
-                group_role=role.name, guild_roles=guild_roles, channel_name=channel_name
+                group_role=role.name,
+                guild_roles=guild_roles,
+                channel_name=channel_name,
+                channel_role_mentions=channel_role_mentions,
             ),
         )
 
@@ -284,9 +292,14 @@ class GroupBuilder:
         roles: dict[str, RoleDefinition],
         guild_roles: Sequence[discord.Role],
         channel_name: str,
+        channel_role_mentions: dict[str, str],
     ):
         """Initialise roles information."""
-        constructor_info = {"guild_roles": guild_roles, "channel_name": channel_name}
+        constructor_info = {
+            "guild_roles": guild_roles,
+            "channel_name": channel_name,
+            "channel_role_mentions": channel_role_mentions,
+        }
         self.roles = {
             role_name: self._role_constructor(role_info, **constructor_info)
             for role_name, role_info in roles.items()

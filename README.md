@@ -8,13 +8,13 @@ is still significantly inspired by that system.
 ## TODO
 
 - more validation of inputs
-- role-tag specification for channels
 
 For feature parity with the original Dungeon Buddy, the following is missing:
 
 - Log group members when group completes in any way (full, timeout, cancelled)
 - Add `/lfgstats` reporting
-- Add history for users (both personal and for mods)
+- Add history for users (both personal and for mods) -
+probably do this through `lfgstats` or equivalent command to avoid command clutter?
 - Error handling for failed interactions?
 
 And finally:
@@ -160,6 +160,12 @@ The commands config files need to look like the following:
 ``` toml
 name = "lfg_command"
 description = "This description is shown to the user."
+channel_whitelist = [
+    "lfg-dungeon"
+]
+
+[channel_role_mention]
+lfg-dungeon = "dungeon"
 
 [activity]
 name = "dungeon"
@@ -189,6 +195,11 @@ dps = 3
 - `description`: The text description shown to users.
 - `channel_whitelist`: A list of strings of the channels that you want this command to be active
 in. If `bot-control` is not included then it will be added to the list.
+- `channel_role_mention`: A dictionary of channel name to role-mention, where the role which is
+mentioned is constructed as `<role-name>-<role-mention>`.
+e.g. a specification here of `dungeon` with a role of `tank` would make the role that you need
+to set up in Discord for it to be mentioned is `tank-dungeon`. This doesn't care about
+capitalisation so your discord role name could be `Tank-Dungeon` or `tAnK-DuNgEoN`.
 - *Optional*: `timeout_length`, a float in minutes. This controls how long the listing exists for before
 timing out. Default is 30 minutes.
 - *Optional*: `editable_length`, a float in minutes. This controls how long the listing is able to

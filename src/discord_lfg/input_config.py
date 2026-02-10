@@ -79,6 +79,7 @@ class CommandConfig:
     editable_length: int
     kick_reasons: list[str]
     channel_whitelist: list[str]
+    channel_role_mentions: dict[str, str]
     guild_roles: Sequence[Role]
 
 
@@ -295,6 +296,7 @@ def _parse_command(config: LFGConfig, command_config_input: dict) -> CommandConf
     description = command_config_input.get("description", "")
     timeout_length = command_config_input.get("timeout_length", 30)
     editable_length = command_config_input.get("editable_length", 5)
+    channel_role_mentions: dict = command_config_input.get("channel_role_mentions", {})
 
     channel_whitelist: list = command_config_input.get("channel_whitelist", [])
     if "bot-control" not in channel_whitelist:
@@ -319,6 +321,7 @@ def _parse_command(config: LFGConfig, command_config_input: dict) -> CommandConf
         editable_length,
         kick_reasons,
         channel_whitelist,
+        channel_role_mentions,
         [],
     )
     logging.debug(command_data)
