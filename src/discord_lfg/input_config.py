@@ -49,19 +49,25 @@ class LFGConfig:
     def validate(self):
         """Validates the config inputs."""
         errors = []
-        if len(errors) > 0:
-            conf_errors = "".join([f"{err}\n" for err in errors])
-            raise ValueError(f"Config is missing required arguments: \n{conf_errors}")
+        if self.guild_id_int <= 0:
+            errors.append("Guild ID must not be 0 or negative")
+        if not self.log_folder.exists():
+            errors.append(f"Log folder given does not exist, please create it: {self.log_folder}")
+        errors += self._validate_roles()
+        for command_path in self.commands:
+            if not command_path.exists():
+                errors.append(f"Command path given does not exist: {command_path}")
+        return errors
 
     def _validate_roles(self):
         errors = []
         if self.all_roles is None or len(self.all_roles) == 0:
             errors.append("You must define at least one role in the config, see readme for details")
         for role_name, role_data in self.all_roles.items():
-            if role_data.get("emoji") is None or role_data.get("identifier") is None:
-                errors.append(
-                    f"Role input is missing data: {role_name} needs 'emoji' and 'identifier'"
-                )
+            if role_data.get("emoji") is None:
+                errors.append(f"Role input is missing data: {role_name} needs 'emoji'.")
+            if role_data.get("identifier") is None:
+                errors.append(f"Role input is missing data: {role_name} needs 'identifier'.")
         return errors
 
 
@@ -81,6 +87,15 @@ class CommandConfig:
     channel_whitelist: list[str]
     channel_role_mentions: dict[str, str]
     guild_roles: Sequence[Role]
+
+    def validate(self):
+        """Validates the config inputs."""
+        errors = []
+        if self.name == "":
+            errors.append("Commands must have a name.")
+        if self.description == "":
+            errors.append("Commands must have a description.")
+        return errors
 
 
 @dataclass
@@ -147,6 +162,20 @@ class CommandArgument:
             name=self.name, kind=kind, annotation=self.python_type, default=default
         )
 
+    def validate(self):
+        """Validates that the argument elements are acceptable."""
+        errors = []
+        if self.display_name == "":
+            errors.append("Command arguments must have a name.")
+        if self.description == "":
+            errors.append("Command arguments must have a description.")
+        if self.autocomplete_channel_numbers and self.autocomplete_options is not None:
+            errors.append(
+                f"{self.name}: If you define `options_from_channel_numbers` "
+                f"you cannot provide an options list."
+            )
+        return errors
+
     def discord_rename(self, command: discord.app_commands.Command):
         """Renames how discord displays the name of this command.
 
@@ -174,30 +203,12 @@ class CommandArgument:
             autocomplete_choice_from_list(self.autocomplete_options, command, self.name)
 
 
-def command_argument_from_config(argument_definition: dict, arg_name: str):
-    """Builds a command argument based on information given in a toml config."""
-    type_lookups = {"str": str, "int": int, "float": float, "discord.member": discord.Member}
-
-    required_elements = ["display_name", "python_type", "required", "description"]
-    errors = []
-    for element in required_elements:
-        if argument_definition.get(element) is None:
-            errors.append(f"missing {element} from argument definition: {arg_name}")
-    display_name = argument_definition.get("display_name", "")
-    python_type = type_lookups[argument_definition.get("python_type", "").lower()]
-    required = argument_definition.get("required", False)
-    description = argument_definition.get("description", "")
-    autocomplete_channel_numbers = argument_definition.get("options_from_channel_numbers", False)
-    autocomplete_options = argument_definition.get("options", {})
-    return CommandArgument(
-        name=arg_name,
-        python_type=python_type,
-        required=required,
-        description=description,
-        autocomplete_options=autocomplete_options,
-        autocomplete_channel_numbers=autocomplete_channel_numbers,
-        display_name=display_name,
-    )
+def parse_inputs() -> tuple[str, LFGConfig, list[CommandConfig]]:
+    """Parse the inputs to the bot.py script."""
+    token_data, config_data = _argparser()
+    token = _parse_token(token_data)
+    config, commands = _parse_config(config_data)
+    return token, config, commands
 
 
 def _argparser():
@@ -231,36 +242,100 @@ def _parse_config(config_data: dict) -> tuple[LFGConfig, list[CommandConfig]]:
         all_roles=config_data.get("role", {}),
         commands=[Path(command) for command in config_data.get("commands", [])],
     )
-    try:
-        config.validate()
-    except ConfigValueError as e:
-        response = "\n".join(e.messages)
-        logging.critical(response)
-        raise
+    errors = [""]
+    errors += config.validate()
     setup_logging(config.log_folder, config.debug)
 
     commands = []
-    errors = []
     for command_path in config_data.get("command_files", ""):
         command_path = Path(command_path)
         logging.debug(command_path)
         if command_path.exists() and command_path.suffix == ".toml":
             with open(command_path, "rb") as config_file:
                 command_config_input = tomllib.load(config_file)
-            command_data = _parse_command(config, command_config_input)
-            commands.append(command_data)
+            try:
+                command_data = _parse_command(config, command_config_input)
+                commands.append(command_data)
+            except ConfigValueError as e:
+                errors.append(f"{command_path} contained errors:")
+                errors += e.messages
         else:
-            errors.append(f"Command path doesn't exit or is not a .toml file: {command_path}")
+            errors.append(f"Command path doesn't exist or is not a .toml file: {command_path}")
+    if len(errors) > 0:
+        response = "\n".join(errors)
+        logging.critical(response)
+        raise ConfigValueError(response)
 
     return config, commands
 
 
+def _parse_command(config: LFGConfig, command_config_input: dict) -> CommandConfig:
+    """Parses data from a specific command configuration."""
+    name = command_config_input.get("name", "")
+    description = command_config_input.get("description", "")
+    timeout_length = command_config_input.get("timeout_length", 30)
+    editable_length = command_config_input.get("editable_length", 5)
+    channel_role_mentions: dict = command_config_input.get("channel_role_mentions", {})
+
+    channel_whitelist: list = command_config_input.get("channel_whitelist", [])
+    if "bot-control" not in channel_whitelist:
+        channel_whitelist.append("bot-control")
+
+    kick_reasons: list = command_config_input.get("kick_reasons", [])
+    other_str = "Other - please message separately"
+    if other_str not in kick_reasons:
+        kick_reasons.append(other_str)
+
+    roles = create_roles_from_config(config.all_roles, command_config_input.get("role_counts", {}))
+    argument_errors = []
+    try:
+        args = _build_arguments(command_config_input, roles)
+    except ConfigValueError as e:
+        argument_errors += e.messages
+        args = []
+
+    command_data = CommandConfig(
+        args,
+        roles,
+        name,
+        description,
+        config.debug,
+        config.guild_name,
+        timeout_length,
+        editable_length,
+        kick_reasons,
+        channel_whitelist,
+        channel_role_mentions,
+        [],
+    )
+    logging.debug(command_data)
+    main_config_errors = command_data.validate()
+    errors = main_config_errors + argument_errors
+    if len(errors) > 0:
+        raise ConfigValueError(errors)
+
+    return command_data
+
+
 def _build_arguments(config_input, roles: dict[str, RoleDefinition]):
-    activity_arg = command_argument_from_config(config_input.get("activity", {}), "activity")
+    errors = []
+    try:
+        activity_arg = command_argument_from_config(config_input.get("activity", {}), "activity")
+    except ConfigValueError as e:
+        errors.append("activity contains errors:")
+        errors += e.messages
+
     option_args = []
     options = config_input.get("option", {})
     for option_name, option_data in options.items():
-        option_args.append(command_argument_from_config(option_data, f"option_{option_name}"))
+        try:
+            option_args.append(command_argument_from_config(option_data, f"option_{option_name}"))
+        except ConfigValueError as e:
+            errors.append(f"option_{option_name} contains errors:")
+            errors += e.messages
+    if len(errors) > 0:
+        raise ConfigValueError(errors)
+
     creator_role_arg = CommandArgument(
         "creator_role", str, True, "The role you are filling for this group.", list(roles.keys())
     )
@@ -290,50 +365,33 @@ def _build_arguments(config_input, roles: dict[str, RoleDefinition]):
     return [activity_arg] + option_args + [creator_role_arg, required_spots_arg] + standard_args
 
 
-def _parse_command(config: LFGConfig, command_config_input: dict) -> CommandConfig:
-    """Parses data from a specific command configuration."""
-    name = command_config_input.get("name", "")
-    description = command_config_input.get("description", "")
-    timeout_length = command_config_input.get("timeout_length", 30)
-    editable_length = command_config_input.get("editable_length", 5)
-    channel_role_mentions: dict = command_config_input.get("channel_role_mentions", {})
+def command_argument_from_config(argument_definition: dict, arg_name: str):
+    """Builds a command argument based on information given in a toml config."""
+    type_lookups = {"str": str, "int": int, "float": float, "discord.member": discord.Member}
 
-    channel_whitelist: list = command_config_input.get("channel_whitelist", [])
-    if "bot-control" not in channel_whitelist:
-        channel_whitelist.append("bot-control")
-
-    kick_reasons: list = command_config_input.get("kick_reasons", [])
-    other_str = "Other - please message separately"
-    if other_str not in kick_reasons:
-        kick_reasons.append(other_str)
-
-    roles = create_roles_from_config(config.all_roles, command_config_input.get("role_counts", {}))
-    args = _build_arguments(command_config_input, roles)
-
-    command_data = CommandConfig(
-        args,
-        roles,
-        name,
-        description,
-        config.debug,
-        config.guild_name,
-        timeout_length,
-        editable_length,
-        kick_reasons,
-        channel_whitelist,
-        channel_role_mentions,
-        [],
+    required_elements = ["display_name", "python_type", "required", "description"]
+    errors = []
+    for element in required_elements:
+        if argument_definition.get(element) is None:
+            errors.append(f"missing {element} from argument definition: {arg_name}")
+    display_name = argument_definition.get("display_name", "")
+    python_type = type_lookups[argument_definition.get("python_type", "").lower()]
+    required = argument_definition.get("required", False)
+    description = argument_definition.get("description", "")
+    autocomplete_options = argument_definition.get("options")
+    command_argument = CommandArgument(
+        name=arg_name,
+        python_type=python_type,
+        required=required,
+        description=description,
+        autocomplete_options=autocomplete_options,
+        display_name=display_name,
     )
-    logging.debug(command_data)
-    return command_data
+    errors = command_argument.validate()
+    if len(errors) > 0:
+        raise ConfigValueError(errors)
 
-
-def parse_inputs() -> tuple[str, LFGConfig, list[CommandConfig]]:
-    """Parse the inputs to the bot.py script."""
-    token_data, config_data = _argparser()
-    token = _parse_token(token_data)
-    config, commands = _parse_config(config_data)
-    return token, config, commands
+    return command_argument
 
 
 def setup_logging(log_folder: Path, debug: bool = False):
