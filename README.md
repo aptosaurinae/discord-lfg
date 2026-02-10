@@ -176,7 +176,7 @@ options = [
     DN = "dungeon name",
 ]
 
-[timing_aim]
+[option.timing_aim]
 name = "timing_aim"
 python_type = "str"
 required = true
