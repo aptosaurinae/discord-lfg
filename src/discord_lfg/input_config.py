@@ -166,12 +166,12 @@ class CommandArgument:
         """Validates that the argument elements are acceptable."""
         errors = []
         if self.display_name == "":
-            errors.append("Command arguments must have a name.")
+            errors.append("    Command arguments must have a name.")
         if self.description == "":
-            errors.append("Command arguments must have a description.")
+            errors.append("    Command arguments must have a description.")
         if self.autocomplete_channel_numbers and self.autocomplete_options is not None:
             errors.append(
-                f"{self.name}: If you define `options_from_channel_numbers` "
+                f"    {self.name}: If you define `options_from_channel_numbers` "
                 f"you cannot provide an options list."
             )
         return errors
@@ -258,11 +258,13 @@ def _parse_config(config_data: dict) -> tuple[LFGConfig, list[CommandConfig]]:
                 commands.append(command_data)
             except ConfigValueError as e:
                 errors.append(f"{command_path} contained errors:")
-                errors += e.messages
+                messages = [f"    {message}" for message in e.messages]
+                errors += messages
         else:
             errors.append(f"Command path doesn't exist or is not a .toml file: {command_path}")
     if len(errors) > 0:
-        response = "\n".join(errors)
+        response = "\nThere are errors in your config file:"
+        response += "\n    ".join(errors)
         logging.critical(response)
         raise ConfigValueError(response)
 
@@ -367,13 +369,19 @@ def _build_arguments(config_input, roles: dict[str, RoleDefinition]):
 
 def command_argument_from_config(argument_definition: dict, arg_name: str):
     """Builds a command argument based on information given in a toml config."""
-    type_lookups = {"str": str, "int": int, "float": float, "discord.member": discord.Member}
+    type_lookups = {
+        "str": str,
+        "int": int,
+        "float": float,
+        "discord.member": discord.Member,
+        "": None,
+    }
 
     required_elements = ["display_name", "python_type", "required", "description"]
     errors = []
     for element in required_elements:
         if argument_definition.get(element) is None:
-            errors.append(f"missing {element} from argument definition: {arg_name}")
+            errors.append(f"    {arg_name} is missing {element} from argument definition")
     display_name = argument_definition.get("display_name", "")
     python_type = type_lookups[argument_definition.get("python_type", "").lower()]
     required = argument_definition.get("required", False)
@@ -387,7 +395,7 @@ def command_argument_from_config(argument_definition: dict, arg_name: str):
         autocomplete_options=autocomplete_options,
         display_name=display_name,
     )
-    errors = command_argument.validate()
+    errors += command_argument.validate()
     if len(errors) > 0:
         raise ConfigValueError(errors)
 
