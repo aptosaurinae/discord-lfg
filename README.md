@@ -7,8 +7,6 @@ is still significantly inspired by that system although has been generalised sig
 
 ## TODO
 
-- more validation of inputs
-
 For feature parity with the original Dungeon Buddy, the following is missing:
 
 - Log group members when group completes in any way (full, timeout, cancelled)
