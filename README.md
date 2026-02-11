@@ -19,6 +19,7 @@ And finally:
 
 - Tests, Tests, Tests
 - Documentation
+- Look at UV for install instead of conda?
 
 ## Background
 
