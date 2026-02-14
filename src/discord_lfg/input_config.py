@@ -49,6 +49,8 @@ class LFGConfig:
     def validate(self):
         """Validates the config inputs."""
         errors = []
+        if not isinstance(self.debug, bool):
+            errors.append("Debug must be `true` or `false`")
         if self.guild_id_int <= 0:
             errors.append("Guild ID must not be 0 or negative")
         if not self.log_folder.exists():
@@ -234,15 +236,15 @@ def _parse_token(token_data: dict):
 def _parse_config(config_data: dict) -> tuple[LFGConfig, list[CommandConfig]]:
     """Setup config for inputs."""
     config = LFGConfig(
-        debug=config_data.get("debug", 0),
-        guild_id_int=config_data.get("guild_id", ""),
-        guild_id_discord=discord.Object(config_data.get("guild_id", "")),
+        debug=config_data.get("debug", False),
+        guild_id_int=int(config_data.get("guild_id", 0)),
+        guild_id_discord=discord.Object(config_data.get("guild_id", 0)),
         guild_name=config_data.get("guild_name", ""),
         log_folder=Path(config_data.get("log_folder", "")),
         all_roles=config_data.get("role", {}),
         commands=[Path(command) for command in config_data.get("commands", [])],
     )
-    errors = [""]
+    errors = []
     errors += config.validate()
     setup_logging(config.log_folder, config.debug)
 
@@ -263,7 +265,7 @@ def _parse_config(config_data: dict) -> tuple[LFGConfig, list[CommandConfig]]:
         else:
             errors.append(f"Command path doesn't exist or is not a .toml file: {command_path}")
     if len(errors) > 0:
-        response = "\nThere are errors in your config file:"
+        response = "\nThere are errors in your config file:\n    "
         response += "\n    ".join(errors)
         logging.critical(response)
         raise ConfigValueError(response)

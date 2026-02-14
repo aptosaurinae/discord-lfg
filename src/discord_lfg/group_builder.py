@@ -105,7 +105,6 @@ class GroupBuilder:
             config: A dictionary of configuration information for Group Builder, all optional extras
             creator_role: The role the creator has chosen (must match a role name)
             filled_spots: A dictionary of which roles are already filled in the format {name: count}
-            roles: A dictionary of role information based on RoleDefinition.
         """
         logging.debug(
             f"GroupBuilder created by {interaction.user.id} {interaction.user.display_name}"
@@ -339,7 +338,7 @@ class GroupBuilder:
             filled_spots=0,
             filled_spot_name=f"~~Filled {guild_name}{' ' if guild_name != '' else ''}Spot~~",
             passphrase=generate_passphrase(),
-            debug=bool(debug),
+            debug=debug,
         )
 
     # --- Group finishing methods (timeout, cancel, close because full)

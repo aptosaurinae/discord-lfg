@@ -1,13 +1,18 @@
-site_name: dungeon-buddy-py
+site_name: discord-lfg
 nav:
   - Home: index.md
   - Installation: installation.md
+  - Configuration:
+    - config/introduction.md
+    - Token Input: config/token.md
+    - General Configuration: config/general-config.md
+    - Command Configuration: config/command-config.md
   - Contributing: contributing.md
   - Changelog: CHANGELOG.md
   - Reference: []
 theme:
   name: material
-repo_url: https://github.com/aptosaurinae/dungeon-buddy-py/
+repo_url: https://github.com/aptosaurinae/discord-lfg/
 site_dir: .docs
 markdown_extensions:
   - admonition
@@ -51,7 +56,7 @@ plugins:
           import:
             - https://docs.python.org/3/objects.inv
 watch:
-  - src/db_py
+  - src/discord_lfg
 extra_css:
   - static/extras.css
 extra:

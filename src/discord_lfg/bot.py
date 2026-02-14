@@ -31,6 +31,7 @@ def _register_on_ready(
     guild_id_int: int,
     log_folder: Path,
     commands_configs: list[CommandConfig],
+    debug: bool = False,
 ):
     @client.event
     async def on_ready():
@@ -48,7 +49,8 @@ def _register_on_ready(
             )
             client.tree.add_command(command, guild=guild_id_obj)
 
-        _register_lfgdebug(client, guild_id_obj)
+        if debug:
+            _register_lfgdebug(client, guild_id_obj)
 
         await client.tree.sync(guild=guild_id_obj)
 
@@ -99,7 +101,12 @@ if __name__ == "__main__":
     intents = discord.Intents.default()
     client = BotClient(intents=intents)
     _register_on_ready(
-        client, config.guild_id_discord, config.guild_id_int, config.log_folder, commands
+        client,
+        config.guild_id_discord,
+        config.guild_id_int,
+        config.log_folder,
+        commands,
+        config.debug,
     )
     # _register_lfgstats(client, guild_id_obj)
     client.run(token=token)
