@@ -390,12 +390,14 @@ def command_argument_from_config(argument_definition: dict, arg_name: str):
     required = argument_definition.get("required", required_default)
     description = argument_definition.get("description", "")
     autocomplete_options = argument_definition.get("options")
+    autocomplete_channel_numbers = argument_definition.get("options_from_channel_numbers", False)
     command_argument = CommandArgument(
         name=arg_name,
         python_type=python_type,
         required=required,
         description=description,
         autocomplete_options=autocomplete_options,
+        autocomplete_channel_numbers=autocomplete_channel_numbers,
         display_name=display_name,
     )
     errors += command_argument.validate()

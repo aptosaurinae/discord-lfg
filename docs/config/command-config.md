@@ -26,7 +26,9 @@ A list of the channels where this command should be active.
 Note that due to the limitations of the command system, commands are registered to a "guild"
 (i.e. a Discord server) rather than being able to limit them to specific channels.
 This channel whitelist will be checked when the command is used and if the channel is not
-in the whitelist then users will be told they cannot use the command here.
+in the whitelist then users will be told they cannot use the command here, as below.
+
+![Discord message indicating a command cannot be used](../img/lfg_command_whitelist_error.png)
 
 There is a hard-coded addition for a channel named `#bot-control` to make sure that there is always
 a testing ground for all commands.

@@ -214,18 +214,15 @@ class GroupBuilder:
         ])
         if kicked_users != "":
             kicked_users = f"\nRemoved users:\n{kicked_users}"
-        footer = ""
-        if not (self.state.closed or self.state.cancelled or self.state.timed_out):
-            if kicked_users != "":
-                kicked_users += "\n"
-            footer = "`/lfghelp for Group Builder help`"
+        if (
+            not (self.state.closed or self.state.cancelled or self.state.timed_out)
+            and kicked_users == ""
+        ):
+            kicked_users += "\n"
 
         return (
-            f"**{self.listing_message_body}**\n"
-            f"{group.creator_notes}\n"
-            f"{role_string}\n"
+            f"**{self.listing_message_body}**\n{group.creator_notes}\n{role_string}\n"
             # f"{kicked_users}"
-            f"{footer}"
         )
 
     @property

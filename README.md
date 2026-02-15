@@ -2,6 +2,8 @@
 
 This is a Python based system for Discord to allow easy creation of groups, using the library [`discord-py`](https://discordpy.readthedocs.io/en/stable/).
 
+![Discord view of a Discord-LFG group message with role buttons](docs/img/discord-lfg-group.png)
+
 It was originally based on the Dungeon Buddy system written by Baddadan for No Pressure EU, and
 is still significantly inspired by that system although has been generalised significantly.
 
