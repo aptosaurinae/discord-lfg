@@ -33,8 +33,8 @@ Roles need a set of the following elements:
 A name will be constructed automatically from the name used to define the role.
 
 - Format:
-  - emoji: `str`
-  - indicator: `str`
+    - emoji: `str`
+    - indicator: `str`
 - Example:
 ```toml
 [role.tank]

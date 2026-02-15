@@ -379,14 +379,15 @@ def command_argument_from_config(argument_definition: dict, arg_name: str):
         "": None,
     }
 
-    required_elements = ["display_name", "python_type", "required", "description"]
+    required_elements = ["display_name", "python_type", "description"]
     errors = []
     for element in required_elements:
         if argument_definition.get(element) is None:
             errors.append(f"    {arg_name} is missing {element} from argument definition")
     display_name = argument_definition.get("display_name", "")
     python_type = type_lookups[argument_definition.get("python_type", "").lower()]
-    required = argument_definition.get("required", False)
+    required_default = arg_name == "activity"
+    required = argument_definition.get("required", required_default)
     description = argument_definition.get("description", "")
     autocomplete_options = argument_definition.get("options")
     command_argument = CommandArgument(
