@@ -161,7 +161,9 @@ required = true
 Additional options will be displayed in the group listing as information for potential joiners
 but otherwise are not used.
 
-## Example config
+## Full Config Examples
+
+### Basic example
 
 ``` toml
 name = "lfg_command"
@@ -195,4 +197,102 @@ options = [
 tank = 1
 healer = 1
 dps = 3
+```
+
+### World of Warcraft Dungeon Group
+
+``` toml
+name = "lfg_dungeon"
+description = "Builds a typical dungeon group of 1 tank, 1 healer, and 3 dps."
+timeout_length = 30
+editable_length = 2
+kick_reasons = [
+	"Low itemlevel",
+	"Not experienced enough",
+	"Want bloodlust",
+	"Want combat resurrection",
+]
+channel_whitelist = [
+    "lfg-m0",
+    "lfg-m2-m3",
+    "lfg-m4-m6",
+    "lfg-m7-m9",
+    "lfg-m10-m11",
+    "lfg-m12-m13"
+]
+
+[channel_role_mentions]
+lfg-m0 = "-m0"
+lfg-m2-m3 = "-m2-3"
+lfg-m4-m6 = "-m4-6"
+lfg-m7-m9 = "-m7-9"
+lfg-m10-m11 = "-m10-11"
+lfg-m12-m13 = "-m12-13"
+
+[activity]
+display_name = "dungeon"
+python_type = "str"
+required = true
+description = "The dungeon you are creating a group for."
+options = [
+    "Magister's Terrace",
+    "Maisara Caverns",
+    "Nexus Point Xenas",
+    "Windrunner Spire",
+    "Algeth'ar Academy",
+    "Seat of the Triumvirate",
+    "Skyreach",
+    "Pit of Saron",
+]
+
+[option.difficulty]
+display_name = "difficulty"
+python_type = "int"
+required = true
+description = "The difficulty level of the key."
+options_from_channel_numbers = true
+
+[option.time]
+display_name = "timing_aim"
+python_type = "str"
+required = true
+description = "The timing type you are aiming for."
+options = [
+    "Time or Abandon",
+    "Time but Complete",
+    "Vault completion",
+]
+
+[role_counts]
+tank = 1
+healer = 1
+dps = 3
+```
+
+### 5 vs 5 Team Game
+
+```
+name = "lfg_5v5"
+description = "Builds a typical 5v5 team game layout."
+timeout_length = 15
+editable_length = 0
+channel_whitelist = ["lfg-5v5"]
+
+[channel_role_mentions]
+lfg-5v5 = "-5v5"
+
+[activity]
+display_name = "team_game"
+python_type = "str"
+required = true
+description = "The game you are building a group for."
+options = [
+    "Dota2",
+    "League of Legends",
+    "Counter-Strike",
+]
+
+[role_counts]
+team1 = 5
+team2 = 5
 ```
