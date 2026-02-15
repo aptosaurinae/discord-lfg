@@ -1,13 +1,41 @@
-site_name: dungeon-buddy-py
+site_name: discord-lfg
 nav:
   - Home: index.md
   - Installation: installation.md
+  - Running the bot: running.md
+  - Configuration:
+    - config/introduction.md
+    - Token Input: config/token.md
+    - General Configuration: config/general-config.md
+    - Command Configuration: config/command-config.md
   - Contributing: contributing.md
   - Changelog: CHANGELOG.md
   - Reference: []
 theme:
   name: material
-repo_url: https://github.com/aptosaurinae/dungeon-buddy-py/
+  palette:
+
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+
+repo_url: https://github.com/aptosaurinae/discord-lfg/
 site_dir: .docs
 markdown_extensions:
   - admonition
@@ -51,7 +79,7 @@ plugins:
           import:
             - https://docs.python.org/3/objects.inv
 watch:
-  - src/db_py
+  - src/discord_lfg
 extra_css:
   - static/extras.css
 extra:

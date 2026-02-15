@@ -4,9 +4,11 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from typing import Sequence
 
 import discord
 
+from discord_lfg.input_config import CommandConfig
 from discord_lfg.utils import (
     RoleDefinition,
     datetime_now_utc,
@@ -24,6 +26,7 @@ class GroupDetails:
     listed_as: str
     creator_notes: str
     extra_info: list
+    kick_reasons: list[str]
 
 
 @dataclass
@@ -89,10 +92,9 @@ class GroupBuilder:
         self,
         interaction: discord.Interaction,
         group_info: dict,
-        config: dict,
+        config: CommandConfig,
         creator_role: str,
         filled_spots: dict[str, int],
-        roles: dict[str, RoleDefinition],
     ):
         """Creates a Group Builder.
 
@@ -103,24 +105,25 @@ class GroupBuilder:
             config: A dictionary of configuration information for Group Builder, all optional extras
             creator_role: The role the creator has chosen (must match a role name)
             filled_spots: A dictionary of which roles are already filled in the format {name: count}
-            roles: A dictionary of role information based on RoleDefinition.
         """
         logging.debug(
             f"GroupBuilder created by {interaction.user.id} {interaction.user.display_name}"
         )
-        self.role_counts = {role.name: role.count for role in roles.values()}
-        guild_name = config.get("guild_name", "")
-        timeout_length = config.get("timeout_length", 30)
-        editable_length = config.get("editable_length", 5)
-        debug = config.get("debug", False)
-        guild_roles = config.get("guild_roles", {})
+        self.role_counts = {role.name: role.count for role in config.roles.values()}
+        guild_name = config.guild_name
+        timeout_length = config.timeout_length
+        editable_length = config.editable_length
+        debug = config.debug
+        guild_roles = config.guild_roles
+        kick_reasons = config.kick_reasons
 
         self._state_init(guild_name, timeout_length, editable_length, debug)
-        self._setup_group(**group_info, guild_name=guild_name)
+        self._setup_group(**group_info, guild_name=guild_name, kick_reasons=kick_reasons)
         self._roles_init(
-            roles,
+            config.roles,
             guild_roles,
             interaction.channel.name if isinstance(interaction.channel.name, str) else "",  # type: ignore
+            config.channel_role_mentions,
         )
 
         self.creator = self.create_user_from_interaction(interaction, creator_role, True)
@@ -211,18 +214,15 @@ class GroupBuilder:
         ])
         if kicked_users != "":
             kicked_users = f"\nRemoved users:\n{kicked_users}"
-        footer = ""
-        if not (self.state.closed or self.state.cancelled or self.state.timed_out):
-            if kicked_users != "":
-                kicked_users += "\n"
-            footer = "`/lfghelp for Group Builder help`"
+        if (
+            not (self.state.closed or self.state.cancelled or self.state.timed_out)
+            and kicked_users == ""
+        ):
+            kicked_users += "\n"
 
         return (
-            f"**{self.listing_message_body}**\n"
-            f"{group.creator_notes}\n"
-            f"{role_string}\n"
+            f"**{self.listing_message_body}**\n{group.creator_notes}\n{role_string}\n"
             # f"{kicked_users}"
-            f"{footer}"
         )
 
     @property
@@ -262,7 +262,11 @@ class GroupBuilder:
     # --- Initialisation
 
     def _role_constructor(
-        self, role: RoleDefinition, guild_roles: list[discord.Role], channel_name: str
+        self,
+        role: RoleDefinition,
+        guild_roles: list[discord.Role],
+        channel_name: str,
+        channel_role_mentions: dict[str, str],
     ):
         return GroupRole(
             name=role.name,
@@ -272,22 +276,39 @@ class GroupBuilder:
             disabled=False,
             emoji=role.emoji,
             role_mention=get_guild_role_mention_for_group_role(
-                group_role=role.name, guild_roles=guild_roles, channel_name=channel_name
+                group_role=role.name,
+                guild_roles=guild_roles,
+                channel_name=channel_name,
+                channel_role_mentions=channel_role_mentions,
             ),
         )
 
     def _roles_init(
-        self, roles: dict[str, RoleDefinition], guild_roles: list[discord.Role], channel_name: str
+        self,
+        roles: dict[str, RoleDefinition],
+        guild_roles: Sequence[discord.Role],
+        channel_name: str,
+        channel_role_mentions: dict[str, str],
     ):
         """Initialise roles information."""
-        constructor_info = {"guild_roles": guild_roles, "channel_name": channel_name}
+        constructor_info = {
+            "guild_roles": guild_roles,
+            "channel_name": channel_name,
+            "channel_role_mentions": channel_role_mentions,
+        }
         self.roles = {
             role_name: self._role_constructor(role_info, **constructor_info)
             for role_name, role_info in roles.items()
         }
 
     def _setup_group(
-        self, activity_name: str, listed_as: str, creator_notes: str, guild_name: str, **kwargs
+        self,
+        activity_name: str,
+        listed_as: str,
+        creator_notes: str,
+        guild_name: str,
+        kick_reasons: list[str],
+        **kwargs,
     ):
         """Captures information from the initial listing process."""
         random_listing = generate_listing_name(activity_name, 3, guild_name)
@@ -296,6 +317,7 @@ class GroupBuilder:
             listed_as=listed_as if (listed_as != "") else random_listing,
             creator_notes="" if (creator_notes == "") else f"**Notes:** *{creator_notes}*\n",
             extra_info=list(kwargs.values()),
+            kick_reasons=kick_reasons,
         )
 
     def _state_init(self, guild_name: str, timeout_length: int, editable_length: int, debug: bool):
@@ -313,7 +335,7 @@ class GroupBuilder:
             filled_spots=0,
             filled_spot_name=f"~~Filled {guild_name}{' ' if guild_name != '' else ''}Spot~~",
             passphrase=generate_passphrase(),
-            debug=bool(debug),
+            debug=debug,
         )
 
     # --- Group finishing methods (timeout, cancel, close because full)
@@ -693,18 +715,12 @@ class EditRemoveUser(discord.ui.Select):
 class EditRemoveUserReason(discord.ui.Select):
     """Provide a reason for removing users."""
 
-    def __init__(self, users: dict[int, GroupUser]):
+    def __init__(self, users: dict[int, GroupUser], kick_reasons: list[str]):
         """Initialisation."""
         disabled = True
         options = [discord.SelectOption(label="placeholder")]
         if len(users) > 0 and any([user > 0 for user in users]):
-            reasons = [
-                "Low itemlevel",
-                "Not experienced enough",
-                "Want bloodlust",
-                "Want combat resurrection",
-                "Other - please message separately",
-            ]
+            reasons = kick_reasons
             options = [discord.SelectOption(label=reason) for reason in reasons]
             disabled = False
 
@@ -769,6 +785,11 @@ class GroupEditOptions(discord.ui.View):
         self.interaction: discord.Interaction = None  # type: ignore
         self.group_builder = group_builder
         self.filled_spot_name = self.group_builder.state.filled_spot_name
+        self.remove_users_reason = ""
+        self.confirmed = False
+        self.cancel_group_state = 0
+        self.remove_users: list[GroupUser] = []
+
         removeable_users = {}
         for role_name, role_item in self.group_builder.roles.items():
             for user in role_item.users:
@@ -777,21 +798,22 @@ class GroupEditOptions(discord.ui.View):
                 elif user.id > -100:
                     removeable_users[user.id] = user
         self.new_creator_role = self.creator_role
-        self.open_roles = [
-            role.name for role in self.group_builder.roles.values() if not all(role.assigned)
+        open_roles = [
+            role.name
+            for role in self.group_builder.roles.values()
+            if not (all(role.assigned) or role.name == self.creator_role)
         ]
-        self.remove_users: list[GroupUser] = []
-        self.remove_users_reason = ""
-        self.confirmed = False
-        self.cancel_group_state = 0
+        kick_reasons = self.group_builder.group_details.kick_reasons
 
         self.edit_remove_users = EditRemoveUser(removeable_users)
-        self.edit_remove_users_reason = EditRemoveUserReason(removeable_users)
-        self.edit_creator_role = EditCreatorRole(self.open_roles)
-
         self.add_item(self.edit_remove_users)
+
+        self.edit_remove_users_reason = EditRemoveUserReason(removeable_users, kick_reasons)
         self.add_item(self.edit_remove_users_reason)
-        self.add_item(self.edit_creator_role)
+
+        if len(open_roles) > 0:
+            self.edit_creator_role = EditCreatorRole(open_roles)
+            self.add_item(self.edit_creator_role)
 
     def _remove_users(self) -> bool | None:
         logging.debug(f"Attempting to remove users from {self.group_builder.group_title}")

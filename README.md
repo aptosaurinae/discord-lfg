@@ -2,27 +2,30 @@
 
 This is a Python based system for Discord to allow easy creation of groups, using the library [`discord-py`](https://discordpy.readthedocs.io/en/stable/).
 
+![Discord view of a Discord-LFG group message with role buttons](docs/img/discord-lfg-group.png)
+
 It was originally based on the Dungeon Buddy system written by Baddadan for No Pressure EU, and
-is still significantly inspired by that system.
+is still significantly inspired by that system although has been generalised significantly.
 
 ## TODO
-
-- Make commands build from the config?
-  - update readme for config
-  - this will mean needing to move role counts to the commands? keep roles as-is and re-use for command definitions
 
 For feature parity with the original Dungeon Buddy, the following is missing:
 
 - Log group members when group completes in any way (full, timeout, cancelled)
 - Add `/lfgstats` reporting
-- Add history for users (both personal and for mods)
+- Add history for users (both personal and for mods) -
+probably do this through `lfgstats` or equivalent command to avoid command clutter?
 - Error handling for failed interactions?
 
 And finally:
 
 - Tests, Tests, Tests
+- Documentation
+- Look at UV for install instead of conda?
 
 ## Background
+
+<!--- --8<-- [start:docs] -->
 
 Discord-LFG is a Discord bot originally created for easy creation of groups for World of Warcraft dungeons.
 These groups typically have one tank, one healer, and three damage dealers in each group.
@@ -37,6 +40,8 @@ The [original Dungeon Buddy](https://bit.ly/3ZrVj7C) was built by Baddadan/Kashu
 the [No Pressure EU](https://no-pressure.eu) Discord server.
 This system is inspired by Dungeon Buddy, and implementated in
 Python using [discord-py](https://discordpy.readthedocs.io/en/latest/api.html).
+
+<!--- --8<-- [end:docs] -->
 
 ## Installation and setup
 
@@ -86,6 +91,8 @@ This will enable `pre-commit` and `pytest`.
 
 ### Running
 
+<!--- --8<-- [start:docs-running] -->
+
 To run the bot you can then do the following:
 
 ``` shell
@@ -104,93 +111,24 @@ Discord-LFG started
 ```
 
 You should find that the bot slash commands are then active in the relevant server when it's given
-a valid configuration file.
+a valid set of configuration files.
+
+<!--- --8<-- [end:docs-running] -->
 
 ### File setup
 
-The token toml file needs to look like the following:
+In order to run the bot you'll need to give it a discord bot authentication token,
+as well as a configuration of where the bot is going to load into and what commands it will
+load.
 
-``` toml
-[discord]
-token = "abcd123"
-```
-
-where the token string is a valid Discord bot token.
-
-The config file needs to look like the following:
-
-``` toml
-guild_id = 123456789
-guild_name = "NoP"
-
-[activity]
-name = "dungeon"
-python_type = "str"
-required = true
-description = "The dungeon you are listing a key for."
-options = [
-    DN = "dungeon name",
-]
-
-[timing_aim]
-name = "timing_aim"
-python_type = "str"
-required = true
-description = "The timing type you are aiming for."
-options = [
-    "dungeon timing type",
-]
-
-[role.tank]
-emoji = "<:tankemojiname:123456789>"
-count = 1
-indicator = "t"
-
-[role.healer]
-emoji = "<:healeremojiname:123456789>"
-count = 1
-indicator = "h"
-
-[role.dps]
-emoji = "<:dpsemojiname:123456789>"
-count = 3
-indicator = "d"
-
-[messages]
-help = "help message response"
-```
-
-- `guild_id` is the Discord ID of the server that you are wanting the host the bot in.
-- `activity` is a list of the dungeons for users to choose with metadata about how options
-are presented to users.
-- `timing_aim` is a dictionary of the timing types for users to choose with metadata.
-- `messages` must contain a `help` response.
-- `role` dictionary for each of the required roles you want in the group.
-  - `emoji`: The emoji names and numbers need to match the names and IDs of the emojis in the server you are hosting the bot. The names can be found as the ":name:" names in the server. The IDs can be found by right clicking on the emojis in the server you're in and opening the link, then looking at the number of their name in the URL.
-  - `count`: the number of spots in the group for this role.
-  - `indicator`: the single character indicator for quick group building.
-- *Optional*: `guild_name` modifies the automatic listing group names and filled spots.
-- *Optional*: `timeout_length`, a float in minutes. This controls how long the listing exists for before
-timing out. This is a float, so can be set to 0.1 or similar for testing purposes.
-- *Optional*: `editable_length`, a float in minutes. This controls how long the listing is able to
-be edited for once the group is full.
-- *Optional*: `debug`, set to 1 to turn on debug mode, which will be more verbose in the console
-and enable `/lfgdebug` which is a pre-set listing for test purposes.
-- *Optional*: `log_folder`, set this to a folder that already exists and it will dump a log file here.
+See the documentation for full details of the configuration setup.
 
 ## Bot Commands
 
-Once the bot is up and running, the following commands should be available from within the relevant server.
+Once the bot is up and running, the commands that are active should match those defined in
+the command files referenced by the main config.
 
-`/lfg` - create a group for the dungeon. Choose desired dungeon > dungeon difficulty > timed/completed > your role >
-required roles from a drop-down style menu.
-
-`/lfgquick` - create a group using autocomplete fields instead of an interactive drop down menu system.
-
-[NYI] `/lfghistory` - check up-to 10 of your latest groups. Previous teammates & passphrases can be found here.
-
-[NYI] `/lfgstats` - check total groups created, groups created in the last 24h, 7d, 30d &
-also the most popular dungeons for each key range.
+![Commands preview within Discord](docs/img/lfg_commands_preview.png)
 
 ## License
 
@@ -217,8 +155,10 @@ which alters the structure of how many aspects are set up in and of itself.
 It would be difficult to provide a full listing of all changes as a result.
 The following list of changes has been made to functionality:
 
-- The `/lfgquick` command has been changed to use auto-complete fields instead of a pure-string.
-- Signficantly more configuration is available directly from the config:
+- The backend has been generalised significantly to make it possible to create custom commands,
+although still within a "looking-for-group"/"group-building" framework.
+- Significantly more configuration is available directly from the config, including the definition
+of different commands that use the group builder with a variety of roles or user input options.
   - commands
   - roles
   - guild name
@@ -229,3 +169,4 @@ The following list of changes has been made to functionality:
   - Yellow for full but editable
   - Blue for full and not editable
   - Red for cancelled or timed out
+- When users are removed from the group, they are notified why and blocked from rejoining.

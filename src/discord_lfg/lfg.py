@@ -5,6 +5,7 @@ import logging
 import discord
 
 from discord_lfg.group_builder import GroupBuilder
+from discord_lfg.input_config import CommandConfig
 from discord_lfg.utils import RoleDefinition
 
 
@@ -17,15 +18,9 @@ class LFGValidationError(Exception):
 
 
 def _validate_lfg_inputs(
-    difficulty: int,
-    creator_role: str,
-    filled_spots: dict[str, int],
-    roles: dict[str, RoleDefinition],
+    creator_role: str, filled_spots: dict[str, int], roles: dict[str, RoleDefinition]
 ):
     errors = []
-    if difficulty == -1:
-        errors.append("You cannot use this command in this channel.")
-
     max_counts = {role.name: role.count for role in roles.values()}
     max_counts[creator_role] -= 1
     for role, count in filled_spots.items():
@@ -65,20 +60,18 @@ def _convert_required_spots_to_filled(
 async def lfg(
     interaction: discord.Interaction,
     activity: str,
-    difficulty: int,
     creator_role: str,
     required_spots: str,
     listed_as: str,
     creator_notes: str,
-    roles: dict[str, RoleDefinition],
-    config: dict,
+    config: CommandConfig,
     **options,
 ):
     """Creates a GroupBuilder instance from a slash command."""
     logging.debug("".join([str((key, value)) for key, value in locals().items()]))
     try:
-        filled_spots = _convert_required_spots_to_filled(roles, required_spots, creator_role)
-        _validate_lfg_inputs(difficulty, creator_role, filled_spots, roles)
+        filled_spots = _convert_required_spots_to_filled(config.roles, required_spots, creator_role)
+        _validate_lfg_inputs(creator_role, filled_spots, config.roles)
     except LFGValidationError as e:
         response = "\n".join(e.messages)
         message_func = (
@@ -93,7 +86,6 @@ async def lfg(
         "activity_name": activity,
         "listed_as": listed_as,
         "creator_notes": creator_notes,
-        "difficulty": difficulty,
         **options,
     }
     logging.debug(user_inputs)
@@ -104,19 +96,32 @@ async def lfg(
         config=config,
         creator_role=creator_role,
         filled_spots=filled_spots,
-        roles=roles,
     )
     await instance.send_message(interaction)
     await instance.send_passphrase(interaction)
 
 
-async def lfgdebug(interaction: discord.Interaction, debug_type: int, config: dict):
+async def lfgdebug(interaction: discord.Interaction, debug_type: int):
     """Creates a listing for debugging purposes."""
     roles = {
         "tank": RoleDefinition("tank", 1, "🛡️", "t"),
         "healer": RoleDefinition("healer", 1, "🪄", "h"),
         "dps": RoleDefinition("dps", 3, "⚔️", "t"),
     }
+    config = CommandConfig(
+        [],
+        roles,
+        "lfgdebug",
+        "Multiple LFG for debug purposes",
+        True,
+        "Debug",
+        1,
+        1,
+        ["kick user"],
+        [],
+        {},
+        [],
+    )
     if debug_type == 0:
         difficulty = 3
         required_spots = "h"
@@ -139,8 +144,10 @@ async def lfgdebug(interaction: discord.Interaction, debug_type: int, config: di
 
     if debug_type == 4:
         difficulty = -1
-        required_spots = "dddd"
-        await interaction.channel.send("Invalid group (4 dps spots and -1 difficulty)")  # type: ignore
+        required_spots = "ddd"
+        await interaction.channel.send(  # type: ignore
+            "Invalid group (3 dps spots when only 2 avail if creator is dps)"
+        )
 
     if debug_type == 5:
         difficulty = 4
@@ -156,6 +163,5 @@ async def lfgdebug(interaction: discord.Interaction, debug_type: int, config: di
         listed_as=f"Dungeon Debug Test {debug_type}",
         creator_notes="debug creator notes blah blah",
         required_spots=required_spots,
-        roles=roles,
         config=config,
     )
