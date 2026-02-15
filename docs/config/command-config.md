@@ -18,7 +18,7 @@ The name of the slash command shown to users. Do not include the leading slash.
 The description shown within Discord when viewing the list of slash commands.
 
 - Format: `str`
-- Example: `Creates a LFG listing for a standard dungeon group`
+- Example: `description = "Creates a LFG listing for a standard dungeon group"`
 
 #### Channel Whitelist
 
@@ -28,7 +28,7 @@ Note that due to the limitations of the command system, commands are registered 
 This channel whitelist will be checked when the command is used and if the channel is not
 in the whitelist then users will be told they cannot use the command here.
 
-There is a hard-coded override for a channel named `#bot-control` to make sure that there is always
+There is a hard-coded addition for a channel named `#bot-control` to make sure that there is always
 a testing ground for all commands.
 
 - Format: `list[str]`

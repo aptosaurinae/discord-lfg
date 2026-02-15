@@ -23,6 +23,8 @@ And finally:
 
 ## Background
 
+<!--- --8<-- [start:docs] -->
+
 Discord-LFG is a Discord bot originally created for easy creation of groups for World of Warcraft dungeons.
 These groups typically have one tank, one healer, and three damage dealers in each group.
 Discord-LFG provides a structured embed with buttons for joining groups, making it easier to track Discord
@@ -36,6 +38,8 @@ The [original Dungeon Buddy](https://bit.ly/3ZrVj7C) was built by Baddadan/Kashu
 the [No Pressure EU](https://no-pressure.eu) Discord server.
 This system is inspired by Dungeon Buddy, and implementated in
 Python using [discord-py](https://discordpy.readthedocs.io/en/latest/api.html).
+
+<!--- --8<-- [end:docs] -->
 
 ## Installation and setup
 
@@ -85,6 +89,8 @@ This will enable `pre-commit` and `pytest`.
 
 ### Running
 
+<!--- --8<-- [start:docs-running] -->
+
 To run the bot you can then do the following:
 
 ``` shell
@@ -104,6 +110,8 @@ Discord-LFG started
 
 You should find that the bot slash commands are then active in the relevant server when it's given
 a valid set of configuration files.
+
+<!--- --8<-- [end:docs-running] -->
 
 ### File setup
 
