@@ -123,14 +123,10 @@ See the documentation for full details of the configuration setup.
 
 ## Bot Commands
 
-<!--- --8<-- [start:docs-running-2] -->
-
 Once the bot is up and running, the commands that are active should match those defined in
 the command files referenced by the main config.
 
 ![Commands preview within Discord](docs/img/lfg_commands_preview.png)
-
-<!--- --8<-- [end:docs-running-2] -->
 
 ## License
 
