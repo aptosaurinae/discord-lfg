@@ -119,78 +119,18 @@ In order to run the bot you'll need to give it a discord bot authentication toke
 as well as a configuration of where the bot is going to load into and what commands it will
 load.
 
-See the documentation for full details of the configuration setup. Some simple templates
-are provided below as somewhat of a quick-start for setting up a typical 5 person dungeon group.
-
-#### Token file
-
-``` toml
-[discord]
-token = "abcd123"
-```
-
-#### Primary config
-
-``` toml
-guild_id = 123456789
-guild_name = "NoP"
-commands = [
-    "path/to/command_file.toml"
-]
-
-[role.tank]
-emoji = "<:tankemojiname:123456789>"
-indicator = "t"
-
-[role.healer]
-emoji = "<:healeremojiname:123456789>"
-indicator = "h"
-
-[role.dps]
-emoji = "<:dpsemojiname:123456789>"
-indicator = "d"
-```
-
-#### Command configs
-
-``` toml
-name = "lfg_command"
-description = "This description is shown to the user."
-channel_whitelist = [
-    "lfg-dungeon"
-]
-
-[channel_role_mention]
-lfg-dungeon = "dungeon"
-
-[activity]
-name = "dungeon"
-python_type = "str"
-required = true
-description = "The dungeon you are listing a key for."
-options = [
-    DN = "dungeon name",
-]
-
-[option.timing_aim]
-name = "timing_aim"
-python_type = "str"
-required = true
-description = "The timing type you are aiming for."
-options = [
-    "dungeon timing type",
-]
-
-[role_counts]
-tank = 1
-healer = 1
-dps = 3
-```
+See the documentation for full details of the configuration setup.
 
 ## Bot Commands
 
+<!--- --8<-- [start:docs-running-2] -->
+
 Once the bot is up and running, the commands that are active should match those defined in
 the command files referenced by the main config.
+
+![Commands preview within Discord](docs/img/lfg_commands_preview.png)
+
+<!--- --8<-- [end:docs-running-2] -->
 
 ## License
 

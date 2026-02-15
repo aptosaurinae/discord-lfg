@@ -13,7 +13,7 @@ for users and developers are available in the Docs and Readme for this project.
 ## Building the documentation
 
 If you are unable to access the online documentation, you can build the documentation locally.
-First, install a development environment of h3xplorer, then deploy the documentation using
+First, install a development environment of `discord-lfg`, then deploy the documentation using
 [MkDocs](https://www.mkdocs.org/):
 
 ``` shell
