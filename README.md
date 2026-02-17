@@ -21,7 +21,6 @@ And finally:
 
 - Tests, Tests, Tests
 - Documentation
-- Look at UV for install instead of conda?
 
 ## Background
 
@@ -49,45 +48,22 @@ Python using [discord-py](https://discordpy.readthedocs.io/en/latest/api.html).
 
 <!--- --8<-- [start:docs-install-general] -->
 
-To install Discord-LFG (discord_lfg), we recommend using the [conda](https://docs.conda.io/en/latest/) package manager,
-accessible from the terminal by installing [miniforge](https://github.com/conda-forge/miniforge?tab=readme-ov-file#download).
+To install Discord-LFG (`discord_lfg`), we recommend using [uv](https://docs.astral.sh/uv/).
 
-Note that the `discord-py` package is not up to date on conda, so you will need to add this from `pip` after
-setting up the environment initially with `conda`.
+``` shell
+git clone git@github.com:aptosaurinae/discord-lfg.git
+cd discord-lfg
+uv sync
+uv pip install -e .
+```
+
+To build the documentation locally you can run:
+
+``` shell
+uv run mkdocs serve
+```
 
 <!--- --8<-- [end:docs-install-general] -->
-
-#### As a user
-
-<!--- --8<-- [start:docs-install-user] -->
-
-``` shell
-git clone git@github.com:aptosaurinae/discord-lfg.git
-cd discord-lfg
-conda env create -n discord-lfg -f requirements/base.txt
-conda activate discord-lfg
-pip install discord-py
-pip install --no-deps -e .
-```
-
-<!--- --8<-- [end:docs-install-user] -->
-
-#### Development / Contributing
-
-<!--- --8<-- [start:docs-install-dev] -->
-
-``` shell
-git clone git@github.com:aptosaurinae/discord-lfg.git
-cd discord-lfg
-conda env create -n discord-lfg -f requirements/base.txt -f requirements/dev.txt
-conda activate discord-lfg
-pip install discord-py
-pip install --no-deps -e .
-```
-
-This will enable `pre-commit` and `pytest`.
-
-<!--- --8<-- [end:docs-install-dev] -->
 
 ### Running
 
@@ -96,18 +72,19 @@ This will enable `pre-commit` and `pytest`.
 To run the bot you can then do the following:
 
 ``` shell
-python src/discord_lfg/bot.py path/to/token.toml path/to/config.toml
+uv run python src/discord_lfg/bot.py path/to/token.toml path/to/config.toml
 ```
 
 which should result in something like the following:
 
 ``` shell
-(discord-lfg) D:\Programming\github-repos\discord-lfg>python src/discord_lfg/bot.py "D:\Programming\discord-lfg-config\test_token.toml" "D:\Programming\discord-lfg\test_config.toml"
-[2026-01-04 15:24:28] [INFO    ] discord.client: logging in using static token
-[2026-01-04 15:24:31] [INFO    ] discord.gateway: Shard ID None has connected to Gateway (Session ID: <id number>).
-Logged in as app-commands-test#2842 (ID: <app id number>)
+PS C:\projects\discord-lfg> uv run python -m discord_lfg.bot "C:\projects\discord-lfg-data\token.toml" "C:\projects\discord-lfg-data\config.toml"
+[2026-02-17 19:33:34] [INFO    ] discord.client: logging in using static token
+[2026-02-17 19:33:35] [INFO    ] discord.gateway: Shard ID None has connected to Gateway (Session ID: 123456789).
+Logged in as app-commands-test#2842 (ID: 123456789)
 ------
 Discord-LFG started
+logging to: C:\projects\discord-lfg-data\logging
 ```
 
 You should find that the bot slash commands are then active in the relevant server when it's given
