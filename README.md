@@ -11,6 +11,7 @@ is still significantly inspired by that system although has been generalised sig
 
 For feature parity with the original Dungeon Buddy, the following is missing:
 
+- Add config argument for stats directory
 - Log group members when group completes in any way (full, timeout, cancelled)
 - Add `/lfgstats` reporting
 - Add history for users (both personal and for mods) -

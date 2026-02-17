@@ -50,6 +50,16 @@ class TestWriteData:
             assert partitions
             assert len(partitions) == 3
 
+    @pytest.mark.parametrize("df", [DATES_LIST], indirect=["df"])
+    def test_filter_reduces_output_df_to_single_value(self, df):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            stats._write_data(tmp_path, df, filter_date=date(**DATES_LIST[0]))
+
+            partitions = list(tmp_path.iterdir())
+            assert partitions
+            assert len(partitions) == 1
+
 
 class TestGetData:
     def test_partitioned_data_reads_as_single_table(self):

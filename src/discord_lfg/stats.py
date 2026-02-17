@@ -8,6 +8,13 @@ import polars as pl
 DATA = pl.DataFrame()
 
 
+def _write_data(data_path: Path, df: pl.DataFrame, filter_date: date | None = None):
+    if filter_date is not None:
+        df = df.clone()
+        df = df.filter(pl.col("date_finished") == filter_date)
+    df.write_parquet(data_path, compression="lz4", partition_by="date_finished")
+
+
 def get_data(data_path: Path | None) -> pl.DataFrame:
     """Gets the existing data ready to append to (for warm-starting the bot)."""
     global DATA
@@ -42,11 +49,34 @@ def get_data(data_path: Path | None) -> pl.DataFrame:
         return DATA
 
 
-def _write_data(data_path: Path, df: pl.DataFrame, filter_date: date | None = None):
-    if filter_date is not None:
-        df = df.clone()
-        df = df.filter(pl.col("date_finished") == filter_date)
-    df.write_parquet(data_path, compression="lz4", partition_by="date_finished")
+def record_group(
+    date_finished: date,
+    activity_name: str,
+    listed_as: str,
+    creator_notes: str,
+    creator_id: int,
+    extra_info: list[str],
+    role_names: list[str],
+    user_ids: list[int],
+    user_display_names: list[str],
+    output_path: Path | None = None,
+):
+    """Records a finished group into the data table."""
+    global DATA
+    entry = _create_entry(
+        date_finished,
+        activity_name,
+        listed_as,
+        creator_notes,
+        creator_id,
+        extra_info,
+        role_names,
+        user_ids,
+        user_display_names,
+    )
+    DATA = pl.concat([DATA, entry])
+    if output_path is not None:
+        _write_data(output_path, DATA, date_finished)
 
 
 def _create_entry(
@@ -73,33 +103,6 @@ def _create_entry(
         "user_display_names": [user_display_names],
     })
     return entry
-
-
-def record_group(
-    date_finished: date,
-    activity_name: str,
-    listed_as: str,
-    creator_notes: str,
-    creator_id: int,
-    extra_info: list[str],
-    role_names: list[str],
-    user_ids: list[int],
-    user_display_names: list[str],
-):
-    """Records a finished group into the data table."""
-    global DATA
-    entry = _create_entry(
-        date_finished,
-        activity_name,
-        listed_as,
-        creator_notes,
-        creator_id,
-        extra_info,
-        role_names,
-        user_ids,
-        user_display_names,
-    )
-    DATA = pl.concat([DATA, entry])
 
 
 def _listing_message(activity_name: str, extra_info: list[str]):
