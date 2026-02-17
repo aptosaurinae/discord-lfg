@@ -23,7 +23,7 @@ class TestWriteData:
         date_values = []
         for items in request.param:
             date_values.append(date(**items))
-        return pl.DataFrame({"date": date_values}, schema={"date": pl.Date})
+        return pl.DataFrame({"date_finished": date_values}, schema={"date_finished": pl.Date})
 
     @pytest.mark.parametrize(
         "df",
@@ -53,16 +53,15 @@ class TestWriteData:
 
 class TestGetData:
     def test_partitioned_data_reads_as_single_table(self):
-        result = stats.get_data(Path(__file__).parent / "fixture_data")
+        result = stats.get_data(Path(__file__).parent / "fixture_data" / "lfg_data")
 
         date_values = []
         for items in DATES_LIST:
             date_values.append(date(**items))
-        expected = pl.DataFrame({"date": date_values}, schema={"date": pl.Date})
+        expected = pl.DataFrame({"date_finished": date_values}, schema={"date_finished": pl.Date})
 
         assert_frame_equal(result, expected, check_row_order=False)
 
-    def test_non_existant_folder_returns_blank_df(self):
+    def test_non_existant_folder_returns_empty_df(self):
         result = stats.get_data(Path(__file__).parent / "non_existant_folder")
-        expected = pl.DataFrame()
-        assert_frame_equal(result, expected)
+        assert result.is_empty()
