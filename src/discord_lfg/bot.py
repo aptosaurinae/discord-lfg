@@ -41,6 +41,8 @@ def _register_on_ready(
         guild_roles = {guild.id: guild.roles for guild in client.guilds}[guild_id_int]
         if stats_folder is not None and stats_folder.exists():
             get_data(stats_folder)
+        else:
+            get_data(None)
 
         for command_config in commands_configs:
             command_config.guild_roles = guild_roles
@@ -63,6 +65,10 @@ def _register_on_ready(
         print("Discord-LFG started")
         if log_folder is not None and log_folder.exists():
             print(f"logging to: {log_folder}")
+        if stats_folder is not None and stats_folder.exists():
+            print(f"stats outputting to: {stats_folder}")
+        else:
+            print("stats being captured locally but will not be persistent")
 
 
 # -- LFG

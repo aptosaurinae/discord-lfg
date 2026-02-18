@@ -7,6 +7,19 @@ import polars as pl
 
 DATA = pl.DataFrame()
 
+DATA_SCHEMA = {
+    "command_name": pl.String,
+    "date_finished": pl.Date,
+    "activity_name": pl.String,
+    "listed_as": pl.String,
+    "creator_notes": pl.String,
+    "creator_id": pl.Int64,
+    "extra_info": pl.List(pl.String),
+    "role_names": pl.List(pl.String),
+    "user_ids": pl.List(pl.Int64),
+    "user_display_names": pl.List(pl.String),
+}
+
 
 def _write_data(data_path: Path | None, df: pl.DataFrame, filter_date: date | None = None):
     if data_path is None:
@@ -25,36 +38,11 @@ def get_data(data_path: Path | None) -> pl.DataFrame:
     global OUTPUT_PATH
     if data_path is not None and data_path.exists():
         OUTPUT_PATH = data_path
-        DATA = pl.read_parquet(data_path)
+        DATA = pl.read_parquet(data_path, schema=DATA_SCHEMA)
         return DATA
     else:
         OUTPUT_PATH = None
-        DATA = pl.DataFrame(
-            {
-                "command_name": [],
-                "date_finished": [],
-                "activity_name": [],
-                "listed_as": [],
-                "creator_notes": [],
-                "creator_id": [],
-                "extra_info": [],
-                "role_names": [],
-                "user_ids": [],
-                "user_display_names": [],
-            },
-            schema={
-                "command_name": pl.String,
-                "date_finished": pl.Date,
-                "activity_name": pl.String,
-                "listed_as": pl.String,
-                "creator_notes": pl.String,
-                "creator_id": pl.Int64,
-                "extra_info": pl.List(pl.String),
-                "role_names": pl.List(pl.String),
-                "user_ids": pl.List(pl.Int64),
-                "user_display_names": pl.List(pl.String),
-            },
-        )
+        DATA = pl.DataFrame(schema=DATA_SCHEMA)
         return DATA
 
 

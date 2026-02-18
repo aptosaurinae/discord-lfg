@@ -58,13 +58,15 @@ class TestWriteData:
 
 
 class TestGetData:
-    def test_partitioned_data_reads_as_single_table(self):
+    def test_partitioned_disk_data_reads_as_single_table(self):
         result = stats.get_data(Path(__file__).parent / "fixture_data" / "lfg_data")
 
         date_values = []
         for items in DATES_LIST:
             date_values.append(date(**items))
-        expected = pl.DataFrame({"date_finished": date_values}, schema={"date_finished": pl.Date})
+        df_dict = {key: [None, None, None] for key in stats.DATA_SCHEMA}
+        df_dict["date_finished"] = date_values
+        expected = pl.DataFrame(df_dict, schema=stats.DATA_SCHEMA)
 
         assert_frame_equal(result, expected, check_row_order=False)
 
@@ -118,3 +120,15 @@ class TestRecordGroup:
         expected = pl.DataFrame({key: [value] for key, value in record_data.items()})
 
         assert_frame_equal(stats.DATA, expected)
+
+
+if __name__ == "__main__":
+    date_values = []
+    for items in DATES_LIST:
+        date_values.append(date(**items))
+    df_dict = {key: [None, None, None] for key in stats.DATA_SCHEMA}
+    df_dict["date_finished"] = date_values
+    df = pl.DataFrame(df_dict, schema=stats.DATA_SCHEMA)
+    df.write_parquet(
+        Path(__file__).parent / "fixture_data" / "lfg_data", partition_by="date_finished"
+    )
