@@ -8,6 +8,7 @@ from discord import app_commands
 from discord_lfg.commands import build_command
 from discord_lfg.input_config import CommandConfig, parse_inputs
 from discord_lfg.lfg import lfg, lfgdebug
+from discord_lfg.stats import get_data
 
 # --- Bot setup
 
@@ -29,7 +30,8 @@ def _register_on_ready(
     client: BotClient,
     guild_id_obj: discord.Object,
     guild_id_int: int,
-    log_folder: Path,
+    log_folder: Path | None,
+    stats_folder: Path | None,
     commands_configs: list[CommandConfig],
     debug: bool = False,
 ):
@@ -37,6 +39,8 @@ def _register_on_ready(
     async def on_ready():
         """Startup tasks."""
         guild_roles = {guild.id: guild.roles for guild in client.guilds}[guild_id_int]
+        if stats_folder is not None and stats_folder.exists():
+            get_data(stats_folder)
 
         for command_config in commands_configs:
             command_config.guild_roles = guild_roles
@@ -57,7 +61,7 @@ def _register_on_ready(
         print(f"Logged in as {client.user} (ID: {client.user.id})")
         print("------")
         print("Discord-LFG started")
-        if log_folder != "" and log_folder.exists():
+        if log_folder is not None and log_folder.exists():
             print(f"logging to: {log_folder}")
 
 
@@ -105,6 +109,7 @@ if __name__ == "__main__":
         config.guild_id_discord,
         config.guild_id_int,
         config.log_folder,
+        config.stats_folder,
         commands,
         config.debug,
     )

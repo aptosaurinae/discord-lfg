@@ -62,12 +62,21 @@ This will result in the group name having `NoP` put in front of it, and any
 
 #### Log folder
 
-Defines the file to dump log files into. Log files will be automatically named based on the
+Defines the folder to dump log files into. Log files will be automatically named based on the
 time the bot is started, and this folder must exist already or the bot will error.
 If not given then no log files will be created.
 
 - Format: `str`
 - Example: `log_folder = "path/to/log_folder"`
+
+#### Stats folder
+
+Defines the folder to dump stats files into. Stats files will be automatically named based on the
+completion time of the group, and this folder must exist already or the bot will error.
+If not given then no stats files will be created.
+
+- Format: `str`
+- Example: `stats_folder = "path/to/stats_folder"`
 
 #### Debug
 

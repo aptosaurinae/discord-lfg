@@ -8,22 +8,30 @@ import polars as pl
 DATA = pl.DataFrame()
 
 
-def _write_data(data_path: Path, df: pl.DataFrame, filter_date: date | None = None):
-    if filter_date is not None:
-        df = df.clone()
-        df = df.filter(pl.col("date_finished") == filter_date)
-    df.write_parquet(data_path, compression="lz4", partition_by="date_finished")
+def _write_data(data_path: Path | None, df: pl.DataFrame, filter_date: date | None = None):
+    if data_path is None:
+        global OUTPUT_PATH
+        data_path = OUTPUT_PATH
+    if data_path is not None:
+        if filter_date is not None:
+            df = df.clone()
+            df = df.filter(pl.col("date_finished") == filter_date)
+        df.write_parquet(data_path, compression="lz4", partition_by="date_finished")
 
 
 def get_data(data_path: Path | None) -> pl.DataFrame:
     """Gets the existing data ready to append to (for warm-starting the bot)."""
     global DATA
+    global OUTPUT_PATH
     if data_path is not None and data_path.exists():
+        OUTPUT_PATH = data_path
         DATA = pl.read_parquet(data_path)
         return DATA
     else:
+        OUTPUT_PATH = None
         DATA = pl.DataFrame(
             {
+                "command_name": [],
                 "date_finished": [],
                 "activity_name": [],
                 "listed_as": [],
@@ -35,6 +43,7 @@ def get_data(data_path: Path | None) -> pl.DataFrame:
                 "user_display_names": [],
             },
             schema={
+                "command_name": pl.String,
                 "date_finished": pl.Date,
                 "activity_name": pl.String,
                 "listed_as": pl.String,
@@ -50,6 +59,7 @@ def get_data(data_path: Path | None) -> pl.DataFrame:
 
 
 def record_group(
+    command_name: str,
     date_finished: date,
     activity_name: str,
     listed_as: str,
@@ -64,6 +74,7 @@ def record_group(
     """Records a finished group into the data table."""
     global DATA
     entry = _create_entry(
+        command_name,
         date_finished,
         activity_name,
         listed_as,
@@ -80,6 +91,7 @@ def record_group(
 
 
 def _create_entry(
+    command_name: str,
     date_finished: date,
     activity_name: str,
     listed_as: str,
@@ -92,6 +104,7 @@ def _create_entry(
 ) -> pl.DataFrame:
     """Creates a single-row DataFrame with the GroupBuilder information."""
     entry = pl.DataFrame({
+        "command_name": [command_name],
         "date_finished": [date_finished],
         "activity_name": [activity_name],
         "listed_as": [listed_as],
