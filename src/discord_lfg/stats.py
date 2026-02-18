@@ -69,7 +69,6 @@ def record_group(
     role_names: list[str],
     user_ids: list[int],
     user_display_names: list[str],
-    output_path: Path | None = None,
 ):
     """Records a finished group into the data table."""
     global DATA
@@ -86,8 +85,8 @@ def record_group(
         user_display_names,
     )
     DATA = pl.concat([DATA, entry])
-    if output_path is not None:
-        _write_data(output_path, DATA, date_finished)
+    if OUTPUT_PATH is not None:
+        _write_data(OUTPUT_PATH, DATA, date_finished)
 
 
 def _create_entry(
