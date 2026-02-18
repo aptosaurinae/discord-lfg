@@ -94,7 +94,6 @@ class CommandConfig:
     channel_whitelist: list[str]
     channel_role_mentions: dict[str, str]
     guild_roles: Sequence[Role]
-    stats_folder: Path | None
 
     def validate(self):
         """Validates the config inputs."""
@@ -320,7 +319,6 @@ def _parse_command(config: LFGConfig, command_config_input: dict) -> CommandConf
         channel_whitelist,
         channel_role_mentions,
         [],
-        config.stats_folder,
     )
     logging.debug(command_data)
     main_config_errors = command_data.validate()
