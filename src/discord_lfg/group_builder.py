@@ -76,7 +76,7 @@ class GroupState:
     command_name: str
     created_at: datetime
     close_group_at: datetime
-    editable_length: int
+    editable_length: float
     closed: bool
     cancelled: bool
     timed_out: bool
@@ -327,8 +327,8 @@ class GroupBuilder:
         self,
         command_name: str,
         guild_name: str,
-        timeout_length: int,
-        editable_length: int,
+        timeout_length: float,
+        editable_length: float,
         debug: bool,
     ):
         """Initialise state."""
@@ -367,7 +367,7 @@ class GroupBuilder:
                 user_display_names.append(user.display_name)
         return record_group(
             self.state.command_name,
-            datetime.date(self.state.close_group_at),
+            self.state.close_group_at.date(),
             self.group_details.activity_name,
             self.group_details.listed_as,
             self.group_details.creator_notes,
@@ -388,7 +388,7 @@ class GroupBuilder:
         while not self._is_finished and not self.state.cancelled:
             logging.debug(f"{self.group_title} still active")
             self.is_closed()
-            await asyncio.sleep(10)
+            await asyncio.sleep(1)
 
         if self.state.cancelled:
             logging.debug(f"{self.group_title} was cancelled while waiting to be closed.")
@@ -400,7 +400,7 @@ class GroupBuilder:
             self.state.timed_out = True
 
         await self.edit_message()
-
+        self._record_group()
         del self
 
     async def cancel_group(self):
@@ -411,6 +411,7 @@ class GroupBuilder:
         self.state.cancelled = True
         await self.edit_message()
         await self.message.channel.send(content=self.listing_message)
+        self._record_group()
         del self
 
     def is_closed(self):
@@ -448,7 +449,10 @@ class GroupBuilder:
     async def edit_message(self):
         """Updates the Discord displayed message based on the current status of the group."""
         logging.debug("edit_message")
-        await self.message.edit(**self._message_content)
+        if self.message is not None:
+            await self.message.edit(**self._message_content)
+        else:
+            return "self.message is not initialised", self._message_content
 
     @property
     def passphrase(self) -> str:

@@ -88,8 +88,8 @@ class CommandConfig:
     description: str
     debug: bool
     guild_name: str
-    timeout_length: int
-    editable_length: int
+    timeout_length: float
+    editable_length: float
     kick_reasons: list[str]
     channel_whitelist: list[str]
     channel_role_mentions: dict[str, str]
