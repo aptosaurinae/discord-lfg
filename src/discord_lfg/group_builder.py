@@ -9,6 +9,7 @@ from typing import Sequence
 import discord
 
 from discord_lfg.input_config import CommandConfig
+from discord_lfg.stats import record_group
 from discord_lfg.utils import (
     RoleDefinition,
     datetime_now_utc,
@@ -72,6 +73,7 @@ class GroupRole:
 class GroupState:
     """Container for the state of the group."""
 
+    command_name: str
     created_at: datetime
     close_group_at: datetime
     editable_length: int
@@ -110,6 +112,7 @@ class GroupBuilder:
             f"GroupBuilder created by {interaction.user.id} {interaction.user.display_name}"
         )
         self.role_counts = {role.name: role.count for role in config.roles.values()}
+        command_name = config.name
         guild_name = config.guild_name
         timeout_length = config.timeout_length
         editable_length = config.editable_length
@@ -117,7 +120,7 @@ class GroupBuilder:
         guild_roles = config.guild_roles
         kick_reasons = config.kick_reasons
 
-        self._state_init(guild_name, timeout_length, editable_length, debug)
+        self._state_init(command_name, guild_name, timeout_length, editable_length, debug)
         self._setup_group(**group_info, guild_name=guild_name, kick_reasons=kick_reasons)
         self._roles_init(
             config.roles,
@@ -320,11 +323,19 @@ class GroupBuilder:
             kick_reasons=kick_reasons,
         )
 
-    def _state_init(self, guild_name: str, timeout_length: int, editable_length: int, debug: bool):
+    def _state_init(
+        self,
+        command_name: str,
+        guild_name: str,
+        timeout_length: int,
+        editable_length: int,
+        debug: bool,
+    ):
         """Initialise state."""
         now = datetime_now_utc()
         empty_spots = sum(self.role_counts.values())
         self.state = GroupState(
+            command_name=command_name,
             created_at=now,
             close_group_at=now + timedelta(minutes=timeout_length),
             editable_length=editable_length,
@@ -343,6 +354,29 @@ class GroupBuilder:
     @property
     def _is_finished(self) -> bool:
         return self.state.close_group_at <= datetime_now_utc()
+
+    def _record_group(self):
+        creator_id = self.creator.id
+        role_names = []
+        user_ids = []
+        user_display_names = []
+        for role_name, role_info in self.roles.items():
+            for user in role_info.users:
+                role_names.append(role_name)
+                user_ids.append(user.id)
+                user_display_names.append(user.display_name)
+        return record_group(
+            self.state.command_name,
+            datetime.date(self.state.close_group_at),
+            self.group_details.activity_name,
+            self.group_details.listed_as,
+            self.group_details.creator_notes,
+            creator_id,
+            self.group_details.extra_info,
+            role_names,
+            user_ids,
+            user_display_names,
+        )
 
     async def _check_if_closed_or_timed_out(self):
         """Closes the group if the background timer has finished and the group is not cancelled."""
@@ -366,6 +400,7 @@ class GroupBuilder:
             self.state.timed_out = True
 
         await self.edit_message()
+
         del self
 
     async def cancel_group(self):

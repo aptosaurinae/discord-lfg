@@ -75,6 +75,7 @@ def record_group(
     DATA = pl.concat([DATA, entry])
     if OUTPUT_PATH is not None:
         _write_data(OUTPUT_PATH, DATA, date_finished)
+    return entry
 
 
 def _create_entry(
