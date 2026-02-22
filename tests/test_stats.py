@@ -16,6 +16,22 @@ DATES_LIST = [
 ]
 
 
+@pytest.fixture(scope="class")
+def record_data():
+    return {
+        "command_name": "lfg_test",
+        "date_finished": date(2026, 1, 1),
+        "activity_name": "123 activity",
+        "listed_as": "group 456",
+        "creator_notes": "creator notes 789",
+        "creator_id": 2,
+        "extra_info": ["extra", "info"],
+        "role_names": ["role1", "role2"],
+        "user_ids": [1, 2],
+        "user_display_names": ["user1", "user2"],
+    }
+
+
 class TestWriteData:
     @pytest.fixture(scope="class")
     def df(self, request):
@@ -92,34 +108,52 @@ class TestGetData:
 
 
 class TestRecordGroup:
-    @pytest.fixture(scope="class")
-    def setup_data(self):
-        return stats.get_data(None)
-
-    @pytest.fixture(scope="class")
-    def record_data(self):
-        return {
-            "command_name": "lfg_test",
-            "date_finished": date(2026, 1, 1),
-            "activity_name": "test",
-            "listed_as": "test group 1",
-            "creator_notes": "creator notes test",
-            "creator_id": 1,
-            "extra_info": ["extra", "info"],
-            "role_names": ["role1", "role2"],
-            "user_ids": [1, 2],
-            "user_display_names": ["user1", "user2"],
-        }
-
-    def test_typical_input_is_written_to_data(self, setup_data, record_data: dict):
-        assert_frame_equal(
-            stats.DATA, pl.DataFrame({key: [] for key in record_data}), check_dtypes=False
-        )
-
+    def test_typical_input_is_written_to_data(self, record_data: dict):
+        stats.get_data(None)
         stats.record_group(**record_data)
-        expected = pl.DataFrame({key: [value] for key, value in record_data.items()})
 
+        expected = pl.DataFrame({key: [value] for key, value in record_data.items()})
         assert_frame_equal(stats.DATA, expected)
+
+    def test_typical_input_multiple_times_is_written_to_data(self, record_data: dict):
+        stats.get_data(None)
+        stats.record_group(**record_data)
+        stats.record_group(**record_data)
+        stats.record_group(**record_data)
+
+        expected = pl.DataFrame({key: [value, value, value] for key, value in record_data.items()})
+        assert_frame_equal(stats.DATA, expected)
+
+
+class TestHistoricGroup:
+    def test_standard_entry_contains_activity_name(self, record_data: dict):
+        result = stats.historic_group(record_data)
+        expected = record_data["activity_name"]
+        assert expected in result, "Activity name not in historic group message"
+
+    def test_standard_entry_contains_creator_notes(self, record_data: dict):
+        result = stats.historic_group(record_data)
+        expected = record_data["creator_notes"]
+        assert expected in result, "Creator notes not in historic group message"
+
+    def test_standard_entry_contains_extra_info(self, record_data: dict):
+        result = stats.historic_group(record_data)
+        expected = record_data["extra_info"]
+        for item in expected:
+            assert item in result, "Extra info not in historic group message"
+
+    def test_standard_entry_contains_creator_name_with_flag(self, record_data: dict):
+        result = stats.historic_group(record_data)
+        id = record_data["creator_id"]
+        idx = record_data["user_ids"].index(id)
+        name = record_data["user_display_names"][idx]
+        creator_string = f"**{name}** 🚩"
+        assert creator_string in result, "Creator name not correct in historic group message"
+
+    def test_standard_entry_contains_other_user_name(self, record_data: dict):
+        result = stats.historic_group(record_data)
+        name = record_data["user_display_names"][0]
+        assert name in result, "Other user name not in historic group message"
 
 
 if __name__ == "__main__":

@@ -127,7 +127,7 @@ def _roles_description(
     return role_string
 
 
-def historic_group_string(group_data: dict):
+def historic_group(group_data: dict):
     """Creates a string representing the historic group appropriate for display to a user."""
     listing_message = _listing_message(
         group_data.get("activity_name", ""), group_data.get("extra_info", [])
