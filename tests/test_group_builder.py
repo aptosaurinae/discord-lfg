@@ -14,12 +14,12 @@ from discord_lfg.utils import RoleDefinition
 class TestGroupBuilder:
     @pytest.fixture(scope="class")
     def discord_interaction(self):
+        interaction = AsyncMock()
+
         user = Mock()
         user.id = 123
         user.name = "testuser"
         user.display_name = "interaction_user_display_name"
-
-        interaction = AsyncMock()
         interaction.user = user
 
         interaction.response = AsyncMock()
