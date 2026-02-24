@@ -8,7 +8,7 @@ from discord import app_commands
 from discord_lfg.commands import build_command
 from discord_lfg.input_config import CommandConfig, parse_inputs
 from discord_lfg.lfg import lfg, lfgdebug
-from discord_lfg.stats import get_data
+from discord_lfg.stats import StatsViewer, get_data
 
 # --- Bot setup
 
@@ -88,21 +88,21 @@ def _register_lfgdebug(client, guild_id_obj: discord.Object):
 def _register_lfgstats(client, guild_id_obj: discord.Object):
     @client.tree.command(guild=guild_id_obj)
     async def lfghistory(interaction: discord.Interaction):
-        """Review your last 10 group signups."""
-        response = "temp"
-        await interaction.response.send_message(response, ephemeral=True)
+        """Review your LFG history."""
+        viewer = StatsViewer(interaction)
+        await interaction.response.send_message(view=viewer, ephemeral=True)
 
-    @client.tree.command(guild=guild_id_obj)
-    async def lfgstats(interaction: discord.Interaction):
-        """Review recent and all-time numbers of group listings."""
-        response = "temp"
-        await interaction.response.send_message(response, ephemeral=True)
+    # @client.tree.command(guild=guild_id_obj)
+    # async def lfgstats(interaction: discord.Interaction):
+    #     """Review recent and all-time numbers of group listings."""
+    #     response = "temp"
+    #     await interaction.response.send_message(response, ephemeral=True)
 
-    @client.tree.command(guild=guild_id_obj)
-    async def lfguserhistory(interaction: discord.Interaction):
-        """Review a specific users group signup history."""
-        response = "temp"
-        await interaction.response.send_message(response, ephemeral=True)
+    # @client.tree.command(guild=guild_id_obj)
+    # async def lfguserhistory(interaction: discord.Interaction):
+    #     """Review a specific users group signup history."""
+    #     response = "temp"
+    #     await interaction.response.send_message(response, ephemeral=True)
 
 
 if __name__ == "__main__":
@@ -119,5 +119,5 @@ if __name__ == "__main__":
         commands,
         config.debug,
     )
-    # _register_lfgstats(client, guild_id_obj)
+    _register_lfgstats(client, config.guild_id_discord)
     client.run(token=token)

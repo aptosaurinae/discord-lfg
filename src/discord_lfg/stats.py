@@ -1,9 +1,13 @@
 """Manages stats logging."""
 
+import logging
 from datetime import date
 from pathlib import Path
 
+import discord
 import polars as pl
+
+from discord_lfg.utils import datetime_now_utc
 
 DATA = pl.DataFrame()
 
@@ -141,3 +145,143 @@ def historic_group(group_data: dict):
         group_data.get("user_display_names", 0),
     )
     return f"**{listing_message}**\n{creator_notes}\n{roles_description}\n"
+
+
+def end_of_month(start_date: date):
+    """Creates a date for the last day of the month of a given date."""
+    if start_date.month == 12:
+        return start_date.replace(year=start_date.year + 1, month=1, day=start_date.day - 1)
+    else:
+        return start_date.replace(month=start_date.month + 1, day=start_date.day - 1)
+
+
+def next_month(start_date: date):
+    """Creates a date for the first day of the next month of a given date."""
+    if start_date.month == 12:
+        return start_date.replace(year=start_date.year + 1, month=1, day=1)
+    else:
+        return start_date.replace(month=start_date.month + 1)
+
+
+class CommandNameSelect(discord.ui.Select):
+    """Select from command names."""
+
+    def __init__(self, command_names: list[str]):
+        """Initialisation."""
+        options = [discord.SelectOption(label=f"{item}") for item in command_names]
+        super().__init__(
+            placeholder="Choose a command type",
+            min_values=1,
+            max_values=1,
+            options=options,
+            row=0,
+            required=True,
+            disabled=False,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        """Does the thing."""
+        assert self.view is not None
+        logging.debug("CommandNameSelect callback")
+        if self.values:
+            self.view.command_name = self.values[0]
+        await interaction.response.defer()
+
+
+class StatsDateSelect(discord.ui.Select):
+    """Select from dates."""
+
+    def __init__(self, start_date: date):
+        """Initialisation."""
+        current = start_date.replace(day=1)
+        end_day = datetime_now_utc().date()
+        month_start_days: list[date] = []
+        while current <= end_day:
+            month_start_days.append(current)
+            current = next_month(current)
+
+        options = [
+            discord.SelectOption(label=f"{date_item.isoformat()}")
+            for date_item in month_start_days[-24:]
+        ]
+        super().__init__(
+            placeholder="Choose a month.",
+            min_values=1,
+            max_values=1,
+            options=options,
+            row=0,
+            required=True,
+            disabled=False,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        """Does the thing."""
+        assert self.view is not None
+        logging.debug("StatsDateSelect callback")
+        if self.values:
+            self.view.start_date = date.fromisoformat(self.values[0])
+        await interaction.response.defer()
+
+
+class StatsViewer(discord.ui.View):
+    """View historic stats."""
+
+    def __init__(self, interaction: discord.Interaction):
+        """Initialisation."""
+        super().__init__(timeout=60)
+        user_id = interaction.user.id
+        self.user_data = DATA.filter(pl.col("user_ids") == user_id)
+        start_date = self.user_data.select("start_date").min()[0, 0]
+        command_options = self.user_data.select("command_name").unique().to_series().to_list()
+
+        self.date_selected: date = start_date
+        self.add_item(StatsDateSelect(start_date))
+
+        self.command_selected = command_options[0]
+        self.add_item(CommandNameSelect(command_options))
+
+    @discord.ui.button(label="Show Groups", style=discord.ButtonStyle.secondary, row=4)
+    async def show_groups(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Show groups to the user."""
+        start_date = self.date_selected
+        end_date = end_of_month(start_date)
+        self.group_data = self.user_data.filter(
+            pl.col("command_name") == self.command_selected,
+            pl.col("date_finished").dt.date() >= start_date,
+            pl.col("date_finished").dt.date() <= end_date,
+        ).sort("date_finished")
+        if len(self.group_data) > 0:
+            self.data_row = 0
+            await self.message.edit(  # type: ignore
+                embed=historic_group(self.group_data.row(self.data_row, named=True))
+            )
+        if len(self.group_data) <= 1:
+            self.next.disabled = True
+            self.previous.disabled = True
+        else:
+            self.previous.disabled = True
+            self.next.disabled = False
+
+    @discord.ui.button(label="➡️", style=discord.ButtonStyle.secondary, row=4)
+    async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Show groups to the user."""
+        self.data_row += 1
+        if self.data_row <= len(self.group_data):
+            self.previous.disabled = False
+            await self.message.edit(  # type: ignore
+                embed=historic_group(self.group_data.row(self.data_row, named=True))
+            )
+        if self.data_row == len(self.group_data):
+            button.disabled = True
+
+    @discord.ui.button(label="⬅️", style=discord.ButtonStyle.secondary, row=4)
+    async def previous(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Moves a group along."""
+        self.data_row -= 1
+        if self.data_row >= 0:
+            self.next.disabled = False
+            await self.message.edit(  # type: ignore
+                embed=historic_group(self.group_data.row(self.data_row, named=True))
+            )
+        if self.data_row == 0:
+            button.disabled = True
