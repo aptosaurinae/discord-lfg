@@ -89,8 +89,12 @@ def _register_lfgstats(client, guild_id_obj: discord.Object):
     @client.tree.command(guild=guild_id_obj)
     async def lfghistory(interaction: discord.Interaction):
         """Review your LFG history."""
-        viewer = StatsViewer(interaction)
-        await interaction.response.send_message(view=viewer, ephemeral=True)
+        view = StatsViewer(interaction)
+        if len(view.user_data) > 0:
+            await interaction.response.send_message(view=view, ephemeral=True)
+            view.message = await interaction.original_response()
+        else:
+            await interaction.response.send_message(content="No history to show.", ephemeral=True)
 
     # @client.tree.command(guild=guild_id_obj)
     # async def lfgstats(interaction: discord.Interaction):

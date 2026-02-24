@@ -1,7 +1,7 @@
 """Manages stats logging."""
 
 import logging
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import discord
@@ -119,15 +119,18 @@ def _listing_message(activity_name: str, extra_info: list[str]):
 def _roles_description(
     creator_id: int, role_names: list[str], user_ids: list[int], user_names: list[str]
 ):
-    def _role_string(role_name: str, creator: bool, user_name: str):
+    def _role_string(role_name: str, creator: bool, user_name: str, user_id: int):
         bold = "**" if user_name != "" else ""
-        return f"{role_name} : {bold}{user_name}{bold}{' 🚩' if creator else ''}"
+        return (
+            f"{role_name} : {bold}{user_name}{bold}{' 🚩' if creator else ''}"
+            f"{f'[{user_id}]' if user_id > 0 else ''}"
+        )
 
     role_string = ""
     for idx, role_name in enumerate(role_names):
         user_name = user_names[idx]
         creator = user_ids[idx] == creator_id
-        role_string += f"{_role_string(role_name, creator, user_name)}\n"
+        role_string += f"{_role_string(role_name, creator, user_name, user_ids[idx])}\n"
 
     return role_string
 
@@ -147,12 +150,25 @@ def historic_group(group_data: dict):
     return f"**{listing_message}**\n{creator_notes}\n{roles_description}\n"
 
 
+def historic_group_embed(group_data: dict):
+    """Generates a historic group embed."""
+    description = historic_group(group_data)
+    return discord.Embed(
+        title=(
+            f"{group_data.get('listed_as', 'Historic Group')} "
+            f"[{group_data.get('date_finished', datetime_now_utc()).isoformat()}]"
+        ),
+        description=description,
+        colour=discord.Colour.blue(),
+    )
+
+
 def end_of_month(start_date: date):
     """Creates a date for the last day of the month of a given date."""
     if start_date.month == 12:
-        return start_date.replace(year=start_date.year + 1, month=1, day=start_date.day - 1)
+        return start_date.replace(year=start_date.year + 1, month=1) - timedelta(days=1)
     else:
-        return start_date.replace(month=start_date.month + 1, day=start_date.day - 1)
+        return start_date.replace(month=start_date.month + 1) - timedelta(days=1)
 
 
 def next_month(start_date: date):
@@ -168,7 +184,7 @@ class CommandNameSelect(discord.ui.Select):
 
     def __init__(self, command_names: list[str]):
         """Initialisation."""
-        options = [discord.SelectOption(label=f"{item}") for item in command_names]
+        options = [discord.SelectOption(label=f"{item}") for item in sorted(command_names)]
         super().__init__(
             placeholder="Choose a command type",
             min_values=1,
@@ -184,7 +200,7 @@ class CommandNameSelect(discord.ui.Select):
         assert self.view is not None
         logging.debug("CommandNameSelect callback")
         if self.values:
-            self.view.command_name = self.values[0]
+            self.view.command_selected = self.values[0]
         await interaction.response.defer()
 
 
@@ -209,7 +225,7 @@ class StatsDateSelect(discord.ui.Select):
             min_values=1,
             max_values=1,
             options=options,
-            row=0,
+            row=1,
             required=True,
             disabled=False,
         )
@@ -219,7 +235,7 @@ class StatsDateSelect(discord.ui.Select):
         assert self.view is not None
         logging.debug("StatsDateSelect callback")
         if self.values:
-            self.view.start_date = date.fromisoformat(self.values[0])
+            self.view.date_selected = date.fromisoformat(self.values[0])
         await interaction.response.defer()
 
 
@@ -229,18 +245,20 @@ class StatsViewer(discord.ui.View):
     def __init__(self, interaction: discord.Interaction):
         """Initialisation."""
         super().__init__(timeout=60)
+        self.message: discord.InteractionMessage = None  # type: ignore
         user_id = interaction.user.id
-        self.user_data = DATA.filter(pl.col("user_ids") == user_id)
-        start_date = self.user_data.select("start_date").min()[0, 0]
-        command_options = self.user_data.select("command_name").unique().to_series().to_list()
+        self.user_data = DATA.filter(pl.col("user_ids").list.contains(user_id))
+        if len(self.user_data) > 0:
+            start_date = self.user_data.select("date_finished").min()[0, 0]
+            command_options = self.user_data.select("command_name").unique().to_series().to_list()
 
-        self.date_selected: date = start_date
-        self.add_item(StatsDateSelect(start_date))
+            self.date_selected: date = start_date
+            self.add_item(StatsDateSelect(start_date))
 
-        self.command_selected = command_options[0]
-        self.add_item(CommandNameSelect(command_options))
+            self.command_selected = command_options[0]
+            self.add_item(CommandNameSelect(command_options))
 
-    @discord.ui.button(label="Show Groups", style=discord.ButtonStyle.secondary, row=4)
+    @discord.ui.button(label="Show Groups", style=discord.ButtonStyle.primary, row=4)
     async def show_groups(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Show groups to the user."""
         start_date = self.date_selected
@@ -250,38 +268,44 @@ class StatsViewer(discord.ui.View):
             pl.col("date_finished").dt.date() >= start_date,
             pl.col("date_finished").dt.date() <= end_date,
         ).sort("date_finished")
-        if len(self.group_data) > 0:
-            self.data_row = 0
-            await self.message.edit(  # type: ignore
-                embed=historic_group(self.group_data.row(self.data_row, named=True))
-            )
         if len(self.group_data) <= 1:
             self.next.disabled = True
             self.previous.disabled = True
         else:
             self.previous.disabled = True
             self.next.disabled = False
-
-    @discord.ui.button(label="➡️", style=discord.ButtonStyle.secondary, row=4)
-    async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
-        """Show groups to the user."""
-        self.data_row += 1
-        if self.data_row <= len(self.group_data):
-            self.previous.disabled = False
+        if len(self.group_data) > 0:
+            self.data_row = 0
             await self.message.edit(  # type: ignore
-                embed=historic_group(self.group_data.row(self.data_row, named=True))
+                embed=historic_group_embed(self.group_data.row(self.data_row, named=True)),
+                view=self,
             )
-        if self.data_row == len(self.group_data):
-            button.disabled = True
+        await interaction.response.defer()
 
-    @discord.ui.button(label="⬅️", style=discord.ButtonStyle.secondary, row=4)
+    @discord.ui.button(label="⬅️", style=discord.ButtonStyle.secondary, row=4, disabled=True)
     async def previous(self, interaction: discord.Interaction, button: discord.ui.Button):
-        """Moves a group along."""
+        """Shows the chronologically previous group."""
         self.data_row -= 1
+        if self.data_row == 0:
+            button.disabled = True
         if self.data_row >= 0:
             self.next.disabled = False
             await self.message.edit(  # type: ignore
-                embed=historic_group(self.group_data.row(self.data_row, named=True))
+                embed=historic_group_embed(self.group_data.row(self.data_row, named=True)),
+                view=self,
             )
-        if self.data_row == 0:
+        await interaction.response.defer()
+
+    @discord.ui.button(label="➡️", style=discord.ButtonStyle.secondary, row=4, disabled=True)
+    async def next(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Shows the chronologically next group."""
+        self.data_row += 1
+        if self.data_row == len(self.group_data) - 1:
             button.disabled = True
+        if self.data_row <= len(self.group_data) - 1:
+            self.previous.disabled = False
+            await self.message.edit(  # type: ignore
+                embed=historic_group_embed(self.group_data.row(self.data_row, named=True)),
+                view=self,
+            )
+        await interaction.response.defer()

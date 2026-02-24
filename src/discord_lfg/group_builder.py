@@ -366,16 +366,16 @@ class GroupBuilder:
                 user_ids.append(user.id)
                 user_display_names.append(user.display_name)
         return record_group(
-            self.state.command_name,
-            self.state.close_group_at.date(),
-            self.group_details.activity_name,
-            self.group_details.listed_as,
-            self.group_details.creator_notes,
-            creator_id,
-            self.group_details.extra_info,
-            role_names,
-            user_ids,
-            user_display_names,
+            command_name=self.state.command_name,
+            date_finished=self.state.close_group_at.date(),
+            activity_name=self.group_details.activity_name,
+            listed_as=self.group_details.listed_as,
+            creator_notes=self.group_details.creator_notes,
+            creator_id=creator_id,
+            extra_info=[str(item) for item in self.group_details.extra_info],
+            role_names=role_names,
+            user_ids=user_ids,
+            user_display_names=user_display_names,
         )
 
     async def _check_if_closed_or_timed_out(self):
