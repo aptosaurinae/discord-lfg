@@ -180,7 +180,7 @@ class TestGroupBuilder:
     async def test_group_records_when_timed_out_with_typical_inputs(
         self, discord_interaction, blank_group_info, basic_config: CommandConfig
     ):
-        basic_config.timeout_length = 1 / 60
+        basic_config.timeout_length = 1 / 600
         group = GroupBuilder(
             interaction=discord_interaction,
             group_info=blank_group_info,
@@ -211,5 +211,45 @@ class TestGroupBuilder:
             "user_ids": [user_ids],
             "user_display_names": [user_display_names],
         })
-        await asyncio.sleep(2)
+        await asyncio.sleep(0.2)
+        assert_frame_equal(stats.DATA, expected)
+
+    @pytest.mark.asyncio
+    async def test_group_records_when_filled_up_with_typical_inputs(
+        self, discord_interaction, blank_group_info, basic_config: CommandConfig
+    ):
+        basic_config.editable_length = 1 / 600
+        group = GroupBuilder(
+            interaction=discord_interaction,
+            group_info=blank_group_info,
+            config=basic_config,
+            creator_role="role1",
+            filled_spots={},
+        )
+        await group.send_message(discord_interaction)
+        group.add_role("role1", group.creator, True)
+
+        stats.get_data(None)
+        role_names = []
+        user_ids = []
+        user_display_names = []
+        for role_name, role_info in group.roles.items():
+            for user in role_info.users:
+                role_names.append(role_name)
+                user_ids.append(user.id)
+                user_display_names.append(user.display_name)
+        expected = pl.DataFrame({
+            "command_name": [group.state.command_name],
+            "date_finished": [group.state.close_group_at.date()],
+            "activity_name": [group.group_details.activity_name],
+            "listed_as": [group.group_details.listed_as],
+            "creator_notes": [group.group_details.creator_notes],
+            "creator_id": [group.creator.id],
+            "extra_info": [group.group_details.extra_info],
+            "role_names": [role_names],
+            "user_ids": [user_ids],
+            "user_display_names": [user_display_names],
+        })
+
+        await asyncio.sleep(0.2)
         assert_frame_equal(stats.DATA, expected)

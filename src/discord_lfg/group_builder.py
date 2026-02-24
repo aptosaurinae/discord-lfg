@@ -385,10 +385,14 @@ class GroupBuilder:
             f"created at: {self.state.created_at}\n"
             f"timeout set to: {self.state.close_group_at}"
         )
+        sleep_timer = (self.state.close_group_at - self.state.created_at).total_seconds() / 300
+        last_update = datetime_now_utc()
         while not self._is_finished and not self.state.cancelled:
-            logging.debug(f"{self.group_title} still active")
+            if (datetime_now_utc() - last_update).total_seconds() > 10:
+                last_update = datetime_now_utc()
+                logging.debug(f"{self.group_title} still active")
             self.is_closed()
-            await asyncio.sleep(1)
+            await asyncio.sleep(sleep_timer)
 
         if self.state.cancelled:
             logging.debug(f"{self.group_title} was cancelled while waiting to be closed.")
