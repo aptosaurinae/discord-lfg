@@ -8,7 +8,7 @@ from discord import app_commands
 from discord_lfg.commands import build_command
 from discord_lfg.input_config import CommandConfig, parse_inputs
 from discord_lfg.lfg import lfg, lfgdebug
-from discord_lfg.stats import StatsViewer, get_data
+from discord_lfg.stats import HistoricGroupViewer, get_data
 
 # --- Bot setup
 
@@ -90,7 +90,7 @@ def _register_lfgstats(client, guild_id_obj: discord.Object, moderator_role: str
     @app_commands.describe(user_id="Mod only. Input a user ID to look up their history.")
     async def lfghistory(interaction: discord.Interaction, user_id: str = "0"):
         """Review your LFG history."""
-        view = StatsViewer(interaction, user_id, moderator_role)
+        view = HistoricGroupViewer(interaction, user_id, moderator_role)
         if len(view.user_data) > 0:
             await interaction.response.send_message(view=view, ephemeral=True)
             view.message = await interaction.original_response()
