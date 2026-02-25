@@ -355,7 +355,7 @@ class GroupBuilder:
     def _is_finished(self) -> bool:
         return self.state.close_group_at <= datetime_now_utc()
 
-    def _record_group(self):
+    def _record_group(self, finished_state: str):
         creator_id = self.creator.id
         role_names = []
         user_ids = []
@@ -368,6 +368,7 @@ class GroupBuilder:
         return record_group(
             command_name=self.state.command_name,
             date_finished=self.state.close_group_at.date(),
+            finished_state=finished_state,
             activity_name=self.group_details.activity_name,
             listed_as=self.group_details.listed_as,
             creator_notes=self.group_details.creator_notes,
@@ -399,12 +400,14 @@ class GroupBuilder:
             return None
         elif self.state.closed:
             logging.debug(f"{self.group_title} closed")
+            finished_state = "complete"
         else:
             logging.debug(f"{self.group_title} timed out")
+            finished_state = "timed_out"
             self.state.timed_out = True
 
         await self.edit_message()
-        self._record_group()
+        self._record_group(finished_state=finished_state)
         del self
 
     async def cancel_group(self):
@@ -415,7 +418,7 @@ class GroupBuilder:
         self.state.cancelled = True
         await self.edit_message()
         await self.message.channel.send(content=self.listing_message)
-        self._record_group()
+        self._record_group(finished_state="cancelled")
         del self
 
     def is_closed(self):

@@ -164,6 +164,7 @@ class TestGroupBuilder:
         expected = pl.DataFrame({
             "command_name": [typical_group.state.command_name],
             "date_finished": [typical_group.state.close_group_at.date()],
+            "finished_state": ["cancelled"],
             "activity_name": [typical_group.group_details.activity_name],
             "listed_as": [typical_group.group_details.listed_as],
             "creator_notes": [typical_group.group_details.creator_notes],
@@ -202,6 +203,7 @@ class TestGroupBuilder:
         expected = pl.DataFrame({
             "command_name": [group.state.command_name],
             "date_finished": [group.state.close_group_at.date()],
+            "finished_state": ["timed_out"],
             "activity_name": [group.group_details.activity_name],
             "listed_as": [group.group_details.listed_as],
             "creator_notes": [group.group_details.creator_notes],
@@ -241,6 +243,7 @@ class TestGroupBuilder:
         expected = pl.DataFrame({
             "command_name": [group.state.command_name],
             "date_finished": [group.state.close_group_at.date()],
+            "finished_state": ["complete"],
             "activity_name": [group.group_details.activity_name],
             "listed_as": [group.group_details.listed_as],
             "creator_notes": [group.group_details.creator_notes],
@@ -284,6 +287,7 @@ class TestGroupBuilder:
         expected = pl.DataFrame({
             "command_name": [group.state.command_name],
             "date_finished": [group.state.close_group_at.date()],
+            "finished_state": ["complete"],
             "activity_name": [group.group_details.activity_name],
             "listed_as": [group.group_details.listed_as],
             "creator_notes": [group.group_details.creator_notes],

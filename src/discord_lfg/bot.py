@@ -8,7 +8,7 @@ from discord import app_commands
 from discord_lfg.commands import build_command
 from discord_lfg.input_config import CommandConfig, parse_inputs
 from discord_lfg.lfg import lfg, lfgdebug
-from discord_lfg.stats import HistoricGroupViewer, get_data
+from discord_lfg.stats import HistoricGroupViewer, HistoricStatsViewer, get_data
 
 # --- Bot setup
 
@@ -99,17 +99,14 @@ def _register_lfghistory(client, guild_id_obj: discord.Object, moderator_role: s
                 content=f"No history to show for {user_id}.", ephemeral=True
             )
 
-    # @client.tree.command(guild=guild_id_obj)
-    # async def lfgstats(interaction: discord.Interaction):
-    #     """Review recent and all-time numbers of group listings."""
-    #     response = "temp"
-    #     await interaction.response.send_message(response, ephemeral=True)
 
-    # @client.tree.command(guild=guild_id_obj)
-    # async def lfguserhistory(interaction: discord.Interaction):
-    #     """Review a specific users group signup history."""
-    #     response = "temp"
-    #     await interaction.response.send_message(response, ephemeral=True)
+def _register_lfgstats(client, guild_id_obj: discord.Object):
+    @client.tree.command(guild=guild_id_obj)
+    async def lfgstats(interaction: discord.Interaction):
+        """Review numbers of group listings."""
+        view = HistoricStatsViewer()
+        await interaction.response.send_message(view=view, ephemeral=True)
+        view.message = await interaction.original_response()
 
 
 if __name__ == "__main__":
@@ -127,4 +124,5 @@ if __name__ == "__main__":
         config.debug,
     )
     _register_lfghistory(client, config.guild_id_discord, config.moderator_role_name)
+    _register_lfgstats(client, config.guild_id_discord)
     client.run(token=token)

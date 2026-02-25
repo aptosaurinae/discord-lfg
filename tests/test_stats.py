@@ -21,6 +21,7 @@ def record_data():
     return {
         "command_name": "lfg_test",
         "date_finished": date(2026, 1, 1),
+        "finished_state": "complete",
         "activity_name": "123 activity",
         "listed_as": "group 456",
         "creator_notes": "creator notes 789",
@@ -95,6 +96,7 @@ class TestGetData:
         columns = [
             "command_name",
             "date_finished",
+            "finished_state",
             "activity_name",
             "listed_as",
             "creator_notes",

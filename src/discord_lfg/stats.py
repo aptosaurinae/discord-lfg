@@ -14,6 +14,7 @@ DATA = pl.DataFrame()
 DATA_SCHEMA = {
     "command_name": pl.String,
     "date_finished": pl.Date,
+    "finished_state": pl.String,
     "activity_name": pl.String,
     "listed_as": pl.String,
     "creator_notes": pl.String,
@@ -53,6 +54,7 @@ def get_data(data_path: Path | None) -> pl.DataFrame:
 def record_group(
     command_name: str,
     date_finished: date,
+    finished_state: str,
     activity_name: str,
     listed_as: str,
     creator_notes: str,
@@ -67,6 +69,7 @@ def record_group(
     entry = _create_entry(
         command_name,
         date_finished,
+        finished_state,
         activity_name,
         listed_as,
         creator_notes,
@@ -85,6 +88,7 @@ def record_group(
 def _create_entry(
     command_name: str,
     date_finished: date,
+    finished_state: str,
     activity_name: str,
     listed_as: str,
     creator_notes: str,
@@ -98,6 +102,7 @@ def _create_entry(
     entry = pl.DataFrame({
         "command_name": [command_name],
         "date_finished": [date_finished],
+        "finished_state": [finished_state],
         "activity_name": [activity_name],
         "listed_as": [listed_as],
         "creator_notes": [creator_notes],
@@ -153,13 +158,20 @@ def historic_group(group_data: dict):
 def historic_group_embed(group_data: dict):
     """Generates a historic group embed."""
     description = historic_group(group_data)
+    if finish_state := group_data.get("finished_state", "") in ["timed_out", "cancelled"]:
+        colour = discord.Colour.red()
+    elif finish_state == "complete":
+        colour = discord.Colour.blue()
+    else:
+        colour = discord.Colour.dark_grey()
     return discord.Embed(
         title=(
             f"{group_data.get('listed_as', 'Historic Group')} "
-            f"[{group_data.get('date_finished', datetime_now_utc()).isoformat()}]"
+            f"[{group_data.get('date_finished', datetime_now_utc()).isoformat()} - "
+            f"{finish_state}]"
         ),
         description=description,
-        colour=discord.Colour.blue(),
+        colour=colour,
     )
 
 
@@ -179,7 +191,7 @@ def next_month(start_date: date):
         return start_date.replace(month=start_date.month + 1)
 
 
-class HistoricGroupCommandNameSelect(discord.ui.Select):
+class HistoricCommandNameSelect(discord.ui.Select):
     """Select from command names."""
 
     def __init__(self, command_names: list[str]):
@@ -198,7 +210,7 @@ class HistoricGroupCommandNameSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         """Does the thing."""
         assert self.view is not None
-        logging.debug("CommandNameSelect callback")
+        logging.debug("HistoricCommandNameSelect callback")
         if self.values:
             self.view.command_selected = self.values[0]
         await interaction.response.defer()
@@ -233,9 +245,72 @@ class HistoricGroupDateSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         """Does the thing."""
         assert self.view is not None
-        logging.debug("StatsDateSelect callback")
+        logging.debug("HistoricGroupDateSelect callback")
         if self.values:
             self.view.date_selected = date.fromisoformat(self.values[0])
+        await interaction.response.defer()
+
+
+class HistoricStatsDateSelect(discord.ui.Select):
+    """Select from dates."""
+
+    def __init__(self):
+        """Initialisation."""
+        today = datetime_now_utc().date()
+        self.durations = {
+            "Today": (today, today),
+            "Last 7 days": (today - timedelta(days=7), today),
+            "Last 28 days": (today - timedelta(days=28), today),
+            "This month": (today.replace(day=1), today),
+            "Last 6 months (180 days)": (today - timedelta(days=180), today),
+            "All time": (today - timedelta(days=9999), today),
+        }
+        options = [discord.SelectOption(label=item) for item in self.durations]
+        super().__init__(
+            placeholder="Choose a period.",
+            min_values=1,
+            max_values=1,
+            options=options,
+            row=1,
+            required=True,
+            disabled=False,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        """Does the thing."""
+        assert self.view is not None
+        logging.debug("HistoricStatsDateSelect callback")
+        if self.values:
+            self.view.date_start, self.view.date_end = self.durations[self.values[0]]
+        await interaction.response.defer()
+
+
+class HistoricStatsFinishTypeSelect(discord.ui.Select):
+    """Select which users to remove."""
+
+    def __init__(self):
+        """Initialisation."""
+        options = ["cancelled", "timed_out", "complete"]
+        options = [discord.SelectOption(label=f"{item}") for item in options]
+
+        super().__init__(
+            placeholder="Choose types of groups to include.",
+            min_values=1,
+            max_values=len(options),
+            options=options,
+            row=3,
+            required=False,
+            disabled=False,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        """Does the thing."""
+        assert self.view is not None
+        logging.debug("HistoricStatsFinishTypeSelect callback")
+        if self.values:
+            self.view.finish_types = []
+            for item in self.values:
+                self.view.finish_types.append(item)
         await interaction.response.defer()
 
 
@@ -269,7 +344,7 @@ class HistoricGroupViewer(discord.ui.View):
             self.add_item(HistoricGroupDateSelect(start_date))
 
             self.command_selected = command_options[0]
-            self.add_item(HistoricGroupCommandNameSelect(command_options))
+            self.add_item(HistoricCommandNameSelect(command_options))
 
     @discord.ui.button(label="Show Groups", style=discord.ButtonStyle.primary, row=4)
     async def show_groups(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -321,6 +396,74 @@ class HistoricGroupViewer(discord.ui.View):
                 embed=historic_group_embed(self.group_data.row(self.data_row, named=True)),
                 view=self,
             )
+        await interaction.response.defer()
+
+    async def on_timeout(self) -> None:
+        """Do stuff when timeout occurs."""
+        logging.debug("stats history timed out.")
+        if self.message:
+            await self.message.edit(content="Stats viewer has timed out.", view=None)  # type: ignore
+        self.stop()
+
+
+class HistoricStatsViewer(discord.ui.View):
+    """View historic stats."""
+
+    def __init__(self):
+        """Initialisation."""
+        super().__init__(timeout=120)
+        self.message: discord.InteractionMessage = None  # type: ignore
+
+        self.stats_data = DATA.clone()
+        command_options = self.stats_data.select("command_name").unique().to_series().to_list()
+
+        self.date_start = datetime_now_utc().date()
+        self.date_end = self.date_start
+        self.date_selector = HistoricStatsDateSelect()
+        self.add_item(self.date_selector)
+
+        self.command_selected = command_options[0]
+        self.command_selector = HistoricCommandNameSelect(command_options)
+        self.add_item(self.command_selector)
+
+        self.finish_types = ["complete"]
+        self.finish_type_selector = HistoricStatsFinishTypeSelect()
+        self.add_item(self.finish_type_selector)
+
+    def retain_options(self):
+        """Sets currently selected options as new defaults so these are retained through updates."""
+        for selector in [self.date_selector, self.command_selector, self.finish_type_selector]:
+            selector: discord.ui.Select
+            selected = selector.values
+            if selected:
+                for option in selector.options:
+                    option.default = option.value in selected
+
+    @discord.ui.button(label="Show Stats", style=discord.ButtonStyle.primary, row=4)
+    async def show_stats(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Show groups to the user."""
+        display_data = self.stats_data.filter(
+            pl.col("command_name") == self.command_selected,
+            pl.col("date_finished").dt.date() >= self.date_start,
+            pl.col("date_finished").dt.date() <= self.date_end,
+            pl.col("finished_state").is_in(self.finish_types),
+        )
+        display_data = (
+            display_data.group_by("activity_name").agg(
+                pl.col("command_name").count().alias("count")
+            )
+        ).sort(by="activity_name")
+        embed_description = ""
+        for row in display_data.iter_rows(named=True):
+            embed_description += f"{row['activity_name']}: {row['count']}\n"
+        embed_title = (
+            f"{self.command_selected} [{self.date_start.isoformat()} - {self.date_end.isoformat()}]"
+        )
+        embed = discord.Embed(
+            title=embed_title, description=embed_description, colour=discord.Colour.dark_gold()
+        )
+        self.retain_options()
+        await self.message.edit(embed=embed, view=self)  # type: ignore
         await interaction.response.defer()
 
     async def on_timeout(self) -> None:
