@@ -7,7 +7,7 @@ from pathlib import Path
 import discord
 import polars as pl
 
-from discord_lfg.utils import datetime_now_utc
+from discord_lfg.utils import datetime_now_utc, end_of_month, next_month
 
 DATA = pl.DataFrame()
 
@@ -173,22 +173,6 @@ def historic_group_embed(group_data: dict):
         description=description,
         colour=colour,
     )
-
-
-def end_of_month(start_date: date):
-    """Creates a date for the last day of the month of a given date."""
-    if start_date.month == 12:
-        return start_date.replace(year=start_date.year + 1, month=1) - timedelta(days=1)
-    else:
-        return start_date.replace(month=start_date.month + 1) - timedelta(days=1)
-
-
-def next_month(start_date: date):
-    """Creates a date for the first day of the next month of a given date."""
-    if start_date.month == 12:
-        return start_date.replace(year=start_date.year + 1, month=1, day=1)
-    else:
-        return start_date.replace(month=start_date.month + 1)
 
 
 class HistoricCommandNameSelect(discord.ui.Select):
