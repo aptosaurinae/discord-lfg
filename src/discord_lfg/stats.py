@@ -197,6 +197,7 @@ class HistoricCommandNameSelect(discord.ui.Select):
     def __init__(self, command_names: list[str]):
         """Initialisation."""
         options = [discord.SelectOption(label=f"{item}") for item in sorted(command_names)]
+        options[0].default = True
         super().__init__(
             placeholder="Choose a command type",
             min_values=1,
@@ -266,6 +267,7 @@ class HistoricStatsDateSelect(discord.ui.Select):
             "All time": (today - timedelta(days=9999), today),
         }
         options = [discord.SelectOption(label=item) for item in self.durations]
+        options[0].default = True
         super().__init__(
             placeholder="Choose a period.",
             min_values=1,
@@ -290,8 +292,9 @@ class HistoricStatsFinishTypeSelect(discord.ui.Select):
 
     def __init__(self):
         """Initialisation."""
-        options = ["cancelled", "timed_out", "complete"]
+        options = ["complete", "cancelled", "timed_out"]
         options = [discord.SelectOption(label=f"{item}") for item in options]
+        options[0].default = True
 
         super().__init__(
             placeholder="Choose types of groups to include.",

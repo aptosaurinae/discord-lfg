@@ -11,7 +11,6 @@ is still significantly inspired by that system although has been generalised sig
 
 For feature parity with the original Dungeon Buddy, the following is missing:
 
-- Add `/lfgstats` reporting
 - Error handling for failed interactions?
 
 And finally:
