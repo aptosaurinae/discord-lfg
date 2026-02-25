@@ -7,17 +7,6 @@ This is a Python based system for Discord to allow easy creation of groups, usin
 It was originally based on the Dungeon Buddy system written by Baddadan for No Pressure EU, and
 is still significantly inspired by that system although has been generalised significantly.
 
-## TODO
-
-For feature parity with the original Dungeon Buddy, the following is missing:
-
-- Error handling for failed interactions?
-
-And finally:
-
-- Tests, Tests, Tests
-- Documentation
-
 ## Background
 
 <!--- --8<-- [start:docs] -->
@@ -104,6 +93,18 @@ the command files referenced by the main config.
 
 ![Commands preview within Discord](docs/img/lfg_commands_preview.png)
 
+### History and Stats
+
+Two commands will always be present regardless of configuration:
+
+- `/lfghistory` provides access to a users history. If you set up a moderator role in the
+configuration, then anyone with that role will be able to use a discord user ID to look up that
+users history.
+- `/lfgstats` provides access to generic stats about how many groups have been formed using the
+different commands within a particular timeframe,
+with a breakdown by activity type. Querying can also be done by group
+completion type: completed (filled), timed out, or cancelled.
+
 ## License
 
 This project uses the same license as the original Dungeon Buddy, as below.
@@ -115,6 +116,7 @@ This project is licensed under the [CC BY-NC 4.0 License](https://creativecommon
 -   You **must credit** the original author in any fork, modification, or usage of this project by
 adding the following to your Discord bot description:
     > Original code by Baddadan/Kashual for NoP EU. GitHub: https://bit.ly/3ZrVj7C
+    > Discord-LFG by dukes for NoP EU. https://github.com/aptosaurinae/discord-lfg
 -   This code **cannot** be used in any product that is sold for money or restricted by a paywall.
 This includes Discord member sections
 
@@ -141,8 +143,9 @@ of different commands that use the group builder with a variety of roles or user
 - The embed has a colour stripe that matches the state of the group:
   - Green for open
   - Yellow for full but editable
-  - Blue for full and not editable
+  - Blue for full and not editable ("complete")
   - Red for cancelled or timed out
 - When users are removed from the group, they are notified why and blocked from rejoining.
 - The `lfghistory` command now provides access to a filterable set of data instead of just
 the last 10 groups. `lfguserhistory` has been brought into the `lfghistory` command.
+- The `lfgstats` command has been adjusted to be filterable by command.
