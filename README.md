@@ -11,10 +11,7 @@ is still significantly inspired by that system although has been generalised sig
 
 For feature parity with the original Dungeon Buddy, the following is missing:
 
-- Log group members when group completes in any way (full, timeout, cancelled)
 - Add `/lfgstats` reporting
-- Add history for users (both personal and for mods) -
-probably do this through `lfgstats` or equivalent command to avoid command clutter?
 - Error handling for failed interactions?
 
 And finally:
@@ -85,6 +82,7 @@ Logged in as app-commands-test#2842 (ID: 123456789)
 ------
 Discord-LFG started
 logging to: C:\projects\discord-lfg-data\logging
+stats outputting to: C:\projects\discord-lfg-data\stats
 ```
 
 You should find that the bot slash commands are then active in the relevant server when it's given
@@ -147,3 +145,5 @@ of different commands that use the group builder with a variety of roles or user
   - Blue for full and not editable
   - Red for cancelled or timed out
 - When users are removed from the group, they are notified why and blocked from rejoining.
+- The `lfghistory` command now provides access to a filterable set of data instead of just
+the last 10 groups. `lfguserhistory` has been brought into the `lfghistory` command.

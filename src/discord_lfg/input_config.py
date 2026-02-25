@@ -42,6 +42,7 @@ class LFGConfig:
     guild_id_int: int
     guild_id_discord: discord.Object
     guild_name: str
+    moderator_role_name: str
     log_folder: Path | None
     stats_folder: Path | None
     all_roles: dict[str, dict[str, str]]
@@ -247,6 +248,7 @@ def _parse_config(config_data: dict) -> tuple[LFGConfig, list[CommandConfig]]:
         guild_id_int=int(config_data.get("guild_id", 0)),
         guild_id_discord=discord.Object(config_data.get("guild_id", 0)),
         guild_name=config_data.get("guild_name", ""),
+        moderator_role_name=config_data.get("moderator_role_name", ""),
         log_folder=Path(log_folder) if log_folder is not None else None,
         stats_folder=Path(stats_folder) if stats_folder is not None else None,
         all_roles=config_data.get("role", {}),

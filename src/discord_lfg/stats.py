@@ -242,11 +242,24 @@ class StatsDateSelect(discord.ui.Select):
 class StatsViewer(discord.ui.View):
     """View historic stats."""
 
-    def __init__(self, interaction: discord.Interaction):
+    def __init__(
+        self,
+        interaction: discord.Interaction,
+        user_id_str: str = "0",
+        moderator_role_name: str = "",
+    ):
         """Initialisation."""
-        super().__init__(timeout=60)
+        super().__init__(timeout=120)
         self.message: discord.InteractionMessage = None  # type: ignore
-        user_id = interaction.user.id
+        user_id = int(user_id_str)
+
+        moderator = False
+        for role in interaction.user.roles:  # type: ignore
+            if moderator_role_name == role.name:
+                moderator = True
+
+        if not (moderator and user_id > 0):
+            user_id = interaction.user.id
         self.user_data = DATA.filter(pl.col("user_ids").list.contains(user_id))
         if len(self.user_data) > 0:
             start_date = self.user_data.select("date_finished").min()[0, 0]
@@ -309,3 +322,10 @@ class StatsViewer(discord.ui.View):
                 view=self,
             )
         await interaction.response.defer()
+
+    async def on_timeout(self) -> None:
+        """Do stuff when timeout occurs."""
+        logging.debug("stats history timed out.")
+        if self.message:
+            await self.message.edit(content="Stats viewer has timed out.", view=None)  # type: ignore
+        self.stop()

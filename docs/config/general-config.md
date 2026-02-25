@@ -60,6 +60,14 @@ This will result in the group name having `NoP` put in front of it, and any
 
 ![Guild Name Config Image Example](../img/config_guild_name.png)
 
+#### Moderator role name
+
+The name of a role that you want to give elevated permissions for the `lfghistory` command.
+This allows those users with the role to input a user ID to lookup other users history.
+
+- Format: `str`
+- Example: `moderator_role_name = "Mods"`
+
 #### Log folder
 
 Defines the folder to dump log files into. Log files will be automatically named based on the
@@ -94,6 +102,7 @@ An example config containing all required and optional elements is provided belo
 ```toml
 guild_id = 123456789
 guild_name = "NoP"
+moderator_role_name = "Mods"
 command_files = [
     "C:/discord-lfg-config/command_lfg_dungeon.toml",
     "C:/discord-lfg-config/command_lfg_dungeon_oat.toml",

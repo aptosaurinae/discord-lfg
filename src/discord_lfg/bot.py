@@ -85,16 +85,19 @@ def _register_lfgdebug(client, guild_id_obj: discord.Object):
 # -- Stats
 
 
-def _register_lfgstats(client, guild_id_obj: discord.Object):
+def _register_lfgstats(client, guild_id_obj: discord.Object, moderator_role: str):
     @client.tree.command(guild=guild_id_obj)
-    async def lfghistory(interaction: discord.Interaction):
+    @app_commands.describe(user_id="Mod only. Input a user ID to look up their history.")
+    async def lfghistory(interaction: discord.Interaction, user_id: str = "0"):
         """Review your LFG history."""
-        view = StatsViewer(interaction)
+        view = StatsViewer(interaction, user_id, moderator_role)
         if len(view.user_data) > 0:
             await interaction.response.send_message(view=view, ephemeral=True)
             view.message = await interaction.original_response()
         else:
-            await interaction.response.send_message(content="No history to show.", ephemeral=True)
+            await interaction.response.send_message(
+                content=f"No history to show for {user_id}.", ephemeral=True
+            )
 
     # @client.tree.command(guild=guild_id_obj)
     # async def lfgstats(interaction: discord.Interaction):
@@ -123,5 +126,5 @@ if __name__ == "__main__":
         commands,
         config.debug,
     )
-    _register_lfgstats(client, config.guild_id_discord)
+    _register_lfgstats(client, config.guild_id_discord, config.moderator_role_name)
     client.run(token=token)
