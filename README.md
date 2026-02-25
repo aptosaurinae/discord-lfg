@@ -7,6 +7,15 @@ This is a Python based system for Discord to allow easy creation of groups, usin
 It was originally based on the Dungeon Buddy system written by Baddadan for No Pressure EU, and
 is still significantly inspired by that system although has been generalised significantly.
 
+## Use of AI
+
+I dislike having to put this here but this is the way of the world now.
+
+I used Copilot to help me understand some of the Discord API elements, particularly where
+particular interactions between elements were not obvious when debugging (e.g. the order
+of how views are updated / presented). I also used Copilot to help generate templates of some of
+the option menus, although most of this has now been overwritten or discarded.
+
 ## Background
 
 <!--- --8<-- [start:docs] -->
