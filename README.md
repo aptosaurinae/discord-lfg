@@ -124,7 +124,7 @@ This project is licensed under the [CC BY-NC 4.0 License](https://creativecommon
 
 -   You **must credit** the original author in any fork, modification, or usage of this project by
 adding the following to your Discord bot description:
-    > Original code by Baddadan/Kashual for NoP EU. GitHub: https://bit.ly/3ZrVj7C
+    > Original code by Baddadan/Kashual for NoP EU. GitHub: https://bit.ly/3ZrVj7C \
     > Discord-LFG by dukes for NoP EU. https://github.com/aptosaurinae/discord-lfg
 -   This code **cannot** be used in any product that is sold for money or restricted by a paywall.
 This includes Discord member sections
