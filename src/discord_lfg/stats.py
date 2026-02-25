@@ -179,7 +179,7 @@ def next_month(start_date: date):
         return start_date.replace(month=start_date.month + 1)
 
 
-class CommandNameSelect(discord.ui.Select):
+class HistoricGroupCommandNameSelect(discord.ui.Select):
     """Select from command names."""
 
     def __init__(self, command_names: list[str]):
@@ -204,7 +204,7 @@ class CommandNameSelect(discord.ui.Select):
         await interaction.response.defer()
 
 
-class StatsDateSelect(discord.ui.Select):
+class HistoricGroupDateSelect(discord.ui.Select):
     """Select from dates."""
 
     def __init__(self, start_date: date):
@@ -239,8 +239,8 @@ class StatsDateSelect(discord.ui.Select):
         await interaction.response.defer()
 
 
-class StatsViewer(discord.ui.View):
-    """View historic stats."""
+class HistoricGroupViewer(discord.ui.View):
+    """View historic groups."""
 
     def __init__(
         self,
@@ -266,10 +266,10 @@ class StatsViewer(discord.ui.View):
             command_options = self.user_data.select("command_name").unique().to_series().to_list()
 
             self.date_selected: date = start_date
-            self.add_item(StatsDateSelect(start_date))
+            self.add_item(HistoricGroupDateSelect(start_date))
 
             self.command_selected = command_options[0]
-            self.add_item(CommandNameSelect(command_options))
+            self.add_item(HistoricGroupCommandNameSelect(command_options))
 
     @discord.ui.button(label="Show Groups", style=discord.ButtonStyle.primary, row=4)
     async def show_groups(self, interaction: discord.Interaction, button: discord.ui.Button):
