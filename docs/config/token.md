@@ -28,7 +28,7 @@ In order to generate a token you need to:
 - Set up your bot with a name on the `General Information` page, and ideally choose an
 appropriate picture for your bot
 - In the description of the bot add the required description set out in the licence:
-  > Original code by Baddadan/Kashual for NoP EU. GitHub: https://bit.ly/3ZrVj7C \
+  > Original code by Baddadan/Kashual for NoP EU. GitHub: https://bit.ly/3ZrVj7C  
   > Discord-LFG by dukes for NoP EU. https://github.com/aptosaurinae/discord-lfg
 - Under `Installation` in the `Install Link` drop down select `None`
 - On the `Bot` page:
