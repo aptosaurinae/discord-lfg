@@ -5,7 +5,7 @@ from __future__ import annotations
 try:
     import tomllib
 except ModuleNotFoundError:
-    import pip._vendor.tomli as tomllib
+    import pip._vendor.tomli as tomllib  # pyright: ignore[reportMissingImports]
 
 import argparse
 import inspect
@@ -42,7 +42,9 @@ class LFGConfig:
     guild_id_int: int
     guild_id_discord: discord.Object
     guild_name: str
-    log_folder: Path
+    moderator_role_name: str
+    log_folder: Path | None
+    stats_folder: Path | None
     all_roles: dict[str, dict[str, str]]
     commands: list[Path]
 
@@ -53,8 +55,12 @@ class LFGConfig:
             errors.append("Debug must be `true` or `false`")
         if self.guild_id_int <= 0:
             errors.append("Guild ID must not be 0 or negative")
-        if not self.log_folder.exists():
+        if self.log_folder is not None and not self.log_folder.exists():
             errors.append(f"Log folder given does not exist, please create it: {self.log_folder}")
+        if self.stats_folder is not None and not self.stats_folder.exists():
+            errors.append(
+                f"Data folder given does not exist, please create it: {self.stats_folder}"
+            )
         errors += self._validate_roles()
         for command_path in self.commands:
             if not command_path.exists():
@@ -83,8 +89,8 @@ class CommandConfig:
     description: str
     debug: bool
     guild_name: str
-    timeout_length: int
-    editable_length: int
+    timeout_length: float
+    editable_length: float
     kick_reasons: list[str]
     channel_whitelist: list[str]
     channel_role_mentions: dict[str, str]
@@ -235,12 +241,16 @@ def _parse_token(token_data: dict):
 
 def _parse_config(config_data: dict) -> tuple[LFGConfig, list[CommandConfig]]:
     """Setup config for inputs."""
+    log_folder = config_data.get("log_folder")
+    stats_folder = config_data.get("stats_folder")
     config = LFGConfig(
         debug=config_data.get("debug", False),
         guild_id_int=int(config_data.get("guild_id", 0)),
         guild_id_discord=discord.Object(config_data.get("guild_id", 0)),
         guild_name=config_data.get("guild_name", ""),
-        log_folder=Path(config_data.get("log_folder", "")),
+        moderator_role_name=config_data.get("moderator_role_name", ""),
+        log_folder=Path(log_folder) if log_folder is not None else None,
+        stats_folder=Path(stats_folder) if stats_folder is not None else None,
         all_roles=config_data.get("role", {}),
         commands=[Path(command) for command in config_data.get("commands", [])],
     )
@@ -407,13 +417,13 @@ def command_argument_from_config(argument_definition: dict, arg_name: str):
     return command_argument
 
 
-def setup_logging(log_folder: Path, debug: bool = False):
+def setup_logging(log_folder: Path | None, debug: bool = False):
     """Setup logger."""
     dt_now = datetime.now(timezone.utc)
     datetime_str = (
         f"{dt_now.year}-{dt_now.month}-{dt_now.day}_{dt_now.hour}-{dt_now.minute}-{dt_now.second}"
     )
-    if log_folder != "" and log_folder.exists():
+    if log_folder is not None and log_folder.exists():
         log_file_path = log_folder / f"{datetime_str}_dungeon_buddy.log"
         logging.basicConfig(
             level=logging.DEBUG if debug else logging.INFO,

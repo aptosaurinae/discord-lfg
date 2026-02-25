@@ -1,7 +1,7 @@
 """Utilities for Group Builder."""
 
 import re
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 
 def extract_numbers(text: str) -> list[int]:
@@ -30,3 +30,19 @@ def get_numbers_from_channel_name(channel_name: str) -> None | list:
 def datetime_now_utc():
     """Gets the current time using the UTC timezone."""
     return datetime.now(tz=timezone.utc)
+
+
+def end_of_month(start_date: date):
+    """Creates a date for the last day of the month of a given date."""
+    if start_date.month == 12:
+        return start_date.replace(year=start_date.year + 1, month=1) - timedelta(days=1)
+    else:
+        return start_date.replace(month=start_date.month + 1) - timedelta(days=1)
+
+
+def next_month(start_date: date):
+    """Creates a date for the first day of the next month of a given date."""
+    if start_date.month == 12:
+        return start_date.replace(year=start_date.year + 1, month=1, day=1)
+    else:
+        return start_date.replace(month=start_date.month + 1)

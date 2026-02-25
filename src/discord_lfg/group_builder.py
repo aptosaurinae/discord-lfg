@@ -9,6 +9,7 @@ from typing import Sequence
 import discord
 
 from discord_lfg.input_config import CommandConfig
+from discord_lfg.stats import record_group
 from discord_lfg.utils import (
     RoleDefinition,
     datetime_now_utc,
@@ -72,9 +73,10 @@ class GroupRole:
 class GroupState:
     """Container for the state of the group."""
 
+    command_name: str
     created_at: datetime
     close_group_at: datetime
-    editable_length: int
+    editable_length: float
     closed: bool
     cancelled: bool
     timed_out: bool
@@ -110,6 +112,7 @@ class GroupBuilder:
             f"GroupBuilder created by {interaction.user.id} {interaction.user.display_name}"
         )
         self.role_counts = {role.name: role.count for role in config.roles.values()}
+        command_name = config.name
         guild_name = config.guild_name
         timeout_length = config.timeout_length
         editable_length = config.editable_length
@@ -117,7 +120,7 @@ class GroupBuilder:
         guild_roles = config.guild_roles
         kick_reasons = config.kick_reasons
 
-        self._state_init(guild_name, timeout_length, editable_length, debug)
+        self._state_init(command_name, guild_name, timeout_length, editable_length, debug)
         self._setup_group(**group_info, guild_name=guild_name, kick_reasons=kick_reasons)
         self._roles_init(
             config.roles,
@@ -320,11 +323,19 @@ class GroupBuilder:
             kick_reasons=kick_reasons,
         )
 
-    def _state_init(self, guild_name: str, timeout_length: int, editable_length: int, debug: bool):
+    def _state_init(
+        self,
+        command_name: str,
+        guild_name: str,
+        timeout_length: float,
+        editable_length: float,
+        debug: bool,
+    ):
         """Initialise state."""
         now = datetime_now_utc()
         empty_spots = sum(self.role_counts.values())
         self.state = GroupState(
+            command_name=command_name,
             created_at=now,
             close_group_at=now + timedelta(minutes=timeout_length),
             editable_length=editable_length,
@@ -344,6 +355,30 @@ class GroupBuilder:
     def _is_finished(self) -> bool:
         return self.state.close_group_at <= datetime_now_utc()
 
+    def _record_group(self, finished_state: str):
+        creator_id = self.creator.id
+        role_names = []
+        user_ids = []
+        user_display_names = []
+        for role_name, role_info in self.roles.items():
+            for user in role_info.users:
+                role_names.append(role_name)
+                user_ids.append(user.id)
+                user_display_names.append(user.display_name)
+        return record_group(
+            command_name=self.state.command_name,
+            date_finished=self.state.close_group_at.date(),
+            finished_state=finished_state,
+            activity_name=self.group_details.activity_name,
+            listed_as=self.group_details.listed_as,
+            creator_notes=self.group_details.creator_notes,
+            creator_id=creator_id,
+            extra_info=[str(item) for item in self.group_details.extra_info],
+            role_names=role_names,
+            user_ids=user_ids,
+            user_display_names=user_display_names,
+        )
+
     async def _check_if_closed_or_timed_out(self):
         """Closes the group if the background timer has finished and the group is not cancelled."""
         logging.debug(
@@ -351,21 +386,28 @@ class GroupBuilder:
             f"created at: {self.state.created_at}\n"
             f"timeout set to: {self.state.close_group_at}"
         )
+        sleep_timer = (self.state.close_group_at - self.state.created_at).total_seconds() / 300
+        last_update = datetime_now_utc()
         while not self._is_finished and not self.state.cancelled:
-            logging.debug(f"{self.group_title} still active")
+            if (datetime_now_utc() - last_update).total_seconds() > 10:
+                last_update = datetime_now_utc()
+                logging.debug(f"{self.group_title} still active")
             self.is_closed()
-            await asyncio.sleep(10)
+            await asyncio.sleep(sleep_timer)
 
         if self.state.cancelled:
             logging.debug(f"{self.group_title} was cancelled while waiting to be closed.")
             return None
         elif self.state.closed:
             logging.debug(f"{self.group_title} closed")
+            finished_state = "complete"
         else:
             logging.debug(f"{self.group_title} timed out")
+            finished_state = "timed_out"
             self.state.timed_out = True
 
         await self.edit_message()
+        self._record_group(finished_state=finished_state)
         del self
 
     async def cancel_group(self):
@@ -376,6 +418,7 @@ class GroupBuilder:
         self.state.cancelled = True
         await self.edit_message()
         await self.message.channel.send(content=self.listing_message)
+        self._record_group(finished_state="cancelled")
         del self
 
     def is_closed(self):
@@ -413,7 +456,10 @@ class GroupBuilder:
     async def edit_message(self):
         """Updates the Discord displayed message based on the current status of the group."""
         logging.debug("edit_message")
-        await self.message.edit(**self._message_content)
+        if self.message is not None:
+            await self.message.edit(**self._message_content)
+        else:
+            return "self.message is not initialised", self._message_content
 
     @property
     def passphrase(self) -> str:
