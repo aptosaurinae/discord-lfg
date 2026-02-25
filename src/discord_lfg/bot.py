@@ -85,7 +85,7 @@ def _register_lfgdebug(client, guild_id_obj: discord.Object):
 # -- Stats
 
 
-def _register_lfgstats(client, guild_id_obj: discord.Object, moderator_role: str):
+def _register_lfghistory(client, guild_id_obj: discord.Object, moderator_role: str):
     @client.tree.command(guild=guild_id_obj)
     @app_commands.describe(user_id="Mod only. Input a user ID to look up their history.")
     async def lfghistory(interaction: discord.Interaction, user_id: str = "0"):
@@ -126,5 +126,5 @@ if __name__ == "__main__":
         commands,
         config.debug,
     )
-    _register_lfgstats(client, config.guild_id_discord, config.moderator_role_name)
+    _register_lfghistory(client, config.guild_id_discord, config.moderator_role_name)
     client.run(token=token)
