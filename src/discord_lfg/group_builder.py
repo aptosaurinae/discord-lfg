@@ -752,6 +752,7 @@ class EditRemoveUser(discord.ui.Select):
         """Does the thing."""
         assert self.view is not None
         logging.debug(f"EditRemoveUser callback {self.view.group_builder.group_title}")
+        self.remove_users = []
         for user_id in self.values:
             user_id = int(user_id)
             self.view.remove_users.append(self.view.group_builder.get_user_by_id(user_id))
