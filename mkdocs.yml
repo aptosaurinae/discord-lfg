@@ -8,6 +8,10 @@ nav:
     - Token Input: config/token.md
     - General Configuration: config/general-config.md
     - Command Configuration: config/command-config.md
+  - Discord Users:
+    - Creating groups in Discord: users/creating_groups.md
+    - Joining groups in Discord: users/joining_groups.md
+    - Reviewing history and stats: users/stats.md
   - Contributing: contributing.md
   - Changelog: CHANGELOG.md
   - Reference: []
