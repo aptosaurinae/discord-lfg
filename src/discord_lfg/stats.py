@@ -158,7 +158,8 @@ def historic_group(group_data: dict):
 def historic_group_embed(group_data: dict):
     """Generates a historic group embed."""
     description = historic_group(group_data)
-    if finish_state := group_data.get("finished_state", "") in ["timed_out", "cancelled"]:
+    finish_state = group_data.get("finished_state", "")
+    if finish_state in ["timed_out", "cancelled"]:
         colour = discord.Colour.red()
     elif finish_state == "complete":
         colour = discord.Colour.blue()
