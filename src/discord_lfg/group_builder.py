@@ -85,6 +85,7 @@ class GroupState:
     filled_spot_name: str
     passphrase: str
     debug: bool
+    empty_filled_role_increment: int = -1
 
 
 class GroupBuilder:
@@ -111,6 +112,7 @@ class GroupBuilder:
         logging.debug(
             f"GroupBuilder created by {interaction.user.id} {interaction.user.display_name}"
         )
+        self.group_editor: None | GroupEditOptions = None
         self.role_counts = {role.name: role.count for role in config.roles.values()}
         command_name = config.name
         guild_name = config.guild_name
@@ -408,6 +410,8 @@ class GroupBuilder:
 
         await self.edit_message()
         self._record_group(finished_state=finished_state)
+        if self.group_editor is not None:
+            await self.group_editor.on_group_close()
         del self
 
     async def cancel_group(self):
@@ -486,8 +490,9 @@ class GroupBuilder:
     # --- User creation
 
     def _create_filled_spot_user(self, role: str):
+        self.state.empty_filled_role_increment -= 1
         return GroupUser(
-            id=self.state.filled_spots * -1,
+            id=self.state.empty_filled_role_increment,
             tag="",
             name="filled_spot",
             display_name=self.state.filled_spot_name,
@@ -498,8 +503,16 @@ class GroupBuilder:
         )
 
     def _create_empty_spot_user(self, role: str):
+        self.state.empty_filled_role_increment -= 1
         return GroupUser(
-            (self.state.empty_spots + 1000) * -1, "", "empty_spot", "", None, None, False, role
+            -10000 + self.state.empty_filled_role_increment,
+            "",
+            "empty_spot",
+            "",
+            None,
+            None,
+            False,
+            role,
         )
 
     def create_user_from_interaction(
@@ -685,7 +698,11 @@ class GroupBuilder:
                 f"{self.group_title} settings button clicked by {interaction.user.display_name}"
             )
             if interaction.user.id == self.creator.id:
+                if self.group_editor is not None:
+                    await interaction.response.defer()
+                    return
                 view = GroupEditOptions(self)
+                self.group_editor = view
                 content = (
                     f"\nMake changes to {self.group_title} below.\n"
                     f"**To cancel your group click the 'Cancel Group' button 2x.**"
@@ -752,9 +769,12 @@ class EditRemoveUser(discord.ui.Select):
         """Does the thing."""
         assert self.view is not None
         logging.debug(f"EditRemoveUser callback {self.view.group_builder.group_title}")
+        logging.debug(f"Selected for removal: {self.values}")
+        self.view.remove_users = []
         for user_id in self.values:
             user_id = int(user_id)
             self.view.remove_users.append(self.view.group_builder.get_user_by_id(user_id))
+        logging.debug(f"Recorded for removal: {self.view.remove_users}")
         await interaction.response.defer()
 
 
@@ -863,6 +883,7 @@ class GroupEditOptions(discord.ui.View):
 
     def _remove_users(self) -> bool | None:
         logging.debug(f"Attempting to remove users from {self.group_builder.group_title}")
+        logging.debug(f"Current group roles: {self.group_builder.roles}")
         logging.debug(f"remove users: {self.remove_users}")
         if len(self.remove_users) > 0:
             logging.debug(f"users_to_remove: {self.remove_users}")
@@ -953,6 +974,7 @@ class GroupEditOptions(discord.ui.View):
                     )
 
         await self.message.edit(content=return_content, view=None)  # type: ignore
+        self.group_builder.group_editor = None
         self.stop()
 
     @discord.ui.button(label="Abort changes", style=discord.ButtonStyle.secondary, row=4)
@@ -960,6 +982,7 @@ class GroupEditOptions(discord.ui.View):
         """Cancel the menu."""
         self.confirmed = False
         await self.message.edit(content="Group editing cancelled.", view=None)  # type: ignore
+        self.group_builder.group_editor = None
         self.stop()
 
     @discord.ui.button(label="Cancel group", style=discord.ButtonStyle.danger, row=4)
@@ -970,6 +993,7 @@ class GroupEditOptions(discord.ui.View):
         if self.cancel_group_state == 2:
             await self.message.edit(content="Group cancelled.", view=None)  # type: ignore
             await self.group_builder.cancel_group()
+            self.group_builder.group_editor = None
             self.stop()
         else:
             await interaction.response.defer()
@@ -979,4 +1003,13 @@ class GroupEditOptions(discord.ui.View):
         logging.debug("edit menu timed out.")
         if self.message:
             await self.message.edit(content="Group editing has timed out.", view=None)  # type: ignore
+        self.group_builder.group_editor = None
+        self.stop()
+
+    async def on_group_close(self) -> None:
+        """Do stuff when the group managing this editor is closed."""
+        logging.debug("edit menu closed by parent GroupBuilder.")
+        if self.message:
+            await self.message.edit(content="Group closed, editing no longer available.", view=None)  # type: ignore
+        self.group_builder.group_editor = None
         self.stop()
