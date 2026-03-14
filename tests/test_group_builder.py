@@ -75,7 +75,7 @@ class TestGroupBuilder:
     def basic_config(self, blank_command, basic_role):
         return self.blank_config(blank_command, {basic_role.name: basic_role})
 
-    @pytest_asyncio.fixture(scope="class")
+    @pytest_asyncio.fixture
     async def typical_group(self, basic_config, discord_interaction, blank_group_info):
         group = GroupBuilder(
             interaction=discord_interaction,
@@ -86,6 +86,31 @@ class TestGroupBuilder:
         )
         await group.send_message(discord_interaction)
         return group
+
+    def test_no_filled_spots_input_gives_group_with_no_filled_spots(
+        self, typical_group: GroupBuilder, discord_interaction: discord.Interaction
+    ):
+        expected_creator = typical_group.create_user_from_interaction(
+            discord_interaction, "role1", True
+        )
+        assert typical_group.roles["role1"].assigned == [True, False]
+        assert not typical_group.roles["role1"].disabled
+        assert len(typical_group.roles["role1"].users) == 2
+        assert typical_group.roles["role1"].users[0] == expected_creator
+        assert typical_group.roles["role1"].users[1].name == "empty_spot"
+
+    def test_one_filled_spot_input_gives_group_with_filled_spot(
+        self, typical_group: GroupBuilder, discord_interaction: discord.Interaction
+    ):
+        typical_group.fill_spots({"role1": 1})
+        expected_creator = typical_group.create_user_from_interaction(
+            discord_interaction, "role1", True
+        )
+        assert typical_group.roles["role1"].assigned == [True, True]
+        assert typical_group.roles["role1"].disabled
+        assert len(typical_group.roles["role1"].users) == 2
+        assert typical_group.roles["role1"].users[0] == expected_creator
+        assert typical_group.roles["role1"].users[1].name == "filled_spot"
 
     def test_group_state_initialises_when_given_typical_inputs(
         self, typical_group: GroupBuilder, basic_config: CommandConfig

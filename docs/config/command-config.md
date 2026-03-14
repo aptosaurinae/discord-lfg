@@ -273,7 +273,7 @@ dps = 3
 
 ### 5 vs 5 Team Game
 
-```
+``` toml
 name = "lfg_5v5"
 description = "Builds a typical 5v5 team game layout."
 timeout_length = 15

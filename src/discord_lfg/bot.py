@@ -78,7 +78,7 @@ def _register_lfgdebug(client, guild_id_obj: discord.Object):
     @client.tree.command(guild=guild_id_obj, name="lfgdebug")
     async def lfgdebug_command(interaction: discord.Interaction):
         """Some quick-fire group listings for debug purposes (including what should be invalid setups)."""
-        for num in range(6):
+        for num in range(5):
             await lfgdebug(interaction=interaction, debug_type=num)
 
 

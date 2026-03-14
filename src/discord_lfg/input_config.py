@@ -353,10 +353,10 @@ def _build_arguments(config_input, roles: dict[str, RoleDefinition]):
     creator_role_arg = CommandArgument(
         "creator_role", str, True, "The role you are filling for this group.", list(roles.keys())
     )
-    required_spots_arg = CommandArgument(
-        "required_spots",
+    filled_spots_arg = CommandArgument(
+        "filled_spots",
         str,
-        True,
+        False,
         f"valid identifiers: {[role.identifier for role in roles.values()]}",
         None,
     )
@@ -376,7 +376,7 @@ def _build_arguments(config_input, roles: dict[str, RoleDefinition]):
             None,
         ),
     ]
-    return [activity_arg] + option_args + [creator_role_arg, required_spots_arg] + standard_args
+    return [activity_arg] + option_args + [creator_role_arg, filled_spots_arg] + standard_args
 
 
 def command_argument_from_config(argument_definition: dict, arg_name: str):
