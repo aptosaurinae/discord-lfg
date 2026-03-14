@@ -7,6 +7,8 @@ This is a Python based system for Discord to allow easy creation of groups, usin
 It was originally based on the Dungeon Buddy system written by Baddadan for No Pressure EU, and
 is still significantly inspired by that system although has been generalised significantly.
 
+[Full docs for setup and use can be found here](https://aptosaurinae.github.io/discord-lfg/)
+
 ## Use of AI
 
 I dislike having to put this here but this is the way of the world now.
