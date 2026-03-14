@@ -52,7 +52,7 @@ async def lfg(
     interaction: discord.Interaction,
     activity: str,
     creator_role: str,
-    filled_spots_short: str,
+    filled_spots: str,
     listed_as: str,
     creator_notes: str,
     config: CommandConfig,
@@ -60,9 +60,9 @@ async def lfg(
 ):
     """Creates a GroupBuilder instance from a slash command."""
     logging.debug("".join([str((key, value)) for key, value in locals().items()]))
-    filled_spots = _convert_short_filled_spots_to_full(config.roles, filled_spots_short)
+    filled_spots_dict = _convert_short_filled_spots_to_full(config.roles, filled_spots)
     try:
-        _validate_lfg_inputs(creator_role, filled_spots, config.roles)
+        _validate_lfg_inputs(creator_role, filled_spots_dict, config.roles)
     except LFGValidationError as e:
         response = "\n".join(e.messages)
         message_func = (
@@ -86,7 +86,7 @@ async def lfg(
         group_info=user_inputs,
         config=config,
         creator_role=creator_role,
-        filled_spots=filled_spots,
+        filled_spots=filled_spots_dict,
     )
     await instance.send_message(interaction)
     await instance.send_passphrase(interaction)
@@ -146,6 +146,6 @@ async def lfgdebug(interaction: discord.Interaction, debug_type: int):
         timing_aim="Time but complete",
         listed_as=f"Dungeon Debug Test {debug_type}",
         creator_notes="debug creator notes blah blah",
-        filled_spots_short=filled_spots,
+        filled_spots=filled_spots,
         config=config,
     )
