@@ -357,7 +357,7 @@ def _build_arguments(config_input, roles: dict[str, RoleDefinition]):
         "filled_spots",
         str,
         False,
-        f"valid identifiers: {[role.identifier for role in roles.values()]}",
+        f"Use {str([role.identifier for role in roles.values()])[1:-1]} for already filled spots",
         None,
     )
     standard_args = [
