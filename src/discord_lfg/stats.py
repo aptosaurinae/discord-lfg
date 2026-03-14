@@ -169,7 +169,7 @@ def historic_group_embed(group_data: dict):
         title=(
             f"{group_data.get('listed_as', 'Historic Group')} "
             f"[{group_data.get('date_finished', datetime_now_utc()).isoformat()} - "
-            f"{finish_state.capitalize}]"
+            f"{finish_state.capitalize()}]"
         ),
         description=description,
         colour=colour,
@@ -182,7 +182,7 @@ class HistoricCommandNameSelect(discord.ui.Select):
     def __init__(self, command_names: list[str]):
         """Initialisation."""
         options = [discord.SelectOption(label=f"{item}") for item in sorted(command_names)]
-        options[0].default = True
+        # options[0].default = True
         super().__init__(
             placeholder="Choose a command type",
             min_values=1,
@@ -329,10 +329,22 @@ class HistoricGroupViewer(discord.ui.View):
             command_options = self.user_data.select("command_name").unique().to_series().to_list()
 
             self.date_selected: date = start_date
-            self.add_item(HistoricGroupDateSelect(start_date))
+            self.date_selector = HistoricGroupDateSelect(start_date)
+            self.add_item(self.date_selector)
 
             self.command_selected = command_options[0]
-            self.add_item(HistoricCommandNameSelect(command_options))
+            self.command_selector = HistoricCommandNameSelect(command_options)
+            self.add_item(self.command_selector)
+
+    def retain_options(self):
+        """Sets currently selected options as new defaults so these are retained through updates."""
+        logging.debug("retaining options")
+        for selector in [self.date_selector, self.command_selector]:
+            selector: discord.ui.Select
+            selected = selector.values
+            if selected:
+                for option in selector.options:
+                    option.default = option.value in selected
 
     @discord.ui.button(label="Show Groups", style=discord.ButtonStyle.primary, row=4)
     async def show_groups(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -344,16 +356,28 @@ class HistoricGroupViewer(discord.ui.View):
             pl.col("date_finished").dt.date() >= start_date,
             pl.col("date_finished").dt.date() <= end_date,
         ).sort("date_finished")
+        logging.debug(self.group_data)
         if len(self.group_data) <= 1:
             self.next.disabled = True
             self.previous.disabled = True
+            logging.debug("disabled history buttons")
         else:
             self.previous.disabled = True
             self.next.disabled = False
+            logging.debug("enabled next history button")
+        self.retain_options()
         if len(self.group_data) > 0:
             self.data_row = 0
             await self.message.edit(  # type: ignore
                 embed=historic_group_embed(self.group_data.row(self.data_row, named=True)),
+                view=self,
+            )
+        else:
+            await self.message.edit(  # type: ignore
+                embed=discord.Embed(
+                    title="No groups found for the specified command / time",
+                    colour=discord.Colour.dark_gold(),
+                ),
                 view=self,
             )
         await interaction.response.defer()
@@ -390,7 +414,7 @@ class HistoricGroupViewer(discord.ui.View):
         """Do stuff when timeout occurs."""
         logging.debug("stats history timed out.")
         if self.message:
-            await self.message.edit(content="Stats viewer has timed out.", view=None)  # type: ignore
+            await self.message.edit(content="History viewer has timed out.", view=None)  # type: ignore
         self.stop()
 
 
