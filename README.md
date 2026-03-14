@@ -20,14 +20,18 @@ the option menus, although most of this has now been overwritten or discarded.
 
 <!--- --8<-- [start:docs] -->
 
-Discord-LFG is a Discord bot originally created for easy creation of groups for World of Warcraft dungeons.
+Discord-LFG is a Discord bot originally created for easy creation of groups for
+World of Warcraft dungeons.
 These groups typically have one tank, one healer, and three damage dealers in each group.
-Discord-LFG provides a structured embed with buttons for joining groups, making it easier to track Discord
-usernames when groups are formed, providing passwords only to those who sign up enabling a link
+
+Discord-LFG provides a structure for forming groups, using
+slash commands, embeds, and buttons, making it easier to create and join groups, and
+easier for moderators and users to track Discord usernames when groups are formed,
+providing passwords only to those who sign up enabling a link
 between the Discord signup and the in-game signup.
 
-The commands and group listings are able to be configured by the bot host. A template for
-"traditional" World of Warcraft 5-person dungeon groups is included in the docs.
+The commands and group listings are able to be configured by the bot host.
+Some templates for different group types are included in the docs.
 
 The [original Dungeon Buddy](https://bit.ly/3ZrVj7C) was built by Baddadan/Kashual using `DiscordJS` for
 the [No Pressure EU](https://no-pressure.eu) Discord server.
