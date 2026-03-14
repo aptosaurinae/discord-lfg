@@ -97,7 +97,7 @@ async def lfgdebug(interaction: discord.Interaction, debug_type: int):
     roles = {
         "tank": RoleDefinition("tank", 1, "🛡️", "t"),
         "healer": RoleDefinition("healer", 1, "🪄", "h"),
-        "dps": RoleDefinition("dps", 3, "⚔️", "t"),
+        "dps": RoleDefinition("dps", 3, "⚔️", "d"),
     }
     config = CommandConfig(
         [],

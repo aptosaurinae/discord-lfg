@@ -64,7 +64,7 @@ class GroupRole:
             f"users: {self.users}\n"
             f"assigned: {self.assigned}\n"
             f"button_style: {self.button_style}\n"
-            f"disabled: {self.disabled}"
+            f"disabled: {self.disabled}\n"
             f"role_mention: {self.role_mention}"
         )
 
@@ -575,7 +575,7 @@ class GroupBuilder:
 
         role = self.roles[assigned_role]
         logging.debug(
-            f"add_role {self.group_title}\nrole: {role}\nid: {group_user.id}\nstate: {self.state}"
+            f"add_role {self.group_title}\nrole:\n{role}\nid: {group_user.id}\nstate: {self.state}"
         )
         role_idx = role.assigned.index(False)
         role.users[role_idx] = (
