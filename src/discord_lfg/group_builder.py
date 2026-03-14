@@ -85,6 +85,7 @@ class GroupState:
     filled_spot_name: str
     passphrase: str
     debug: bool
+    empty_filled_role_increment: int = -1
 
 
 class GroupBuilder:
@@ -486,8 +487,9 @@ class GroupBuilder:
     # --- User creation
 
     def _create_filled_spot_user(self, role: str):
+        self.state.empty_filled_role_increment -= 1
         return GroupUser(
-            id=self.state.filled_spots * -1,
+            id=self.state.empty_filled_role_increment,
             tag="",
             name="filled_spot",
             display_name=self.state.filled_spot_name,
@@ -498,8 +500,16 @@ class GroupBuilder:
         )
 
     def _create_empty_spot_user(self, role: str):
+        self.state.empty_filled_role_increment -= 1
         return GroupUser(
-            (self.state.empty_spots + 1000) * -1, "", "empty_spot", "", None, None, False, role
+            -10000 + self.state.empty_filled_role_increment,
+            "",
+            "empty_spot",
+            "",
+            None,
+            None,
+            False,
+            role,
         )
 
     def create_user_from_interaction(
@@ -752,10 +762,12 @@ class EditRemoveUser(discord.ui.Select):
         """Does the thing."""
         assert self.view is not None
         logging.debug(f"EditRemoveUser callback {self.view.group_builder.group_title}")
-        self.remove_users = []
+        logging.debug(f"Selected for removal: {self.values}")
+        self.view.remove_users = []
         for user_id in self.values:
             user_id = int(user_id)
             self.view.remove_users.append(self.view.group_builder.get_user_by_id(user_id))
+        logging.debug(f"Recorded for removal: {self.view.remove_users}")
         await interaction.response.defer()
 
 
@@ -864,6 +876,7 @@ class GroupEditOptions(discord.ui.View):
 
     def _remove_users(self) -> bool | None:
         logging.debug(f"Attempting to remove users from {self.group_builder.group_title}")
+        logging.debug(f"Current group roles: {self.group_builder.roles}")
         logging.debug(f"remove users: {self.remove_users}")
         if len(self.remove_users) > 0:
             logging.debug(f"users_to_remove: {self.remove_users}")
