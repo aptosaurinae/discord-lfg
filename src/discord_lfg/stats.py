@@ -468,9 +468,12 @@ class HistoricStatsViewer(discord.ui.View):
         embed_description = ""
         for row in display_data.iter_rows(named=True):
             embed_description += f"{row['activity_name']}: {row['count']}\n"
-        embed_title = (
-            f"{self.command_selected} [{self.date_start.isoformat()} - {self.date_end.isoformat()}]"
-        )
+
+        data_start_date = self.stats_data.select("date_finished").min()[0, 0]
+        date_start = self.date_start if self.date_start > data_start_date else data_start_date
+        date_start_str = date_start.isoformat()
+        date_end_str = self.date_end.isoformat()
+        embed_title = f"{self.command_selected} [{date_start_str} - {date_end_str}]"
         embed = discord.Embed(
             title=embed_title, description=embed_description, colour=discord.Colour.dark_gold()
         )
