@@ -351,13 +351,18 @@ def _build_arguments(config_input, roles: dict[str, RoleDefinition]):
         raise ConfigValueError(errors)
 
     creator_role_arg = CommandArgument(
-        "creator_role", str, True, "The role you are filling for this group.", list(roles.keys())
+        "creator_role",
+        str,
+        True,
+        "The role you are filling for this group.",
+        list(roles.keys()),
+        display_name="your_role",
     )
     filled_spots_arg = CommandArgument(
         "filled_spots",
         str,
         False,
-        f"valid identifiers: {[role.identifier for role in roles.values()]}",
+        f"Use {str([role.identifier for role in roles.values()])[1:-1]} for already filled spots",
         None,
     )
     standard_args = [
