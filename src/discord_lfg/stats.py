@@ -169,7 +169,7 @@ def historic_group_embed(group_data: dict):
         title=(
             f"{group_data.get('listed_as', 'Historic Group')} "
             f"[{group_data.get('date_finished', datetime_now_utc()).isoformat()} - "
-            f"{finish_state}]"
+            f"{finish_state.capitalize}]"
         ),
         description=description,
         colour=colour,
