@@ -9,6 +9,8 @@ import polars as pl
 
 from discord_lfg.utils import datetime_now_utc, end_of_month, next_month
 
+logger = logging.getLogger(__name__)
+
 DATA = pl.DataFrame()
 
 DATA_SCHEMA = {
@@ -196,7 +198,7 @@ class HistoricCommandNameSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         """Does the thing."""
         assert self.view is not None
-        logging.debug("HistoricCommandNameSelect callback")
+        logger.debug("HistoricCommandNameSelect callback")
         if self.values:
             self.view.command_selected = self.values[0]
         await interaction.response.defer()
@@ -231,7 +233,7 @@ class HistoricGroupDateSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         """Does the thing."""
         assert self.view is not None
-        logging.debug("HistoricGroupDateSelect callback")
+        logger.debug("HistoricGroupDateSelect callback")
         if self.values:
             self.view.date_selected = date.fromisoformat(self.values[0])
         await interaction.response.defer()
@@ -266,7 +268,7 @@ class HistoricStatsDateSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         """Does the thing."""
         assert self.view is not None
-        logging.debug("HistoricStatsDateSelect callback")
+        logger.debug("HistoricStatsDateSelect callback")
         if self.values:
             self.view.date_start, self.view.date_end = self.durations[self.values[0]]
         await interaction.response.defer()
@@ -294,7 +296,7 @@ class HistoricStatsFinishTypeSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         """Does the thing."""
         assert self.view is not None
-        logging.debug("HistoricStatsFinishTypeSelect callback")
+        logger.debug("HistoricStatsFinishTypeSelect callback")
         if self.values:
             self.view.finish_types = []
             for item in self.values:
@@ -338,7 +340,7 @@ class HistoricGroupViewer(discord.ui.View):
 
     def retain_options(self):
         """Sets currently selected options as new defaults so these are retained through updates."""
-        logging.debug("retaining options")
+        logger.debug("retaining options")
         for selector in [self.date_selector, self.command_selector]:
             selector: discord.ui.Select
             selected = selector.values
@@ -356,15 +358,15 @@ class HistoricGroupViewer(discord.ui.View):
             pl.col("date_finished").dt.date() >= start_date,
             pl.col("date_finished").dt.date() <= end_date,
         ).sort("date_finished")
-        logging.debug(self.group_data)
+        logger.debug(self.group_data)
         if len(self.group_data) <= 1:
             self.next.disabled = True
             self.previous.disabled = True
-            logging.debug("disabled history buttons")
+            logger.debug("disabled history buttons")
         else:
             self.previous.disabled = True
             self.next.disabled = False
-            logging.debug("enabled next history button")
+            logger.debug("enabled next history button")
         self.retain_options()
         if len(self.group_data) > 0:
             self.data_row = 0
@@ -412,7 +414,7 @@ class HistoricGroupViewer(discord.ui.View):
 
     async def on_timeout(self) -> None:
         """Do stuff when timeout occurs."""
-        logging.debug("stats history timed out.")
+        logger.debug("stats history timed out.")
         if self.message:
             await self.message.edit(content="History viewer has timed out.", view=None)  # type: ignore
         self.stop()
@@ -483,7 +485,7 @@ class HistoricStatsViewer(discord.ui.View):
 
     async def on_timeout(self) -> None:
         """Do stuff when timeout occurs."""
-        logging.debug("stats history timed out.")
+        logger.debug("stats history timed out.")
         if self.message:
             await self.message.edit(content="Stats viewer has timed out.", view=None)  # type: ignore
         self.stop()

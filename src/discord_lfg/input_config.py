@@ -10,6 +10,7 @@ except ModuleNotFoundError:
 import argparse
 import inspect
 import logging
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -24,6 +25,8 @@ from discord_lfg.utils import (
     autocomplete_choice_from_list,
     create_roles_from_config,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ConfigValueError(Exception):
@@ -250,7 +253,7 @@ def _parse_config(config_data: dict) -> tuple[LFGConfig, list[CommandConfig]]:
     commands = []
     for command_path in config_data.get("command_files", ""):
         command_path = Path(command_path)
-        logging.debug(command_path)
+        logger.debug(command_path)
         if command_path.exists() and command_path.suffix == ".toml":
             with open(command_path, "rb") as config_file:
                 command_config_input = tomllib.load(config_file)
@@ -266,7 +269,7 @@ def _parse_config(config_data: dict) -> tuple[LFGConfig, list[CommandConfig]]:
     if len(errors) > 0:
         response = "\nThere are errors in your config file:\n    "
         response += "\n    ".join(errors)
-        logging.critical(response)
+        logger.critical(response)
         raise ConfigValueError(response)
 
     return config, commands
@@ -311,7 +314,7 @@ def _parse_command(config: LFGConfig, command_config_input: dict) -> CommandConf
         channel_role_mentions,
         [],
     )
-    logging.debug(command_data)
+    logger.debug(command_data)
     main_config_errors = command_data.validate()
     errors = main_config_errors + argument_errors
     if len(errors) > 0:
@@ -411,16 +414,31 @@ def command_argument_from_config(argument_definition: dict, arg_name: str):
     return command_argument
 
 
-def setup_logging(log_folder: Path | None, debug: bool = False):
+def setup_logging(log_folder: Path | None, debug: bool = False) -> logging.Logger:
     """Setup logger."""
-    dt_now = datetime.now(timezone.utc)
-    datetime_str = (
-        f"{dt_now.year}-{dt_now.month}-{dt_now.day}_{dt_now.hour}-{dt_now.minute}-{dt_now.second}"
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+
+    if logger.handlers:
+        return logger
+
+    formatter = logging.Formatter(
+        fmt="%(asctime)s [%(levelname)s] %(name)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
+
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
     if log_folder is not None and log_folder.exists():
-        log_file_path = log_folder / f"{datetime_str}_dungeon_buddy.log"
-        logging.basicConfig(
-            level=logging.DEBUG if debug else logging.INFO,
-            format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-            handlers=[logging.FileHandler(log_file_path, encoding="utf-8")],
-        )
+        dt = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
+        log_file_path = log_folder / f"{dt}_dungeon_buddy.log"
+
+        file_handler = logging.FileHandler(log_file_path, encoding="utf-8")
+        file_handler.setLevel(logging.DEBUG if debug else logging.INFO)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+    logger.propagate = False
+    return logger

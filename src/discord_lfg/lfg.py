@@ -8,6 +8,8 @@ from discord_lfg.group_builder import GroupBuilder
 from discord_lfg.input_config import CommandConfig
 from discord_lfg.utils import RoleDefinition
 
+logger = logging.getLogger(__name__)
+
 
 class LFGValidationError(Exception):
     """LFG validation error message handler."""
@@ -59,7 +61,7 @@ async def lfg(
     **options,
 ):
     """Creates a GroupBuilder instance from a slash command."""
-    logging.debug("".join([str((key, value)) for key, value in locals().items()]))
+    logger.debug("".join([str((key, value)) for key, value in locals().items()]))
     filled_spots_dict = _convert_short_filled_spots_to_full(config.roles, filled_spots)
     try:
         _validate_lfg_inputs(creator_role, filled_spots_dict, config.roles)
@@ -79,7 +81,7 @@ async def lfg(
         "creator_notes": creator_notes,
         **options,
     }
-    logging.debug(user_inputs)
+    logger.debug(user_inputs)
 
     instance = GroupBuilder(
         interaction=interaction,

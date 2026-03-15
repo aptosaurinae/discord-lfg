@@ -1,5 +1,6 @@
 """Discord looking-for-group bot."""
 
+import logging
 from pathlib import Path
 
 import discord
@@ -9,6 +10,9 @@ from discord_lfg.commands import build_command
 from discord_lfg.input_config import CommandConfig, parse_inputs
 from discord_lfg.lfg import lfg, lfgdebug
 from discord_lfg.stats import HistoricGroupViewer, HistoricStatsViewer, get_data
+
+logger = logging.getLogger(__name__)
+
 
 # --- Bot setup
 
@@ -60,15 +64,15 @@ def _register_on_ready(
 
         await client.tree.sync(guild=guild_id_obj)
 
-        print(f"Logged in as {client.user} (ID: {client.user.id})")
-        print("------")
-        print("Discord-LFG started")
+        logger.info(f"Logged in as {client.user} (ID: {client.user.id})")
+        logger.info("------")
+        logger.info("Discord-LFG started")
         if log_folder is not None and log_folder.exists():
-            print(f"logging to: {log_folder}")
+            logger.info(f"logging to: {log_folder}")
         if stats_folder is not None and stats_folder.exists():
-            print(f"stats outputting to: {stats_folder}")
+            logger.info(f"stats outputting to: {stats_folder}")
         else:
-            print("stats being captured locally but will not be persistent")
+            logger.info("stats being captured locally but will not be persistent")
 
 
 # -- LFG
