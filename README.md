@@ -72,13 +72,13 @@ uv run mkdocs serve
 To run the bot you can then do the following:
 
 ``` shell
-uv run python -m discord_lfg.bot path/to/token.toml path/to/config.toml
+uv run python -m discord_lfg.bot --token token_string --config path/to/config.toml
 ```
 
 which should result in something like the following:
 
 ``` shell
-> uv run python -m discord_lfg.bot "C:\projects\discord-lfg-data\token.toml" "C:\projects\discord-lfg-data\config.toml"
+> uv run python -m discord_lfg.bot --token "123456789.ABC" --config "C:\projects\discord-lfg-data\config.toml"
 [2026-02-17 19:33:34] [INFO    ] discord.client: logging in using static token
 [2026-02-17 19:33:35] [INFO    ] discord.gateway: Shard ID None has connected to Gateway (Session ID: 123456789).
 Logged in as app-commands-test#2842 (ID: 123456789)

@@ -1,4 +1,4 @@
-# Token file
+# Token
 
 !!! important "Securely storing authentication tokens"
     You should not put authentication tokens as plain text into anything that might be
@@ -6,16 +6,6 @@
     If you want to store tokens securely you can use something like a secrets vault,
     which most cloud providers (AWS, Azure, GCP) and git hosting systems (e.g. GitHub)
     provide in order to keep secrets secure and only inject them at run time.
-
-## Token file example
-
-The token toml file needs to look like the following,
-where the token string is a valid Discord bot token.
-
-``` toml
-[discord]
-token = "abcd123"
-```
 
 ## Creating a bot and inviting it into the server
 
@@ -28,13 +18,14 @@ In order to generate a token you need to:
 - Set up your bot with a name on the `General Information` page, and ideally choose an
 appropriate picture for your bot
 - In the description of the bot add the required description set out in the licence:
-  > Original code by Baddadan/Kashual for NoP EU. GitHub: https://bit.ly/3ZrVj7C  
+  > Original code by Baddadan/Kashual for NoP EU. GitHub: https://bit.ly/3ZrVj7C
   > Discord-LFG by dukes for NoP EU. https://github.com/aptosaurinae/discord-lfg
 - Under `Installation` in the `Install Link` drop down select `None`
 - On the `Bot` page:
     - Turn off `Public Bot` and then save changes
     - Click `Reset Token` to generate a new token.
-    - Copy the token and put it in your token file.
+    - Copy the token and store it somewhere securely where you want to use it, such as a
+    GitHub or cloud secrets vault.
 
 ### Inviting the bot to your server
 

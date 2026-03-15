@@ -213,30 +213,19 @@ class CommandArgument:
 
 def parse_inputs() -> tuple[str, LFGConfig, list[CommandConfig]]:
     """Parse the inputs to the bot.py script."""
-    token_data, config_data = _argparser()
-    token = _parse_token(token_data)
+    token, config_data = _argparser()
     config, commands = _parse_config(config_data)
     return token, config, commands
 
 
 def _argparser():
     parser = argparse.ArgumentParser(description="Configuration for discord bot")
-    parser.add_argument("token_file", type=str, help="Discord Token")
-    parser.add_argument("config", type=str, help="configuration file")
-    args = vars(parser.parse_args())
-    with open(args["token_file"], "rb") as token_file:
-        token_data = tomllib.load(token_file)
-    with open(args["config"], "rb") as config_file:
+    parser.add_argument("--token", required=True, type=str, help="Discord Token as a string")
+    parser.add_argument("--config", required=True, type=str, help="configuration file")
+    args = parser.parse_args()
+    with open(args.config, "rb") as config_file:
         config_data = tomllib.load(config_file)
-    return token_data, config_data
-
-
-def _parse_token(token_data: dict):
-    """Gets a token string from a token file."""
-    if (token := token_data.get("discord", {}).get("token")) is not None:
-        return token
-    else:
-        raise ValueError("Token file must define a 'token' value within '[discord]'")
+    return args.token, config_data
 
 
 def _parse_config(config_data: dict) -> tuple[LFGConfig, list[CommandConfig]]:
