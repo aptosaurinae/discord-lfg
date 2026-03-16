@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#token-file" class="md-skip">
+        <a href="#token" class="md-skip">
           Skip to content
         </a>
       
@@ -328,14 +328,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../running/" class="md-nav__link">
+      <a href="../../hosting_and_running/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    Running the bot
+    Running or hosting the bot
   
 
     
@@ -490,17 +490,6 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#token-file-example" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Token file example
-      
-    </span>
-  </a>
-  
-</li>
       
         <li class="md-nav__item">
   <a href="#creating-a-bot-and-inviting-it-into-the-server" class="md-nav__link">
@@ -1276,17 +1265,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#token-file-example" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Token file example
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#creating-a-bot-and-inviting-it-into-the-server" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1345,7 +1323,7 @@
   
 
 
-<h1 id="token-file">Token file<a class="headerlink" href="#token-file" title="Permanent link">#</a></h1>
+<h1 id="token">Token<a class="headerlink" href="#token" title="Permanent link">#</a></h1>
 <div class="admonition important">
 <p class="admonition-title">Securely storing authentication tokens</p>
 <p>You should not put authentication tokens as plain text into anything that might be
@@ -1354,12 +1332,6 @@ If you want to store tokens securely you can use something like a secrets vault,
 which most cloud providers (AWS, Azure, GCP) and git hosting systems (e.g. GitHub)
 provide in order to keep secrets secure and only inject them at run time.</p>
 </div>
-<h2 id="token-file-example">Token file example<a class="headerlink" href="#token-file-example" title="Permanent link">#</a></h2>
-<p>The token toml file needs to look like the following,
-where the token string is a valid Discord bot token.</p>
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">[discord]</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">token</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;abcd123&quot;</span>
-</span></code></pre></div>
 <h2 id="creating-a-bot-and-inviting-it-into-the-server">Creating a bot and inviting it into the server<a class="headerlink" href="#creating-a-bot-and-inviting-it-into-the-server" title="Permanent link">#</a></h2>
 <h3 id="creating-the-bot-and-getting-a-token">Creating the bot and getting a token<a class="headerlink" href="#creating-the-bot-and-getting-a-token" title="Permanent link">#</a></h3>
 <p>In order to generate a token you need to:</p>
@@ -1369,7 +1341,7 @@ where the token string is a valid Discord bot token.</p>
 <li>Set up your bot with a name on the <code class="language-shell highlight">General<span class="w"> </span>Information</code> page, and ideally choose an
 appropriate picture for your bot</li>
 <li>In the description of the bot add the required description set out in the licence:<blockquote>
-<p>Original code by Baddadan/Kashual for NoP EU. GitHub: https://bit.ly/3ZrVj7C<br />
+<p>Original code by Baddadan/Kashual for NoP EU. GitHub: https://bit.ly/3ZrVj7C
 Discord-LFG by dukes for NoP EU. https://github.com/aptosaurinae/discord-lfg</p>
 </blockquote>
 </li>
@@ -1377,7 +1349,8 @@ Discord-LFG by dukes for NoP EU. https://github.com/aptosaurinae/discord-lfg</p>
 <li>On the <code class="language-shell highlight">Bot</code> page:<ul>
 <li>Turn off <code class="language-shell highlight">Public<span class="w"> </span>Bot</code> and then save changes</li>
 <li>Click <code class="language-shell highlight">Reset<span class="w"> </span>Token</code> to generate a new token.</li>
-<li>Copy the token and put it in your token file.</li>
+<li>Copy the token and store it somewhere securely where you want to use it, such as a
+GitHub or cloud secrets vault. You can also put it as plain text in a file and point the <code class="language-shell highlight">--token</code> argument at the file.</li>
 </ul>
 </li>
 </ul>

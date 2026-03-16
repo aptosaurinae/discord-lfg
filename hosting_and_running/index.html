@@ -23,7 +23,7 @@
     
     
       
-        <title>Running the bot - discord-lfg</title>
+        <title>Running or hosting the bot - discord-lfg</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#running-the-bot" class="md-skip">
+        <a href="#hosting" class="md-skip">
           Skip to content
         </a>
       
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Running the bot
+              Running or hosting the bot
             
           </span>
         </div>
@@ -344,7 +344,7 @@
   <span class="md-ellipsis">
     
   
-    Running the bot
+    Running or hosting the bot
   
 
     
@@ -362,7 +362,7 @@
   <span class="md-ellipsis">
     
   
-    Running the bot
+    Running or hosting the bot
   
 
     
@@ -388,10 +388,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
+  <a href="#using-the-github-repo" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configuration
+        Using the GitHub repo
       
     </span>
   </a>
@@ -399,13 +399,52 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#starting-the-bot-locally-in-a-shell-session" class="md-nav__link">
+  <a href="#using-docker" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Starting the bot locally in a shell session
+        Using Docker
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hosting-on-a-google-cloud-virtual-machine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hosting on a Google Cloud Virtual Machine
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hosting on a Google Cloud Virtual Machine">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-vm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating a VM
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setting-up-the-vm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting up the VM
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1257,10 +1296,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
+  <a href="#using-the-github-repo" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Configuration
+        Using the GitHub repo
       
     </span>
   </a>
@@ -1268,13 +1307,52 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#starting-the-bot-locally-in-a-shell-session" class="md-nav__link">
+  <a href="#using-docker" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Starting the bot locally in a shell session
+        Using Docker
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hosting-on-a-google-cloud-virtual-machine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Hosting on a Google Cloud Virtual Machine
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hosting on a Google Cloud Virtual Machine">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-vm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating a VM
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setting-up-the-vm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Setting up the VM
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1309,25 +1387,67 @@
   
 
 
-<h1 id="running-the-bot">Running the bot<a class="headerlink" href="#running-the-bot" title="Permanent link">#</a></h1>
-<h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">#</a></h2>
-<p>To be able to run the bot you will need to have a set of valid <a href="../config/introduction/">configuration files</a>.</p>
-<h2 id="starting-the-bot-locally-in-a-shell-session">Starting the bot locally in a shell session<a class="headerlink" href="#starting-the-bot-locally-in-a-shell-session" title="Permanent link">#</a></h2>
+<h1 id="hosting">Hosting<a class="headerlink" href="#hosting" title="Permanent link">#</a></h1>
+<p>If you want to host the bot locally for testing (or temporarily / on a local machine) you can either directly use the GitHub repo, or use a docker image from docker-hub, and you can do these either locally or on a remote machine.</p>
+<h2 id="using-the-github-repo">Using the GitHub repo<a class="headerlink" href="#using-the-github-repo" title="Permanent link">#</a></h2>
+<ul>
+<li>Create the required configs, including <a href="../config/token/">getting a token</a></li>
+<li>Follow the <a href="../installation/">installation instructions</a></li>
+</ul>
 <p>To run the bot you can then do the following:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>discord_lfg.bot<span class="w"> </span>path/to/token.toml<span class="w"> </span>path/to/config.toml
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>discord_lfg.bot<span class="w"> </span>--token<span class="w"> </span>token_string<span class="w"> </span>--config<span class="w"> </span>path/to/config.toml
 </span></code></pre></div>
 <p>which should result in something like the following:</p>
-<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>&gt;<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>discord_lfg.bot<span class="w"> </span><span class="s2">&quot;C:\projects\discord-lfg-data\token.toml&quot;</span><span class="w"> </span><span class="s2">&quot;C:\projects\discord-lfg-data\config.toml&quot;</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="o">[</span><span class="m">2026</span>-02-17<span class="w"> </span><span class="m">19</span>:33:34<span class="o">]</span><span class="w"> </span><span class="o">[</span>INFO<span class="w">    </span><span class="o">]</span><span class="w"> </span>discord.client:<span class="w"> </span>logging<span class="w"> </span><span class="k">in</span><span class="w"> </span>using<span class="w"> </span>static<span class="w"> </span>token
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="o">[</span><span class="m">2026</span>-02-17<span class="w"> </span><span class="m">19</span>:33:35<span class="o">]</span><span class="w"> </span><span class="o">[</span>INFO<span class="w">    </span><span class="o">]</span><span class="w"> </span>discord.gateway:<span class="w"> </span>Shard<span class="w"> </span>ID<span class="w"> </span>None<span class="w"> </span>has<span class="w"> </span>connected<span class="w"> </span>to<span class="w"> </span>Gateway<span class="w"> </span><span class="o">(</span>Session<span class="w"> </span>ID:<span class="w"> </span><span class="m">123456789</span><span class="o">)</span>.
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>Logged<span class="w"> </span><span class="k">in</span><span class="w"> </span>as<span class="w"> </span>app-commands-test#2842<span class="w"> </span><span class="o">(</span>ID:<span class="w"> </span><span class="m">123456789</span><span class="o">)</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>------
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>Discord-LFG<span class="w"> </span>started
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>logging<span class="w"> </span>to:<span class="w"> </span>C:<span class="se">\p</span>rojects<span class="se">\d</span>iscord-lfg-data<span class="se">\l</span>ogging
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>stats<span class="w"> </span>outputting<span class="w"> </span>to:<span class="w"> </span>C:<span class="se">\p</span>rojects<span class="se">\d</span>iscord-lfg-data<span class="se">\s</span>tats
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>&gt;<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>discord_lfg.bot<span class="w"> </span>--token<span class="w"> </span><span class="s2">&quot;123456789.ABC&quot;</span><span class="w"> </span>--config<span class="w"> </span><span class="s2">&quot;C:\projects\discord-lfg-data\config.toml&quot;</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="m">2026</span>-03-16<span class="w"> </span><span class="m">13</span>:05:55<span class="w"> </span><span class="o">[</span>WARNING<span class="o">]</span><span class="w"> </span>discord.client:<span class="w"> </span>PyNaCl<span class="w"> </span>is<span class="w"> </span>not<span class="w"> </span>installed,<span class="w"> </span>voice<span class="w"> </span>will<span class="w"> </span>NOT<span class="w"> </span>be<span class="w"> </span>supported
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="m">2026</span>-03-16<span class="w"> </span><span class="m">13</span>:05:55<span class="w"> </span><span class="o">[</span>INFO<span class="o">]</span><span class="w"> </span>discord.client:<span class="w"> </span>logging<span class="w"> </span><span class="k">in</span><span class="w"> </span>using<span class="w"> </span>static<span class="w"> </span>token
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="m">2026</span>-03-16<span class="w"> </span><span class="m">13</span>:05:55<span class="w"> </span>INFO<span class="w">     </span>discord.client<span class="w"> </span>logging<span class="w"> </span><span class="k">in</span><span class="w"> </span>using<span class="w"> </span>static<span class="w"> </span>token
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="m">2026</span>-03-16<span class="w"> </span><span class="m">13</span>:05:57<span class="w"> </span><span class="o">[</span>INFO<span class="o">]</span><span class="w"> </span>discord.gateway:<span class="w"> </span>Shard<span class="w"> </span>ID<span class="w"> </span>None<span class="w"> </span>has<span class="w"> </span>connected<span class="w"> </span>to<span class="w"> </span>Gateway<span class="w"> </span><span class="o">(</span>Session<span class="w"> </span>ID:<span class="w"> </span><span class="m">123456789</span><span class="o">)</span>.
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="m">2026</span>-03-16<span class="w"> </span><span class="m">13</span>:05:57<span class="w"> </span>INFO<span class="w">     </span>discord.gateway<span class="w"> </span>Shard<span class="w"> </span>ID<span class="w"> </span>None<span class="w"> </span>has<span class="w"> </span>connected<span class="w"> </span>to<span class="w"> </span>Gateway<span class="w"> </span><span class="o">(</span>Session<span class="w"> </span>ID:<span class="w"> </span><span class="m">123456789</span><span class="o">)</span>.
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="m">2026</span>-03-16<span class="w"> </span><span class="m">13</span>:05:59<span class="w"> </span><span class="o">[</span>INFO<span class="o">]</span><span class="w"> </span>__main__:<span class="w"> </span>Logged<span class="w"> </span><span class="k">in</span><span class="w"> </span>as<span class="w"> </span>app-commands-test#2842<span class="w"> </span><span class="o">(</span>ID:<span class="w"> </span><span class="m">123456789</span><span class="o">)</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="m">2026</span>-03-16<span class="w"> </span><span class="m">13</span>:05:59<span class="w"> </span><span class="o">[</span>INFO<span class="o">]</span><span class="w"> </span>__main__:<span class="w"> </span>------
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="m">2026</span>-03-16<span class="w"> </span><span class="m">13</span>:05:59<span class="w"> </span><span class="o">[</span>INFO<span class="o">]</span><span class="w"> </span>__main__:<span class="w"> </span>Discord-LFG<span class="w"> </span>started
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="m">2026</span>-03-16<span class="w"> </span><span class="m">13</span>:05:59<span class="w"> </span><span class="o">[</span>INFO<span class="o">]</span><span class="w"> </span>__main__:<span class="w"> </span>logging<span class="w"> </span>to:<span class="w"> </span>/config/logging
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="m">2026</span>-03-16<span class="w"> </span><span class="m">13</span>:05:59<span class="w"> </span><span class="o">[</span>INFO<span class="o">]</span><span class="w"> </span>__main__:<span class="w"> </span>stats<span class="w"> </span>outputting<span class="w"> </span>to:<span class="w"> </span>/config/stats
 </span></code></pre></div>
 <p>You should find that the bot slash commands are then active in the relevant server when it's given
 a valid set of configuration files.</p>
+<h2 id="using-docker">Using Docker<a class="headerlink" href="#using-docker" title="Permanent link">#</a></h2>
+<ul>
+<li>Get Docker Desktop</li>
+<li>Follow the Docker setup to be able to run Docker (in Windows via WSL)</li>
+<li>run <code class="language-shell highlight">docker<span class="w"> </span>pull<span class="w"> </span>aptosaurinae/discord-lfg</code> to get the latest image</li>
+<li>Make sure the files are accessible in the shell - if you're using WSL this might mean needing to use the <code class="language-shell highlight">/mnt</code> folder.</li>
+<li>Run the docker image. The following command assumes config files have been copied into the <code class="language-shell highlight">/etc/discord-lfg/</code> directory and folders have been created for stats and logging. the file paths used in the right side of each volume element need to match those listed in the config file e.g. <code class="language-shell highlight">log_folder</code> in the config needs to point at <code class="language-shell highlight">/config/logging</code>.</li>
+</ul>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>--user<span class="w"> </span>root<span class="se">\</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span>-v<span class="w"> </span>/etc/discord-lfg/discord-bot-test-token:/secrets/discord-bot-token:ro<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span>-v<span class="w"> </span>/etc/discord-lfg:/config:ro<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span>-v<span class="w"> </span>/etc/discord-lfg/logging:/config/logging:rw<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span>-v<span class="w"> </span>/etc/discord-lfg/stats-test:/config/stats:rw<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span>aptosaurinae/discord-lfg:latest<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span>--token<span class="w"> </span>/secrets/discord-bot-token<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span>--config<span class="w"> </span>/config/discord-lfg-test-config-docker.toml
+</span></code></pre></div>
+<p>The <code class="language-shell highlight">-d</code> flag will leave the docker container running in the background. If you want to see the log output in the console (useful when testing), remove this flag.</p>
+<h2 id="hosting-on-a-google-cloud-virtual-machine">Hosting on a Google Cloud Virtual Machine<a class="headerlink" href="#hosting-on-a-google-cloud-virtual-machine" title="Permanent link">#</a></h2>
+<p><strong><em>(alternative hosting options are available)</em></strong></p>
+<h3 id="creating-a-vm">Creating a VM<a class="headerlink" href="#creating-a-vm" title="Permanent link">#</a></h3>
+<ul>
+<li>Make sure you have all of the config info to hand for the bot.</li>
+<li>Create an account and log in.</li>
+<li>Create a new project.</li>
+<li>Once the new project loads, click on <code class="language-shell highlight">Create<span class="w"> </span>a<span class="w"> </span>VM</code> which should take you to the Google Compute VM creation page. If it asks you to enable GCE then do so, wait a moment, and try again.</li>
+<li>In the machine config, rename the instance at the top, then point it at a local region, and select an appropriate instance size (I'd recommend something like an E2-small).</li>
+<li>Click "Create". this might fail if it can't find the selected machine size in the given region, so you may need to try again with a different region.</li>
+<li>Once created, you can access the VM by clicking the "SSH" button under "Connect". This will start up a shell giving you access to the VM.</li>
+</ul>
+<h3 id="setting-up-the-vm">Setting up the VM<a class="headerlink" href="#setting-up-the-vm" title="Permanent link">#</a></h3>
+<ul>
+<li>Reboot the VM (exit the shell, stop it and start it again, reopen the shell)</li>
+<li>Either upload your config files using the tool on the shell browser window, or copy the files in from a bucket.</li>
+<li>Follow either of the GitHub or Docker instructions above. If you are following the Docker instructions, you'll need to run the Linux command line install instructions from <a href="https://docs.docker.com/engine/install/">here</a> instead of using Docker Desktop.</li>
+</ul>
 <h2 id="command-preview-within-discord">Command preview within Discord<a class="headerlink" href="#command-preview-within-discord" title="Permanent link">#</a></h2>
 <p>Once the bot is up and running, the commands that are active should match those defined in
 the command files referenced by the main config, along with the two default <code class="language-shell highlight">lfghistory</code> and
