@@ -228,7 +228,15 @@ def _argparser():
     args = parser.parse_args()
     with open(args.config, "rb") as config_file:
         config_data = tomllib.load(config_file)
-    return args.token, config_data
+    return _parse_token(args.token), config_data
+
+
+def _parse_token(token_arg: str):
+    """Gets a token string from a token file."""
+    p = Path(token_arg)
+    if p.exists() and p.is_file():
+        return p.read_text().strip()
+    return token_arg
 
 
 def _parse_config(config_data: dict) -> tuple[LFGConfig, list[CommandConfig]]:
