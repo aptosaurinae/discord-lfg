@@ -25,7 +25,7 @@ appropriate picture for your bot
     - Turn off `Public Bot` and then save changes
     - Click `Reset Token` to generate a new token.
     - Copy the token and store it somewhere securely where you want to use it, such as a
-    GitHub or cloud secrets vault.
+    GitHub or cloud secrets vault. You can also put it as plain text in a file and point the `--token` argument at the file.
 
 ### Inviting the bot to your server
 

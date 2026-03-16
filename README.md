@@ -79,13 +79,16 @@ which should result in something like the following:
 
 ``` shell
 > uv run python -m discord_lfg.bot --token "123456789.ABC" --config "C:\projects\discord-lfg-data\config.toml"
-[2026-02-17 19:33:34] [INFO    ] discord.client: logging in using static token
-[2026-02-17 19:33:35] [INFO    ] discord.gateway: Shard ID None has connected to Gateway (Session ID: 123456789).
-Logged in as app-commands-test#2842 (ID: 123456789)
-------
-Discord-LFG started
-logging to: C:\projects\discord-lfg-data\logging
-stats outputting to: C:\projects\discord-lfg-data\stats
+2026-03-16 13:05:55 [WARNING] discord.client: PyNaCl is not installed, voice will NOT be supported
+2026-03-16 13:05:55 [INFO] discord.client: logging in using static token
+2026-03-16 13:05:55 INFO     discord.client logging in using static token
+2026-03-16 13:05:57 [INFO] discord.gateway: Shard ID None has connected to Gateway (Session ID: 123456789).
+2026-03-16 13:05:57 INFO     discord.gateway Shard ID None has connected to Gateway (Session ID: 123456789).
+2026-03-16 13:05:59 [INFO] __main__: Logged in as app-commands-test#2842 (ID: 123456789)
+2026-03-16 13:05:59 [INFO] __main__: ------
+2026-03-16 13:05:59 [INFO] __main__: Discord-LFG started
+2026-03-16 13:05:59 [INFO] __main__: logging to: /config/logging
+2026-03-16 13:05:59 [INFO] __main__: stats outputting to: /config/stats
 ```
 
 You should find that the bot slash commands are then active in the relevant server when it's given
