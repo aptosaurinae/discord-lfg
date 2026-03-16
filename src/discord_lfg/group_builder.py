@@ -18,6 +18,8 @@ from discord_lfg.utils import (
     get_guild_role_mention_for_group_role,
 )
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass
 class GroupDetails:
@@ -109,7 +111,7 @@ class GroupBuilder:
             creator_role: The role the creator has chosen (must match a role name)
             filled_spots: A dictionary of which roles are already filled in the format {name: count}
         """
-        logging.debug(
+        logger.debug(
             f"GroupBuilder created by {interaction.user.id} {interaction.user.display_name}"
         )
         self.group_editor: None | GroupEditOptions = None
@@ -135,7 +137,7 @@ class GroupBuilder:
         self.add_role(creator_role, self.creator)
         self.kicked_users: list[GroupUser] = []
         self.fill_spots(filled_spots)
-        logging.debug(
+        logger.debug(
             f"GroupBuilder initialisation finished for {self.listing_message} {self.group_title}"
         )
 
@@ -153,7 +155,7 @@ class GroupBuilder:
             for userid in [user.id for user in role.users]:
                 if userid > 0:
                     tagged_users += f"<@{userid}> "
-        logging.debug(f"current user tags: {tagged_users}")
+        logger.debug(f"current user tags: {tagged_users}")
         return tagged_users
 
     @property
@@ -162,7 +164,7 @@ class GroupBuilder:
         current_role_tags = " ".join([
             role.role_mention for role in self.roles.values() if not role.disabled
         ])
-        logging.debug(f"current role tags: {current_role_tags}")
+        logger.debug(f"current role tags: {current_role_tags}")
         return current_role_tags
 
     @property
@@ -181,7 +183,7 @@ class GroupBuilder:
     @property
     def listing_message(self) -> str:
         """Gets the listing message for the group."""
-        logging.debug(f"get listing message {self.group_title}")
+        logger.debug(f"get listing message {self.group_title}")
         tag_users = False
         tag_roles = False
         if self.state.timed_out:
@@ -208,7 +210,7 @@ class GroupBuilder:
             bold = "**" if user.display_name != "" else ""
             return f"{role.emoji} : {bold}{user.display_name}{bold}{' 🚩' if user.id == creator_id else ''}"
 
-        logging.debug(f"get description {self.group_title}")
+        logger.debug(f"get description {self.group_title}")
         group = self.group_details
         role_string = ""
         for role_name, role_count in self.role_counts.items():
@@ -243,7 +245,7 @@ class GroupBuilder:
     @property
     def group_embed(self) -> discord.Embed:
         """Gets a Discord Embed of the current group user state."""
-        logging.debug(f"get group embed {self.group_title}")
+        logger.debug(f"get group embed {self.group_title}")
         title = f"{self._strikethrough}{self.group_title}{self._strikethrough} {self.filled_roles}"
         if self.state.timed_out or self.state.cancelled:
             colour = discord.Colour.red()
@@ -383,7 +385,7 @@ class GroupBuilder:
 
     async def _check_if_closed_or_timed_out(self):
         """Closes the group if the background timer has finished and the group is not cancelled."""
-        logging.debug(
+        logger.debug(
             f"_timeout {self.group_title}\n"
             f"created at: {self.state.created_at}\n"
             f"timeout set to: {self.state.close_group_at}"
@@ -393,18 +395,18 @@ class GroupBuilder:
         while not self._is_finished and not self.state.cancelled:
             if (datetime_now_utc() - last_update).total_seconds() > 10:
                 last_update = datetime_now_utc()
-                logging.debug(f"{self.group_title} still active")
+                logger.debug(f"{self.group_title} still active")
             self.is_closed()
             await asyncio.sleep(sleep_timer)
 
         if self.state.cancelled:
-            logging.debug(f"{self.group_title} was cancelled while waiting to be closed.")
+            logger.debug(f"{self.group_title} was cancelled while waiting to be closed.")
             return None
         elif self.state.closed:
-            logging.debug(f"{self.group_title} closed")
+            logger.debug(f"{self.group_title} closed")
             finished_state = "complete"
         else:
-            logging.debug(f"{self.group_title} timed out")
+            logger.debug(f"{self.group_title} timed out")
             finished_state = "timed_out"
             self.state.timed_out = True
 
@@ -416,7 +418,7 @@ class GroupBuilder:
 
     async def cancel_group(self):
         """Cancels the group and informs all current signups that it's been cancelled."""
-        logging.debug(
+        logger.debug(
             f"{self.group_title} cancelled by {self.creator.id} / {self.creator.display_name}"
         )
         self.state.cancelled = True
@@ -428,19 +430,19 @@ class GroupBuilder:
     def is_closed(self):
         """Checks if the group should be closed or re-opened and sets a timer accordingly."""
         if self.state.empty_spots == 0 and not self.state.closed:
-            logging.debug(f"{self.listing_message} {self.group_title} closed as it is full")
+            logger.debug(f"{self.listing_message} {self.group_title} closed as it is full")
             self.state.closed = True
             self.state.close_group_at = datetime_now_utc() + timedelta(
                 minutes=self.state.editable_length
             )
-            logging.debug(f"group closed but editable until {self.state.close_group_at}")
+            logger.debug(f"group closed but editable until {self.state.close_group_at}")
         elif self.state.empty_spots > 0 and self.state.closed:
-            logging.debug(f"{self.listing_message} {self.group_title} reopened as it has space")
+            logger.debug(f"{self.listing_message} {self.group_title} reopened as it has space")
             self.state.closed = False
             self.state.close_group_at = datetime_now_utc() + timedelta(
                 minutes=self.state.editable_length
             )
-            logging.debug(f"group reopened and editable until {self.state.close_group_at}")
+            logger.debug(f"group reopened and editable until {self.state.close_group_at}")
 
     # --- Responses and discord message display handling
 
@@ -459,7 +461,7 @@ class GroupBuilder:
 
     async def edit_message(self):
         """Updates the Discord displayed message based on the current status of the group."""
-        logging.debug("edit_message")
+        logger.debug("edit_message")
         if self.message is not None:
             await self.message.edit(**self._message_content)
         else:
@@ -472,7 +474,7 @@ class GroupBuilder:
 
     async def send_passphrase(self, interaction: discord.Interaction):
         """Sends the passphrase."""
-        logging.debug(
+        logger.debug(
             f"send_passphrase {self.group_title}\n"
             f"user_id: {interaction.user.id}\n"
             f"display_name: {interaction.user.display_name}\n"
@@ -567,9 +569,7 @@ class GroupBuilder:
 
     def remove_role(self, role: GroupRole, id: int):
         """Removes the role from the given user."""
-        logging.debug(
-            f"remove_role {self.group_title}\nrole: {role}\nid: {id}\nstate: {self.state}"
-        )
+        logger.debug(f"remove_role {self.group_title}\nrole: {role}\nid: {id}\nstate: {self.state}")
         role_idx = [user.id for user in role.users].index(id)
         role.users[role_idx] = self._create_empty_spot_user(role.name)
         role.assigned[role_idx] = False
@@ -587,7 +587,7 @@ class GroupBuilder:
                     self.remove_role(remove_role, group_user.id)
 
         role = self.roles[assigned_role]
-        logging.debug(
+        logger.debug(
             f"add_role {self.group_title}\nrole:\n{role}\nid: {group_user.id}\nstate: {self.state}"
         )
         role_idx = role.assigned.index(False)
@@ -614,9 +614,9 @@ class GroupBuilder:
     def group_buttons(self) -> discord.ui.View | None:
         """A set of buttons for manipulating the group while it's open."""
         if self._is_finished or self.state.cancelled:
-            logging.debug(f"no buttons needed {self.group_title}")
+            logger.debug(f"no buttons needed {self.group_title}")
             return None
-        logging.debug(f"retrieving buttons {self.group_title}")
+        logger.debug(f"retrieving buttons {self.group_title}")
         role_btns = [self._role_button(role_name) for role_name in self.role_counts]
         passphrase_btn = self._passphrase_button()
         settings_btn = self._settings_button()
@@ -630,11 +630,11 @@ class GroupBuilder:
         """Creates a button interactable formatted for a particular role."""
 
         async def btn_click(interaction: discord.Interaction):
-            logging.debug(
+            logger.debug(
                 f"{self.group_title} {role_name} button clicked by {interaction.user.display_name}"
             )
             if interaction.user.id in [user.id for user in self.kicked_users]:
-                logging.debug(f"Sending kicked user message: {interaction.user.id}")
+                logger.debug(f"Sending kicked user message: {interaction.user.id}")
                 for user in self.kicked_users:
                     if user.id == interaction.user.id:
                         removal_reason = user.removal_reason
@@ -644,10 +644,10 @@ class GroupBuilder:
                         )
                         return None
             if interaction.user.id == self.creator.id:
-                logging.debug("Filling spots because creator clicked button")
+                logger.debug("Filling spots because creator clicked button")
                 self.fill_spots({role_name: 1})
             else:
-                logging.debug("Adding user because non-creator clicked button")
+                logger.debug("Adding user because non-creator clicked button")
                 self.add_role(
                     assigned_role=role_name,
                     group_user=self.create_user_from_interaction(interaction, role_name),
@@ -670,7 +670,7 @@ class GroupBuilder:
         """Creates an ephemeral passphrase message for valid callers."""
 
         async def btn_click(interaction: discord.Interaction):
-            logging.debug(
+            logger.debug(
                 f"{self.group_title} passphrase button clicked by {interaction.user.display_name}"
             )
             if interaction.user.id in self.current_user_ids:
@@ -694,7 +694,7 @@ class GroupBuilder:
         """Accesses control options for valid users."""
 
         async def btn_click(interaction: discord.Interaction):
-            logging.debug(
+            logger.debug(
                 f"{self.group_title} settings button clicked by {interaction.user.display_name}"
             )
             if interaction.user.id == self.creator.id:
@@ -768,13 +768,13 @@ class EditRemoveUser(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         """Does the thing."""
         assert self.view is not None
-        logging.debug(f"EditRemoveUser callback {self.view.group_builder.group_title}")
-        logging.debug(f"Selected for removal: {self.values}")
+        logger.debug(f"EditRemoveUser callback {self.view.group_builder.group_title}")
+        logger.debug(f"Selected for removal: {self.values}")
         self.view.remove_users = []
         for user_id in self.values:
             user_id = int(user_id)
             self.view.remove_users.append(self.view.group_builder.get_user_by_id(user_id))
-        logging.debug(f"Recorded for removal: {self.view.remove_users}")
+        logger.debug(f"Recorded for removal: {self.view.remove_users}")
         await interaction.response.defer()
 
 
@@ -803,7 +803,7 @@ class EditRemoveUserReason(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         """Does the thing."""
         assert self.view is not None
-        logging.debug(f"EditRemoveUserReason callback {self.view.group_builder.group_title}")
+        logger.debug(f"EditRemoveUserReason callback {self.view.group_builder.group_title}")
         if self.values:
             self.view.remove_users_reason = self.values[0]
         await interaction.response.defer()
@@ -835,7 +835,7 @@ class EditCreatorRole(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         """Does the thing."""
         assert self.view is not None
-        logging.debug(f"EditCreatorRole callback {self.view.group_builder.group_title}")
+        logger.debug(f"EditCreatorRole callback {self.view.group_builder.group_title}")
         if self.values:
             self.view.new_creator_role = self.values[0]
         await interaction.response.defer()
@@ -882,14 +882,14 @@ class GroupEditOptions(discord.ui.View):
             self.add_item(self.edit_creator_role)
 
     def _remove_users(self) -> bool | None:
-        logging.debug(f"Attempting to remove users from {self.group_builder.group_title}")
-        logging.debug(f"Current group roles: {self.group_builder.roles}")
-        logging.debug(f"remove users: {self.remove_users}")
+        logger.debug(f"Attempting to remove users from {self.group_builder.group_title}")
+        logger.debug(f"Current group roles: {self.group_builder.roles}")
+        logger.debug(f"remove users: {self.remove_users}")
         if len(self.remove_users) > 0:
-            logging.debug(f"users_to_remove: {self.remove_users}")
-            logging.debug(f"{[user.id > 0 for user in self.remove_users]}")
+            logger.debug(f"users_to_remove: {self.remove_users}")
+            logger.debug(f"{[user.id > 0 for user in self.remove_users]}")
             is_not_all_filled = any([user.id > 0 for user in self.remove_users])
-            logging.debug(
+            logger.debug(
                 f"is_not_all_filled: {is_not_all_filled}, "
                 f"self.remove_users_reason: {self.remove_users_reason}"
             )
@@ -923,27 +923,27 @@ class GroupEditOptions(discord.ui.View):
         is_removed_users = self._remove_users()
         self.group_builder.is_closed()
         await self.group_builder.edit_message()
-        logging.debug(
+        logger.debug(
             f"edit confirm {self.group_builder.group_title}: {is_creator_role_swapped}, {is_removed_users}"
         )
 
         return_content = "Editing complete."
 
         if is_creator_role_swapped is not None and not is_creator_role_swapped:
-            logging.debug("not is_creator_role_swapped")
+            logger.debug("not is_creator_role_swapped")
             await self.interaction.followup.send(
                 content="The role you wanted to swap to is no longer available", ephemeral=True
             )
             await interaction.response.defer()
             return None
         elif is_creator_role_swapped is not None:
-            logging.debug("is_creator_role_swapped is not None")
+            logger.debug("is_creator_role_swapped is not None")
             return_content += (
                 f"\nCreator role swapped from {self.creator_role} to {self.new_creator_role}"
             )
 
         if is_removed_users is not None and not is_removed_users:
-            logging.debug("not is_removed_users")
+            logger.debug("not is_removed_users")
             await self.interaction.followup.send(
                 content="You must provide a removal reason if you are removing users",
                 ephemeral=True,
@@ -951,7 +951,7 @@ class GroupEditOptions(discord.ui.View):
             await interaction.response.defer()
             return None
         elif is_removed_users is not None:
-            logging.debug("is_removed_users is not None")
+            logger.debug("is_removed_users is not None")
             users_removed_str = [
                 f"- `{user.display_name}`: {user.removal_reason}" for user in self.remove_users
             ]
@@ -1000,7 +1000,7 @@ class GroupEditOptions(discord.ui.View):
 
     async def on_timeout(self) -> None:
         """Do stuff when timeout occurs."""
-        logging.debug("edit menu timed out.")
+        logger.debug("edit menu timed out.")
         if self.message:
             await self.message.edit(content="Group editing has timed out.", view=None)  # type: ignore
         self.group_builder.group_editor = None
@@ -1008,7 +1008,7 @@ class GroupEditOptions(discord.ui.View):
 
     async def on_group_close(self) -> None:
         """Do stuff when the group managing this editor is closed."""
-        logging.debug("edit menu closed by parent GroupBuilder.")
+        logger.debug("edit menu closed by parent GroupBuilder.")
         if self.message:
             await self.message.edit(content="Group closed, editing no longer available.", view=None)  # type: ignore
         self.group_builder.group_editor = None

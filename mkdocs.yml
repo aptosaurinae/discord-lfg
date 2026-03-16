@@ -2,7 +2,7 @@ site_name: discord-lfg
 nav:
   - Home: index.md
   - Installation: installation.md
-  - Running the bot: running.md
+  - Running or hosting the bot: hosting_and_running.md
   - Configuration:
     - config/introduction.md
     - Token Input: config/token.md

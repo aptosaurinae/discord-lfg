@@ -104,3 +104,9 @@ dev = [
 
 [tool.uv.sources]
 discord_lfg = { path = ".", editable = true }
+
+[tool.setuptools]
+packages = { find = { where = ["src"] } }
+
+[tool.setuptools.package-data]
+discord_lfg = ["resources/*.toml"]
