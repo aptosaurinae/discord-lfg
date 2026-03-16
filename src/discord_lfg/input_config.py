@@ -441,7 +441,7 @@ def setup_logging(log_folder: Path | None, debug: bool = False) -> logging.Logge
 
     if log_folder is not None and log_folder.exists():
         dt = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
-        log_file_path = log_folder / f"{dt}_dungeon_buddy.log"
+        log_file_path = log_folder / f"{dt}_discord-lfg.log"
 
         file_handler = logging.FileHandler(log_file_path, encoding="utf-8")
         file_handler.setLevel(logging.DEBUG if debug else logging.INFO)
